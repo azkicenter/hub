@@ -1230,6 +1230,10 @@
           <div class="label">مجموع تارگت تیم</div>
           <div class="value" id="team-period-total">—</div>
         </div>
+        <div class="summary-card">
+          <div class="label">مجموع کارشناس‌ها</div>
+          <div class="value" id="team-agent-count">—</div>
+        </div>
       </div>
       <div class="list-card" id="team-list">
         <div class="loading-state">در حال بارگذاری...</div>
@@ -2152,6 +2156,7 @@ async function loadTeamView(leaderId) {
   if (myCenterLinksError || myCenterIds.length === 0) {
     container.innerHTML = '<div class="empty-state">هنوز سنتری به شما اساین نشده است</div>';
     document.getElementById('team-period-total').textContent = '۰';
+    document.getElementById('team-agent-count').textContent = '۰';
     return;
   }
 
@@ -2179,6 +2184,7 @@ async function loadTeamView(leaderId) {
   if (centerAgentLinksError) {
     container.innerHTML = `<div class="empty-state">خطا در دریافت اساین نیروها: ${centerAgentLinksError.message}</div>`;
     document.getElementById('team-period-total').textContent = '—';
+    document.getElementById('team-agent-count').textContent = '—';
     return;
   }
 
@@ -2192,6 +2198,7 @@ async function loadTeamView(leaderId) {
   if (memberIdsFromLinks.length === 0) {
     container.innerHTML = '<div class="empty-state">هنوز نیرویی به شما اساین نشده است</div>';
     document.getElementById('team-period-total').textContent = '۰';
+    document.getElementById('team-agent-count').textContent = '۰';
     return;
   }
 
@@ -2207,15 +2214,18 @@ async function loadTeamView(leaderId) {
   if (membersError) {
     container.innerHTML = `<div class="empty-state">خطا در دریافت پروفایل نیروها: ${membersError.message}</div>`;
     document.getElementById('team-period-total').textContent = '—';
+    document.getElementById('team-agent-count').textContent = '—';
     return;
   }
   if (!allMembers || allMembers.length === 0) {
     container.innerHTML = '<div class="empty-state">هنوز نیرویی به شما اساین نشده است</div>';
     document.getElementById('team-period-total').textContent = '۰';
+    document.getElementById('team-agent-count').textContent = '۰';
     return;
   }
 
   allMembers.forEach(m => { m.centerName = centerNameByAgentId[m.id] || 'بدون سنتر'; });
+  document.getElementById('team-agent-count').textContent = formatNumber(allMembers.length);
 
   const centerAgentMembers = allMembers.filter(m => m.role === 'center_agent');
   const members = allMembers.filter(m => m.role !== 'center_agent');
