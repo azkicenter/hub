@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>داشبورد سنتر</title>
+<title>داشبورد کارشناسان</title>
 <script>
   // اعمال تم ذخیره‌شده قبل از رندر صفحه، تا صفحه لحظه‌ای با تم اشتباه چشمک نزنه
   (function () {
@@ -1015,7 +1015,7 @@
     padding: 17px 20px;
     cursor: pointer;
     transition: background .12s;
-    background: var(--accent-soft);
+    background: rgba(23,169,255,.09);
     -webkit-backdrop-filter: blur(12px) saturate(160%);
     backdrop-filter: blur(12px) saturate(160%);
     border: none;
@@ -1023,7 +1023,7 @@
     text-align: right;
     font-family: var(--font);
   }
-  .leader-header:hover { background: rgba(23,169,255,.3); }
+  .leader-header:hover { background: rgba(23,169,255,.15); }
   .leader-name-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .leader-chevron {
     width: 17px; height: 17px; flex-shrink: 0;
@@ -1033,6 +1033,18 @@
   .leader-item.open > .leader-header .leader-chevron { transform: rotate(180deg); color: var(--accent-deep); }
   .leader-name { font-size: 15px; font-weight: 700; color: var(--accent-deep); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .leader-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .leader-count {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent-deep);
+    background: var(--accent-soft);
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+    text-align: center;
+    box-sizing: border-box;
+    font-variant-numeric: tabular-nums;
+  }
   .leader-total {
     font-size: 14px;
     font-weight: 800;
@@ -2088,6 +2100,7 @@ function buildGroupedMemberItemsHtml(membersWithTotals) {
           <span class="leader-name">${g.centerName}</span>
         </div>
         <div class="leader-right">
+          <span class="leader-count">${formatNumber(g.items.length)} نفر</span>
           <span class="leader-total">${formatNumber(g.total)}</span>
         </div>
       </button>
