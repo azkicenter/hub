@@ -861,10 +861,9 @@
   .team-details {
     max-height: 0;
     overflow: hidden;
-    transition: max-height .25s ease;
+    transition: max-height .3s cubic-bezier(.4,0,.2,1);
     background: var(--surface-tint);
   }
-  .team-item.open .team-details { max-height: 2400px; }
   .team-details-inner { padding: 4px 20px 14px; }
   .team-day-row {
     display: flex;
@@ -1074,10 +1073,9 @@
   .leader-details {
     max-height: 0;
     overflow: hidden;
-    transition: max-height .3s ease;
+    transition: max-height .3s cubic-bezier(.4,0,.2,1);
     background: var(--bg);
   }
-  .leader-item.open > .leader-details { max-height: 4000px; }
   .leader-details-inner { padding: 12px 14px 16px; }
 
   /* ====== شیشه‌ای‌سازی نشان‌ها و کادرهای رنگی کوچک ====== */
@@ -1104,8 +1102,8 @@
   /* ====== انیمیشن لود شدن کادرها هنگام اسکرول ====== */
   .glass-reveal {
     opacity: 0;
-    transform: translateY(var(--reveal-offset, 26px)) scale(.98);
-    transition: opacity .55s cubic-bezier(.2,.8,.2,1), transform .55s cubic-bezier(.2,.8,.2,1);
+    transform: translateY(var(--reveal-offset, 18px)) scale(.99);
+    transition: opacity .38s cubic-bezier(.2,.8,.2,1), transform .38s cubic-bezier(.2,.8,.2,1);
     will-change: opacity, transform;
   }
   .glass-reveal.glass-in {
@@ -1639,6 +1637,7 @@ async function loadLastUpdate() {
     .single();
 
   if (error || !data || !data.updated_label) {
+    if (error) console.error('خطا در دریافت آخرین آپدیت:', error.message, error);
     bar.style.display = 'none';
     return;
   }
@@ -2119,18 +2118,24 @@ function buildGroupedMemberItemsHtml(membersWithTotals) {
 function bindExpandableToggles(container) {
   container.querySelectorAll('.leader-item').forEach(litem => {
     const header = litem.querySelector(':scope > .leader-header');
+    const details = litem.querySelector(':scope > .leader-details');
     if (header) {
       header.addEventListener('click', () => {
+        const opening = !litem.classList.contains('open');
         litem.classList.toggle('open');
+        if (details) details.style.maxHeight = opening ? details.scrollHeight + 'px' : '0px';
         if (window.refreshGlassReveals) window.refreshGlassReveals(litem);
       });
     }
   });
   container.querySelectorAll('.team-item').forEach(item => {
     const header = item.querySelector('.team-header');
+    const details = item.querySelector('.team-details');
     if (header) {
       header.addEventListener('click', () => {
+        const opening = !item.classList.contains('open');
         item.classList.toggle('open');
+        if (details) details.style.maxHeight = opening ? details.scrollHeight + 'px' : '0px';
         if (window.refreshGlassReveals) window.refreshGlassReveals(item);
       });
     }
@@ -3099,7 +3104,7 @@ document.addEventListener('visibilitychange', () => {
   window.refreshGlassReveals = function (root) {
     requestAnimationFrame(function () { forceCheck(root); });
     // یک چک دوم با کمی تأخیر برای حالتی که ترنزیشن/انیمیشن CSS دیرتر layout رو نهایی می‌کنه
-    setTimeout(function () { forceCheck(root); }, 260);
+    setTimeout(function () { forceCheck(root); }, 320);
   };
 
   var io = new IntersectionObserver(function (entries) {
@@ -3108,10 +3113,10 @@ document.addEventListener('visibilitychange', () => {
 
       if (entry.isIntersecting) {
         // ورود کادر به دید: با تأخیر پلکانی، از همون جهتی که تنظیم شده (بالا یا پایین) ظاهر میشه
-        var delay = (enterBatchCounter % 8) * 55;
+        var delay = (enterBatchCounter % 8) * 35;
         enterBatchCounter++;
         clearTimeout(enterBatchResetTimer);
-        enterBatchResetTimer = setTimeout(function () { enterBatchCounter = 0; }, 220);
+        enterBatchResetTimer = setTimeout(function () { enterBatchCounter = 0; }, 180);
 
         el.style.transitionDelay = delay + 'ms';
         requestAnimationFrame(function () {
