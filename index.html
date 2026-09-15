@@ -1329,6 +1329,23 @@
       <div class="ticket-hero-row" id="center-agent-hero"></div>
     </div>
 
+    <div class="panel" id="panel-supervisor">
+      <div class="period-label" id="supervisor-period-label"></div>
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="label">مجموع تارگت کل</div>
+          <div class="value" id="supervisor-total">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">مجموع کارشناس‌ها</div>
+          <div class="value" id="supervisor-agent-count">—</div>
+        </div>
+      </div>
+      <div class="list-card" id="supervisor-list">
+        <div class="loading-state">در حال بارگذاری...</div>
+      </div>
+    </div>
+
     <div class="panel" id="panel-admin">
       <div class="period-label" id="admin-period-label"></div>
       <div class="summary-row">
@@ -1798,6 +1815,7 @@ async function enterApp(user) {
   const isCenter = !profileError && profile && profile.role === 'center';
   const isLeader = !profileError && profile && profile.role === 'leader';
   const isCenterAgent = !profileError && profile && profile.role === 'center_agent';
+  const isSupervisor = !profileError && profile && profile.role === 'supervisor';
 
   startPresenceHeartbeat();
 
@@ -1813,6 +1831,7 @@ async function enterApp(user) {
     document.getElementById('panel-center-bugs').classList.remove('active');
     document.getElementById('center-agent-tabs').style.display = 'none';
     document.getElementById('panel-center-agent').classList.remove('active');
+    document.getElementById('panel-supervisor').classList.remove('active');
     document.getElementById('panel-admin').classList.add('active');
     loadAdminView();
     setInterval(loadAdminView, 20000);
@@ -1830,6 +1849,7 @@ async function enterApp(user) {
     document.getElementById('panel-center-bugs').classList.remove('active');
     document.getElementById('center-agent-tabs').style.display = 'flex';
     document.getElementById('panel-center-agent').classList.add('active');
+    document.getElementById('panel-supervisor').classList.remove('active');
     loadCenterAgentReport(user.id);
     loadBugs(user.id);
   } else if (isCenter) {
@@ -1842,6 +1862,9 @@ async function enterApp(user) {
     document.getElementById('center-tabs').style.display = 'flex';
     document.getElementById('panel-center').classList.add('active');
     document.getElementById('panel-center-bugs').classList.remove('active');
+    document.getElementById('center-agent-tabs').style.display = 'none';
+    document.getElementById('panel-center-agent').classList.remove('active');
+    document.getElementById('panel-supervisor').classList.remove('active');
     loadCenterView(user.id);
   } else if (isLeader) {
     document.getElementById('main-tabs').style.display = 'none';
@@ -1850,7 +1873,28 @@ async function enterApp(user) {
     document.getElementById('team-tabs').style.display = 'flex';
     document.getElementById('panel-team').classList.add('active');
     document.getElementById('panel-team-bugs').classList.remove('active');
+    document.getElementById('center-tabs').style.display = 'none';
+    document.getElementById('panel-center').classList.remove('active');
+    document.getElementById('panel-center-bugs').classList.remove('active');
+    document.getElementById('center-agent-tabs').style.display = 'none';
+    document.getElementById('panel-center-agent').classList.remove('active');
+    document.getElementById('panel-supervisor').classList.remove('active');
     loadTeamView(user.id);
+  } else if (isSupervisor) {
+    document.getElementById('main-tabs').style.display = 'none';
+    document.getElementById('panel-targets').classList.remove('active');
+    document.getElementById('panel-bugs').classList.remove('active');
+    document.getElementById('team-tabs').style.display = 'none';
+    document.getElementById('panel-team').classList.remove('active');
+    document.getElementById('panel-team-bugs').classList.remove('active');
+    document.getElementById('center-tabs').style.display = 'none';
+    document.getElementById('panel-center').classList.remove('active');
+    document.getElementById('panel-center-bugs').classList.remove('active');
+    document.getElementById('center-agent-tabs').style.display = 'none';
+    document.getElementById('panel-center-agent').classList.remove('active');
+    document.getElementById('panel-admin').classList.remove('active');
+    document.getElementById('panel-supervisor').classList.add('active');
+    loadSupervisorView();
   } else {
     loadTargets(user.id);
     loadBugs(user.id);
@@ -2313,6 +2357,215 @@ async function loadTeamView(leaderId) {
   teamBugsFlat.sort((a, b) => (Number(b.check_date_sort) || 0) - (Number(a.check_date_sort) || 0));
 
   renderTeamBugsList(teamBugsFlat);
+
+  bindExpandableToggles(container);
+}
+
+function buildSupervisorLeadersHtml(leaderGroups) {
+  return leaderGroups.map(lg => `
+    <div class="leader-item">
+      <button class="leader-header" type="button">
+        <div class="leader-name-wrap">
+          <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          <span class="leader-name">${lg.leaderName}</span>
+        </div>
+        <div class="leader-right">
+          <span class="leader-count">${formatNumber(lg.items.length)} نفر</span>
+          <span class="leader-total">${formatNumber(lg.total)}</span>
+        </div>
+      </button>
+      <div class="leader-details">
+        <div class="leader-details-inner">${buildGroupedMemberItemsHtml(lg.items)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadSupervisorView() {
+  const container = document.getElementById('supervisor-list');
+  const period = currentPeriodBounds();
+  document.getElementById('supervisor-period-label').textContent = `بازه‌ی جاری: ${period.startLabel} تا ${period.endLabel}`;
+
+  const setTotals = (totalText, countText) => {
+    document.getElementById('supervisor-total').textContent = totalText;
+    document.getElementById('supervisor-agent-count').textContent = countText;
+  };
+
+  // همه‌ی سرگروه‌ها (بدون فیلتر، سوپروایزر کل مجموعه رو می‌بینه)
+  const { data: leaders, error: leadersError } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_PROFILES)
+      .select('id, full_name, backoffice_id')
+      .eq('role', 'leader')
+      .order('full_name', { ascending: true })
+      .range(from, to)
+  );
+
+  if (leadersError) {
+    container.innerHTML = `<div class="empty-state">خطا در دریافت سرگروه‌ها: ${leadersError.message}</div>`;
+    setTotals('—', '—');
+    return;
+  }
+  if (!leaders || leaders.length === 0) {
+    container.innerHTML = '<div class="empty-state">هنوز سرگروهی ثبت نشده است</div>';
+    setTotals('۰', '۰');
+    return;
+  }
+
+  // رابطه‌ی سرگروه ↔ سنتر
+  const { data: leaderCenterLinks, error: leaderCenterLinksError } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_LEADER_CENTERS)
+      .select('leader_id, center_id')
+      .range(from, to)
+  );
+
+  if (leaderCenterLinksError) {
+    container.innerHTML = `<div class="empty-state">خطا در دریافت اساین سنترها: ${leaderCenterLinksError.message}</div>`;
+    setTotals('—', '—');
+    return;
+  }
+
+  const centerIdsByLeaderId = {};
+  (leaderCenterLinks || []).forEach(l => {
+    if (!centerIdsByLeaderId[l.leader_id]) centerIdsByLeaderId[l.leader_id] = [];
+    centerIdsByLeaderId[l.leader_id].push(l.center_id);
+  });
+
+  const allCenterIds = [...new Set((leaderCenterLinks || []).map(l => l.center_id).filter(Boolean))];
+
+  // اسم نمایشی هر سنتر
+  const { data: centerProfiles } = allCenterIds.length
+    ? await fetchAllRows((from, to) =>
+        supabaseClient
+          .from(TABLE_PROFILES)
+          .select('id, full_name')
+          .in('id', allCenterIds)
+          .range(from, to)
+      )
+    : { data: [] };
+
+  const centerNameById = {};
+  (centerProfiles || []).forEach(c => { centerNameById[c.id] = c.full_name || 'بدون سنتر'; });
+
+  // رابطه‌ی سنتر ↔ کارشناس
+  const { data: centerAgentLinks, error: centerAgentLinksError } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_CENTER_AGENTS)
+      .select('center_id, agent_id')
+      .range(from, to)
+  );
+
+  if (centerAgentLinksError) {
+    container.innerHTML = `<div class="empty-state">خطا در دریافت اساین نیروها: ${centerAgentLinksError.message}</div>`;
+    setTotals('—', '—');
+    return;
+  }
+
+  const agentIdsByCenterId = {};
+  const centerNameByAgentId = {};
+  (centerAgentLinks || []).forEach(l => {
+    if (!agentIdsByCenterId[l.center_id]) agentIdsByCenterId[l.center_id] = [];
+    agentIdsByCenterId[l.center_id].push(l.agent_id);
+    centerNameByAgentId[l.agent_id] = centerNameById[l.center_id] || 'بدون سنتر';
+  });
+
+  const allAgentIds = [...new Set((centerAgentLinks || []).map(l => l.agent_id).filter(Boolean))];
+
+  if (allAgentIds.length === 0) {
+    container.innerHTML = buildSupervisorLeadersHtml(leaders.map(l => ({ leaderName: l.full_name || l.backoffice_id || '—', items: [], total: 0 })));
+    setTotals('۰', '۰');
+    bindExpandableToggles(container);
+    return;
+  }
+
+  // پروفایل کارشناس‌ها
+  const { data: agentProfiles, error: agentProfilesError } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_PROFILES)
+      .select('id, backoffice_id, full_name, role')
+      .in('id', allAgentIds)
+      .in('role', ['agent', 'center_agent'])
+      .range(from, to)
+  );
+
+  if (agentProfilesError) {
+    container.innerHTML = `<div class="empty-state">خطا در دریافت پروفایل کارشناس‌ها: ${agentProfilesError.message}</div>`;
+    setTotals('—', '—');
+    return;
+  }
+
+  const agentProfileById = {};
+  (agentProfiles || []).forEach(a => { agentProfileById[a.id] = a; });
+
+  // تارگت‌های بازه‌ی جاری
+  const { data: rows, error: rowsError } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_TARGETS)
+      .select('agent_id, report_date_jalali, target_count')
+      .in('agent_id', allAgentIds)
+      .gte('report_date_sort', period.startSort)
+      .lte('report_date_sort', period.endSort)
+      .range(from, to)
+  );
+
+  if (rowsError) {
+    container.innerHTML = `<div class="empty-state">خطا در دریافت تارگت‌ها: ${rowsError.message}</div>`;
+    setTotals('—', '—');
+    return;
+  }
+
+  const rowsByAgent = {};
+  (rows || []).forEach(r => {
+    if (!rowsByAgent[r.agent_id]) rowsByAgent[r.agent_id] = [];
+    rowsByAgent[r.agent_id].push(r);
+  });
+
+  // خطاها (بدون فیلتر بازه، مشابه بقیه‌ی پنل‌ها)
+  const { data: bugRows, error: bugRowsError } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_BUGS)
+      .select('user_id, check_date_sort')
+      .in('user_id', allAgentIds)
+      .range(from, to)
+  );
+
+  if (bugRowsError) console.error('خطا در دریافت خطاهای نیروها:', bugRowsError.message);
+
+  const bugsByAgent = {};
+  (bugRows || []).forEach(b => {
+    if (!bugsByAgent[b.user_id]) bugsByAgent[b.user_id] = [];
+    bugsByAgent[b.user_id].push(b);
+  });
+
+  const leaderGroups = leaders.map(leader => {
+    const leaderName = leader.full_name || leader.backoffice_id || '—';
+    const centerIds = centerIdsByLeaderId[leader.id] || [];
+
+    const items = [];
+    centerIds.forEach(centerId => {
+      const agentIds = agentIdsByCenterId[centerId] || [];
+      agentIds.forEach(agentId => {
+        const m = agentProfileById[agentId];
+        if (!m) return;
+        const myRows = rowsByAgent[agentId] || [];
+        const myBugs = bugsByAgent[agentId] || [];
+        const myTotal = myRows.reduce((sum, r) => sum + (Number(r.target_count) || 0), 0);
+        items.push({ m: { ...m, centerName: centerNameByAgentId[agentId] || 'بدون سنتر' }, myRows, myBugs, myTotal });
+      });
+    });
+
+    const total = items.reduce((sum, it) => sum + it.myTotal, 0);
+    return { leaderName, items, total };
+  });
+
+  leaderGroups.sort((a, b) => b.total - a.total);
+
+  const grandTotal = leaderGroups.reduce((sum, lg) => sum + lg.total, 0);
+  const grandAgentCount = leaderGroups.reduce((sum, lg) => sum + lg.items.length, 0);
+
+  container.innerHTML = buildSupervisorLeadersHtml(leaderGroups);
+  setTotals(formatNumber(grandTotal), formatNumber(grandAgentCount));
 
   bindExpandableToggles(container);
 }
