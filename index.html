@@ -1783,6 +1783,7 @@ async function enterApp(user) {
 
   currentUserId = user.id;
   loadLastUpdate();
+  setInterval(loadLastUpdate, 2 * 60000);
 
   const { data: profile, error: profileError } = await supabaseClient
     .from(TABLE_PROFILES)
