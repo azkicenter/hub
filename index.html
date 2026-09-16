@@ -831,9 +831,11 @@
     transition: background .12s;
     background: none;
     border: none;
+    outline: none;
     width: 100%;
     text-align: right;
     font-family: var(--font);
+    border-radius: var(--radius-sm);
   }
   .team-header:hover { background: var(--surface-tint); }
   .team-name-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -863,6 +865,7 @@
     overflow: hidden;
     transition: max-height .3s cubic-bezier(.4,0,.2,1);
     background: var(--surface-tint);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
   .team-details-inner { padding: 4px 20px 14px; }
   .team-day-row {
@@ -1018,6 +1021,7 @@
     -webkit-backdrop-filter: blur(12px) saturate(160%);
     backdrop-filter: blur(12px) saturate(160%);
     border: none;
+    outline: none;
     width: 100%;
     text-align: right;
     font-family: var(--font);
@@ -1075,6 +1079,7 @@
     overflow: hidden;
     transition: max-height .3s cubic-bezier(.4,0,.2,1);
     background: var(--bg);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
   .leader-details-inner { padding: 12px 14px 16px; }
 
