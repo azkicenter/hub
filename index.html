@@ -76,7 +76,7 @@
     --shadow-float: 0 24px 60px -16px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1);
     --topbar-bg: rgba(10,15,28,.22);
   }
-  html[data-theme="dark"] .leader-header:hover { background: rgba(255,255,255,.06); }
+  html[data-theme="dark"] .leader-header:hover { background: transparent; }
   body { transition: background .25s ease, color .25s ease; }
   .login-card, .summary-card, .ticket-report-cell, [class*="card"] { transition: background .25s ease, border-color .25s ease, box-shadow .25s ease; }
 
@@ -837,7 +837,7 @@
     font-family: var(--font);
     border-radius: var(--radius-sm);
   }
-  .team-header:hover { background: var(--surface-tint); }
+  .team-header:hover { background: transparent; }
   .team-name-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .team-chevron {
     width: 16px; height: 16px; flex-shrink: 0;
@@ -864,10 +864,10 @@
     max-height: 0;
     overflow: hidden;
     transition: max-height .3s cubic-bezier(.4,0,.2,1);
-    background: var(--surface-tint);
+    background: transparent;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
-  .team-details-inner { padding: 4px 20px 14px; }
+  .team-details-inner { padding: 4px 34px 14px 20px; }
   .team-day-row {
     display: flex;
     align-items: center;
@@ -1017,16 +1017,14 @@
     padding: 17px 20px;
     cursor: pointer;
     transition: background .12s;
-    background: rgba(23,169,255,.09);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-    backdrop-filter: blur(12px) saturate(160%);
+    background: transparent;
     border: none;
     outline: none;
     width: 100%;
     text-align: right;
     font-family: var(--font);
   }
-  .leader-header:hover { background: rgba(23,169,255,.15); }
+  .leader-header:hover { background: transparent; }
   .leader-name-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .leader-chevron {
     width: 17px; height: 17px; flex-shrink: 0;
@@ -1078,10 +1076,10 @@
     max-height: 0;
     overflow: hidden;
     transition: max-height .3s cubic-bezier(.4,0,.2,1);
-    background: var(--bg);
+    background: transparent;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
-  .leader-details-inner { padding: 12px 14px 16px; }
+  .leader-details-inner { padding: 12px 32px 16px 14px; }
 
   /* ====== شیشه‌ای‌سازی نشان‌ها و کادرهای رنگی کوچک ====== */
   .row-badge,
@@ -2165,6 +2163,17 @@ function buildGroupedMemberItemsHtml(membersWithTotals) {
 }
 
 function bindExpandableToggles(container) {
+  function updateOpenAncestors(el) {
+    let node = el.parentElement;
+    while (node) {
+      if (node.classList && node.classList.contains('leader-item') && node.classList.contains('open')) {
+        const ancestorDetails = node.querySelector(':scope > .leader-details');
+        if (ancestorDetails) ancestorDetails.style.maxHeight = ancestorDetails.scrollHeight + 'px';
+      }
+      node = node.parentElement;
+    }
+  }
+
   container.querySelectorAll('.leader-item').forEach(litem => {
     const header = litem.querySelector(':scope > .leader-header');
     const details = litem.querySelector(':scope > .leader-details');
@@ -2174,6 +2183,7 @@ function bindExpandableToggles(container) {
         litem.classList.toggle('open');
         if (details) details.style.maxHeight = opening ? details.scrollHeight + 'px' : '0px';
         if (window.refreshGlassReveals) window.refreshGlassReveals(litem);
+        updateOpenAncestors(litem);
       });
     }
   });
@@ -2186,6 +2196,7 @@ function bindExpandableToggles(container) {
         item.classList.toggle('open');
         if (details) details.style.maxHeight = opening ? details.scrollHeight + 'px' : '0px';
         if (window.refreshGlassReveals) window.refreshGlassReveals(item);
+        updateOpenAncestors(item);
       });
     }
   });
@@ -3452,4 +3463,3 @@ document.addEventListener('visibilitychange', () => {
 
 </body>
 </html>
- 
