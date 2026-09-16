@@ -1628,7 +1628,7 @@ function tehranTodayJalali() {
 function currentPeriodBounds() {
   const [jy, jm, jd] = tehranTodayJalali();
   let startJy, startJm, endJy, endJm;
-  if (jd >= 23) {
+  if (jd >= 21) {
     startJy = jy; startJm = jm;
     endJy = (jm < 12) ? jy : jy + 1;
     endJm = (jm < 12) ? jm + 1 : 1;
@@ -1638,10 +1638,10 @@ function currentPeriodBounds() {
     endJy = jy; endJm = jm;
   }
   return {
-    startSort: startJy * 10000 + startJm * 100 + 23,
-    endSort: endJy * 10000 + endJm * 100 + 22,
-    startLabel: `${startJy}/${pad2(startJm)}/23`,
-    endLabel: `${endJy}/${pad2(endJm)}/22`
+    startSort: startJy * 10000 + startJm * 100 + 21,
+    endSort: endJy * 10000 + endJm * 100 + 20,
+    startLabel: `${startJy}/${pad2(startJm)}/21`,
+    endLabel: `${endJy}/${pad2(endJm)}/20`
   };
 }
 
