@@ -483,6 +483,8 @@
     border-bottom: 1px solid var(--line);
     gap: 12px;
     transition: background .12s;
+    overflow: hidden;
+    isolation: isolate;
   }
   .row-item:hover { background: var(--surface-tint); }
   .row-item:last-child { border-bottom: none; }
@@ -500,7 +502,7 @@
     text-align: center;
   }
 
-  .bug-item { padding: 17px 20px; border-bottom: 1px solid var(--line); transition: background .12s; }
+  .bug-item { padding: 17px 20px; border-bottom: 1px solid var(--line); transition: background .12s; overflow: hidden; isolation: isolate; }
   .bug-item:hover { background: var(--surface-tint); }
   .bug-item:last-child { border-bottom: none; }
   .bug-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 10px; flex-wrap: wrap; }
@@ -819,7 +821,7 @@
     font-size: 14px;
   }
 
-  .team-item { border-bottom: 1px solid var(--line); }
+  .team-item { border-bottom: 1px solid var(--line); overflow: hidden; isolation: isolate; }
   .team-item:last-child { border-bottom: none; }
   .team-header {
     display: flex;
@@ -1008,7 +1010,7 @@
     white-space: nowrap;
   }
 
-  .leader-item { border-bottom: 1px solid var(--line); }
+  .leader-item { border-bottom: 1px solid var(--line); overflow: hidden; isolation: isolate; }
   .leader-item:last-child { border-bottom: none; }
   .leader-header {
     display: flex;
@@ -1103,6 +1105,28 @@
   .leader-bug-total {
     -webkit-backdrop-filter: blur(8px) saturate(160%);
     backdrop-filter: blur(8px) saturate(160%);
+  }
+  /* جلوگیری از آرتیفکت لبه‌ی محو (seam) روی نشان‌ها وقتی ردیف والدشون هنوز در حال انیمیشن ورود (fade/translate) هست:
+     تا وقتی ردیف کاملاً ظاهر نشده (glass-in نگرفته)، backdrop-filter روی نشان‌ها غیرفعاله. */
+  .glass-reveal:not(.glass-in) .row-badge,
+  .glass-reveal:not(.glass-in) .who .user-chip,
+  .glass-reveal:not(.glass-in) .admin-status-badge,
+  .glass-reveal:not(.glass-in) .team-day-badge,
+  .glass-reveal:not(.glass-in) .bug-price,
+  .glass-reveal:not(.glass-in) .perf-below-badge,
+  .glass-reveal:not(.glass-in) .perf-above-badge,
+  .glass-reveal:not(.glass-in) .perf-share-badge,
+  .glass-reveal:not(.glass-in) .perf-day-badge-good,
+  .glass-reveal:not(.glass-in) .perf-day-badge-missing,
+  .glass-reveal:not(.glass-in) .perf-group-count,
+  .glass-reveal:not(.glass-in) .ticket-report-title,
+  .glass-reveal:not(.glass-in) .ticket-report-cell,
+  .glass-reveal:not(.glass-in) .admin-group-count,
+  .glass-reveal:not(.glass-in) .team-total,
+  .glass-reveal:not(.glass-in) .team-bug-total,
+  .glass-reveal:not(.glass-in) .leader-bug-total {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
   /* ====== انیمیشن لود شدن کادرها هنگام اسکرول ====== */
   .glass-reveal {
@@ -1344,6 +1368,10 @@
         <div class="summary-card">
           <div class="label">مجموع کارشناس‌ها</div>
           <div class="value" id="supervisor-agent-count">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">کارشناس‌های دارای تارگت</div>
+          <div class="value" id="supervisor-agent-with-target-count">—</div>
         </div>
       </div>
       <div class="list-card" id="supervisor-list">
@@ -2389,67 +2417,30 @@ async function loadSupervisorView() {
   const period = currentPeriodBounds();
   document.getElementById('supervisor-period-label').textContent = `بازه‌ی جاری: ${period.startLabel} تا ${period.endLabel}`;
 
-  const setTotals = (totalText, countText) => {
+  const setTotals = (totalText, countText, withTargetText) => {
     document.getElementById('supervisor-total').textContent = totalText;
     document.getElementById('supervisor-agent-count').textContent = countText;
+    document.getElementById('supervisor-agent-with-target-count').textContent = withTargetText;
   };
 
-  // همه‌ی سرگروه‌ها (بدون فیلتر، سوپروایزر کل مجموعه رو می‌بینه)
-  const { data: leaders, error: leadersError } = await fetchAllRows((from, to) =>
+  // همه‌ی سنترها (بدون واسطه‌ی سرگروه؛ سوپروایزر مستقیماً سنترها رو می‌بینه)
+  const { data: centers, error: centersError } = await fetchAllRows((from, to) =>
     supabaseClient
       .from(TABLE_PROFILES)
-      .select('id, full_name, backoffice_id')
-      .eq('role', 'leader')
+      .select('id, full_name')
+      .eq('role', 'center')
       .order('full_name', { ascending: true })
       .range(from, to)
   );
 
-  if (leadersError) {
-    container.innerHTML = `<div class="empty-state">خطا در دریافت سرگروه‌ها: ${leadersError.message}</div>`;
-    setTotals('—', '—');
+  if (centersError) {
+    container.innerHTML = `<div class="empty-state">خطا در دریافت سنترها: ${centersError.message}</div>`;
+    setTotals('—', '—', '—');
     return;
   }
-  if (!leaders || leaders.length === 0) {
-    container.innerHTML = '<div class="empty-state">هنوز سرگروهی ثبت نشده است</div>';
-    setTotals('۰', '۰');
-    return;
-  }
-
-  // رابطه‌ی سرگروه ↔ سنتر
-  const { data: leaderCenterLinks, error: leaderCenterLinksError } = await fetchAllRows((from, to) =>
-    supabaseClient
-      .from(TABLE_LEADER_CENTERS)
-      .select('leader_id, center_id')
-      .range(from, to)
-  );
-
-  if (leaderCenterLinksError) {
-    container.innerHTML = `<div class="empty-state">خطا در دریافت اساین سنترها: ${leaderCenterLinksError.message}</div>`;
-    setTotals('—', '—');
-    return;
-  }
-
-  const centerIdsByLeaderId = {};
-  (leaderCenterLinks || []).forEach(l => {
-    if (!centerIdsByLeaderId[l.leader_id]) centerIdsByLeaderId[l.leader_id] = [];
-    centerIdsByLeaderId[l.leader_id].push(l.center_id);
-  });
-
-  const allCenterIds = [...new Set((leaderCenterLinks || []).map(l => l.center_id).filter(Boolean))];
-
-  // اسم نمایشی هر سنتر
-  const { data: centerProfiles } = allCenterIds.length
-    ? await fetchAllRows((from, to) =>
-        supabaseClient
-          .from(TABLE_PROFILES)
-          .select('id, full_name')
-          .in('id', allCenterIds)
-          .range(from, to)
-      )
-    : { data: [] };
 
   const centerNameById = {};
-  (centerProfiles || []).forEach(c => { centerNameById[c.id] = c.full_name || 'بدون سنتر'; });
+  (centers || []).forEach(c => { centerNameById[c.id] = c.full_name || 'بدون سنتر'; });
 
   // رابطه‌ی سنتر ↔ کارشناس
   const { data: centerAgentLinks, error: centerAgentLinksError } = await fetchAllRows((from, to) =>
@@ -2461,24 +2452,20 @@ async function loadSupervisorView() {
 
   if (centerAgentLinksError) {
     container.innerHTML = `<div class="empty-state">خطا در دریافت اساین نیروها: ${centerAgentLinksError.message}</div>`;
-    setTotals('—', '—');
+    setTotals('—', '—', '—');
     return;
   }
 
-  const agentIdsByCenterId = {};
   const centerNameByAgentId = {};
   (centerAgentLinks || []).forEach(l => {
-    if (!agentIdsByCenterId[l.center_id]) agentIdsByCenterId[l.center_id] = [];
-    agentIdsByCenterId[l.center_id].push(l.agent_id);
     centerNameByAgentId[l.agent_id] = centerNameById[l.center_id] || 'بدون سنتر';
   });
 
   const allAgentIds = [...new Set((centerAgentLinks || []).map(l => l.agent_id).filter(Boolean))];
 
   if (allAgentIds.length === 0) {
-    container.innerHTML = buildSupervisorLeadersHtml(leaders.map(l => ({ leaderName: l.full_name || l.backoffice_id || '—', items: [], total: 0 })));
-    setTotals('۰', '۰');
-    bindExpandableToggles(container);
+    container.innerHTML = '<div class="empty-state">هنوز نیرویی به هیچ سنتری اساین نشده است</div>';
+    setTotals('۰', '۰', '۰');
     return;
   }
 
@@ -2494,7 +2481,7 @@ async function loadSupervisorView() {
 
   if (agentProfilesError) {
     container.innerHTML = `<div class="empty-state">خطا در دریافت پروفایل کارشناس‌ها: ${agentProfilesError.message}</div>`;
-    setTotals('—', '—');
+    setTotals('—', '—', '—');
     return;
   }
 
@@ -2514,7 +2501,7 @@ async function loadSupervisorView() {
 
   if (rowsError) {
     container.innerHTML = `<div class="empty-state">خطا در دریافت تارگت‌ها: ${rowsError.message}</div>`;
-    setTotals('—', '—');
+    setTotals('—', '—', '—');
     return;
   }
 
@@ -2541,38 +2528,25 @@ async function loadSupervisorView() {
     bugsByAgent[b.user_id].push(b);
   });
 
-  const leaderGroups = leaders.map(leader => {
-    const leaderName = leader.full_name || leader.backoffice_id || '—';
-    const centerIds = centerIdsByLeaderId[leader.id] || [];
+  // هر agentId فقط یک‌بار پردازش می‌شه؛ چون دیگه از مسیر سرگروه عبور نمی‌کنیم، نیازی به یکتاسازی جدا نیست
+  const items = allAgentIds.map(agentId => {
+    const m = agentProfileById[agentId];
+    if (!m) return null;
+    const myRows = rowsByAgent[agentId] || [];
+    const myBugs = bugsByAgent[agentId] || [];
+    const myTotal = myRows.reduce((sum, r) => sum + (Number(r.target_count) || 0), 0);
+    return { m: { ...m, centerName: centerNameByAgentId[agentId] || 'بدون سنتر' }, myRows, myBugs, myTotal };
+  }).filter(Boolean);
 
-    const items = [];
-    centerIds.forEach(centerId => {
-      const agentIds = agentIdsByCenterId[centerId] || [];
-      agentIds.forEach(agentId => {
-        const m = agentProfileById[agentId];
-        if (!m) return;
-        const myRows = rowsByAgent[agentId] || [];
-        const myBugs = bugsByAgent[agentId] || [];
-        const myTotal = myRows.reduce((sum, r) => sum + (Number(r.target_count) || 0), 0);
-        items.push({ m: { ...m, centerName: centerNameByAgentId[agentId] || 'بدون سنتر' }, myRows, myBugs, myTotal });
-      });
-    });
+  const grandTotal = items.reduce((sum, it) => sum + it.myTotal, 0);
+  const grandAgentCount = items.length;
+  // کارشناس‌هایی که برای بازه‌ی جاری حداقل یک ردیف تارگت ثبت‌شده دارن (یونیک، نه صرفاً اساین‌شده)
+  const grandAgentWithTargetCount = items.filter(it => it.myRows.length > 0).length;
 
-    const total = items.reduce((sum, it) => sum + it.myTotal, 0);
-    return { leaderName, items, total };
-  });
-
-  leaderGroups.sort((a, b) => b.total - a.total);
-
-  const grandTotal = leaderGroups.reduce((sum, lg) => sum + lg.total, 0);
-  // یک کارشناس ممکنه به‌خاطر تعلق سنترش به چند سرگروه، تو چند leaderGroup تکرار بشه؛
-  // برای «مجموع کارشناس‌ها» باید بر اساس شناسه‌ی یکتا شمرده بشه، نه تعداد ردیف‌ها.
-  const uniqueAgentIds = new Set();
-  leaderGroups.forEach(lg => lg.items.forEach(it => uniqueAgentIds.add(it.m.id)));
-  const grandAgentCount = uniqueAgentIds.size;
-
-  container.innerHTML = buildSupervisorLeadersHtml(leaderGroups);
-  setTotals(formatNumber(grandTotal), formatNumber(grandAgentCount));
+  container.innerHTML = items.length
+    ? buildGroupedMemberItemsHtml(items)
+    : '<div class="empty-state">هنوز نیرویی به هیچ سنتری اساین نشده است</div>';
+  setTotals(formatNumber(grandTotal), formatNumber(grandAgentCount), formatNumber(grandAgentWithTargetCount));
 
   bindExpandableToggles(container);
 }
