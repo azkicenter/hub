@@ -861,13 +861,14 @@
     font-variant-numeric: tabular-nums;
   }
   .team-details {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height .3s cubic-bezier(.4,0,.2,1);
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .3s cubic-bezier(.4,0,.2,1);
     background: transparent;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
-  .team-details-inner { padding: 4px 34px 14px 20px; }
+  .team-item.open > .team-details { grid-template-rows: 1fr; }
+  .team-details-inner { overflow: hidden; min-height: 0; padding: 4px 34px 14px 20px; }
   .team-day-row {
     display: flex;
     align-items: center;
@@ -1073,13 +1074,14 @@
     font-variant-numeric: tabular-nums;
   }
   .leader-details {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height .3s cubic-bezier(.4,0,.2,1);
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .3s cubic-bezier(.4,0,.2,1);
     background: transparent;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
-  .leader-details-inner { padding: 12px 32px 16px 14px; }
+  .leader-item.open > .leader-details { grid-template-rows: 1fr; }
+  .leader-details-inner { overflow: hidden; min-height: 0; padding: 12px 32px 16px 14px; }
 
   /* ====== شیشه‌ای‌سازی نشان‌ها و کادرهای رنگی کوچک ====== */
   .row-badge,
@@ -2163,40 +2165,25 @@ function buildGroupedMemberItemsHtml(membersWithTotals) {
 }
 
 function bindExpandableToggles(container) {
-  function updateOpenAncestors(el) {
-    let node = el.parentElement;
-    while (node) {
-      if (node.classList && node.classList.contains('leader-item') && node.classList.contains('open')) {
-        const ancestorDetails = node.querySelector(':scope > .leader-details');
-        if (ancestorDetails) ancestorDetails.style.maxHeight = ancestorDetails.scrollHeight + 'px';
-      }
-      node = node.parentElement;
-    }
-  }
-
+  // ارتفاع باز/بسته شدن با گرید CSS (grid-template-rows: 0fr <-> 1fr) مدیریت می‌شه،
+  // نه با محاسبه‌ی دستی scrollHeight در جاوااسکریپت. این یعنی وقتی چند سطح تو در تو
+  // (سرگروه > سنتر > کارشناس > روزها) همزمان باز می‌شن، ارتفاع هر سطح خودش رو با
+  // محتوای واقعی‌ش تطبیق می‌ده و چیزی زیر کارت بعدی گم یا بریده نمی‌شه.
   container.querySelectorAll('.leader-item').forEach(litem => {
     const header = litem.querySelector(':scope > .leader-header');
-    const details = litem.querySelector(':scope > .leader-details');
     if (header) {
       header.addEventListener('click', () => {
-        const opening = !litem.classList.contains('open');
         litem.classList.toggle('open');
-        if (details) details.style.maxHeight = opening ? details.scrollHeight + 'px' : '0px';
         if (window.refreshGlassReveals) window.refreshGlassReveals(litem);
-        updateOpenAncestors(litem);
       });
     }
   });
   container.querySelectorAll('.team-item').forEach(item => {
     const header = item.querySelector('.team-header');
-    const details = item.querySelector('.team-details');
     if (header) {
       header.addEventListener('click', () => {
-        const opening = !item.classList.contains('open');
         item.classList.toggle('open');
-        if (details) details.style.maxHeight = opening ? details.scrollHeight + 'px' : '0px';
         if (window.refreshGlassReveals) window.refreshGlassReveals(item);
-        updateOpenAncestors(item);
       });
     }
   });
@@ -2578,7 +2565,11 @@ async function loadSupervisorView() {
   leaderGroups.sort((a, b) => b.total - a.total);
 
   const grandTotal = leaderGroups.reduce((sum, lg) => sum + lg.total, 0);
-  const grandAgentCount = leaderGroups.reduce((sum, lg) => sum + lg.items.length, 0);
+  // یک کارشناس ممکنه به‌خاطر تعلق سنترش به چند سرگروه، تو چند leaderGroup تکرار بشه؛
+  // برای «مجموع کارشناس‌ها» باید بر اساس شناسه‌ی یکتا شمرده بشه، نه تعداد ردیف‌ها.
+  const uniqueAgentIds = new Set();
+  leaderGroups.forEach(lg => lg.items.forEach(it => uniqueAgentIds.add(it.m.id)));
+  const grandAgentCount = uniqueAgentIds.size;
 
   container.innerHTML = buildSupervisorLeadersHtml(leaderGroups);
   setTotals(formatNumber(grandTotal), formatNumber(grandAgentCount));
