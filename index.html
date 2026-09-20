@@ -1985,11 +1985,22 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       .replace(/^(ازکیسنتر|سنتر|مرکزصدور|مرکز|شعبه)+/, '');
   }
 
+  // === تطبیق دستی (override) برای سنترهایی که اسمشون در تب «تارگت‌ها» با اسمشون در
+  // جدول سنترهای نقشه (seller_locations) فرق داره و تطبیق خودکار روی اسم پیداشون نمی‌کنه.
+  // کلید = اسم دقیق سنتر همون‌طوری که در تب تارگت‌ها ثبت شده (t.name / profiles.full_name)
+  // مقدار = یا آیدی دقیق ردیف در seller_locations (مطمئن‌ترین حالت)
+  //         یا اسم دقیق همون سنتر در seller_locations (وقتی آیدی رو نداری)
+  // نمونه (بعد از پیدا کردن اسم‌های واقعیِ نامچفت، همین‌جا اضافه کن):
+  // 'سنتر مشهد ۲': 'MSH-002',
+  // 'سنتر مشهد ۲': 'مشهد - شعبه دو',
+  const CENTER_MANUAL_MATCH = {};
+
   // سنترهای تارگت‌دار (از تب تارگت‌ها) رو با نقطه‌های نقشه تطبیق می‌ده
   function computeGreen() {
     const targets = window.supTargetCenters || [];
     S.green = new Set();
     S.unmatched = [];
+    S.unmatchedManualMiss = []; // اسم‌هایی که تو CENTER_MANUAL_MATCH override دارن ولی هنوز پیدا نشدن (یعنی خودِ override هم اشتباهه)
     const byKey = new Map();
     S.rows.forEach(c => {
       const k = centerKey(c.name);
@@ -1998,6 +2009,20 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       byKey.get(k).push(c);
     });
     targets.forEach(t => {
+      // ۱) اول override دستی رو چک کن (دقیق‌ترین و قابل‌اعتمادترین راه)
+      if (Object.prototype.hasOwnProperty.call(CENTER_MANUAL_MATCH, t.name)) {
+        const target = CENTER_MANUAL_MATCH[t.name];
+        const byId = S.rows.find(c => String(c.id) === String(target));
+        if (byId) { S.green.add(byId.id); return; }
+        const mk = centerKey(target);
+        const byName = mk ? S.rows.filter(c => centerKey(c.name) === mk) : [];
+        if (byName.length) { byName.forEach(c => S.green.add(c.id)); return; }
+        // override تعریف شده ولی چیزی پیداش نکرد → یعنی خود override (آیدی/اسم) اشتباه نوشته شده
+        S.unmatchedManualMiss.push(t.name);
+        S.unmatched.push(t.name);
+        return;
+      }
+      // ۲) تطبیق خودکار روی اسم (کلید نرمال‌شده)
       const k = centerKey(t.name);
       let hits = k && byKey.has(k) ? byKey.get(k) : [];
       if (!hits.length && k.length >= 5) {           // تطبیق نرم‌تر: یکی داخل اون یکی
@@ -2007,6 +2032,14 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       if (hits.length) hits.forEach(c => S.green.add(c.id));
       else S.unmatched.push(t.name);
     });
+    // لیست کامل (بدون بریدگی) رو تو کنسول چاپ کن تا راحت کپی بشه و بشه براش override نوشت
+    if (S.unmatched.length) {
+      console.log('[نقشه سنتر] سنترهای تارگت‌دار که روی نقشه پیدا نشدن (' + S.unmatched.length + ' مورد):');
+      console.table(S.unmatched.map(name => ({ 'اسم در تب تارگت‌ها': name })));
+      if (S.unmatchedManualMiss.length) {
+        console.warn('[نقشه سنتر] این موارد تو CENTER_MANUAL_MATCH override دارن ولی آیدی/اسمِ نوشته‌شده در seller_locations پیدا نشد، مقدارشون رو چک کن:', S.unmatchedManualMiss);
+      }
+    }
   }
 
   function updateGreenInfo() {
@@ -2017,10 +2050,11 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     const found = targets.length - S.unmatched.length;
     let txt = 'سبز: ' + faNum(found) + ' از ' + faNum(targets.length) + ' سنتر تارگت‌دار روی نقشه پیدا شد.';
     if (S.unmatched.length) {
-      const shown = S.unmatched.slice(0, 6).join('، ');
-      txt += ' پیدا نشد: ' + shown + (S.unmatched.length > 6 ? ' و ' + faNum(S.unmatched.length - 6) + ' مورد دیگر' : '');
+      // لیست کامل (بدون بریدگی به ۶ تا) تا بشه مستقیم از همینجا خوند
+      txt += ' پیدا نشد: ' + S.unmatched.join('، ') + ' (لیست کامل در Console مرورگر هم چاپ شده)';
     }
     el.textContent = txt;
+    el.title = S.unmatched.length ? 'برای اضافه کردن این‌ها به نقشه یا اصلاح اسمشون، به تابع CENTER_MANUAL_MATCH در کد مراجعه کن.' : '';
     el.classList.toggle('warn', S.unmatched.length > 0);
   }
 
