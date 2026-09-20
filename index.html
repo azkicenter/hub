@@ -1164,6 +1164,14 @@
     background: var(--surface); color: var(--ink);
   }
   .sm-btn:hover { background: var(--accent-soft); }
+  .sm-chk {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+    font-family: var(--font); font-size: 13.5px; color: var(--ink); white-space: nowrap;
+    padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);
+  }
+  .sm-chk:hover { background: var(--accent-soft); }
+  .sm-chk input { accent-color: #1fa855; width: 16px; height: 16px; margin: 0; }
+  .sm-chk:has(input:checked) { border-color: #1fa855; background: rgba(31,168,85,.12); }
   /* فیلتر تب‌های ازکی سنتر */
   .azki-filter { margin-bottom: 14px; }
   .azki-filter .sm-stabs { margin-bottom: 10px; }
@@ -1224,11 +1232,11 @@
   /* آمار هر شرکت در تب مقایسه (بدون کادر آبی) */
   .leader-header.azki-head { flex-wrap: wrap; }
   .azki-stats { display: flex; align-items: center; justify-content: flex-end; gap: 24px; flex-wrap: wrap; min-width: 0; }
-  .azki-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .azki-stat { display: flex; flex-direction: column; align-items: center; gap: 10px; }
   .azki-stat .k { font-size: 12.5px; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
   .azki-stat .v { font-size: 23px; font-weight: 800; line-height: 1.2; color: var(--ink); font-variant-numeric: tabular-nums; }
   .azki-stat.pct .v { color: var(--accent-deep); }
-  @media (max-width: 640px) { .azki-stats { gap: 16px; } .azki-stat .k { font-size: 11px; } .azki-stat .v { font-size: 19px; } }
+  @media (max-width: 640px) { .azki-stats { gap: 16px; } .azki-stat { gap: 7px; } .azki-stat .k { font-size: 11px; } .azki-stat .v { font-size: 19px; } }
   .azki-error { color: #c0392b; font-size: 12.5px; min-height: 16px; margin-top: 6px; }
   .sm-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
   .sm-legend { display: inline-flex; align-items: center; gap: 6px; }
@@ -1585,6 +1593,7 @@
         <div class="sm-bar">
           <input id="sm-q" type="search" placeholder="جستجو: نام، کد، شهر، تلفن یا آدرس" autocomplete="off">
           <select id="sm-state"><option value="">همه استان‌ها</option></select>
+          <label class="sm-chk" for="sm-only-green"><input type="checkbox" id="sm-only-green"><i class="sm-dot green" style="margin:0"></i>فقط سنترهای دارای تارگت</label>
           <button type="button" class="sm-btn" id="sm-refresh">بروزرسانی</button>
           <button type="button" class="sm-btn" id="sm-full">تمام‌صفحه</button>
         </div>
@@ -2117,7 +2126,8 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
 
   function render(fit) {
     const q = norm($('sm-q').value.trim()), st = $('sm-state').value;
-    const rows = S.rows.filter(c => (!st || c.state === st) && (!q || c._h.includes(q)));
+    const onlyGreen = $('sm-only-green').checked;
+    const rows = S.rows.filter(c => (!st || c.state === st) && (!q || c._h.includes(q)) && (!onlyGreen || S.green.has(c.id)));
     S.cluster.clearLayers();
     S.cluster.addLayers(rows.map(c => S.markers.get(c.id)));
     document.querySelectorAll('#sm-prov .sm-prow[data-p]').forEach(b => b.classList.toggle('active', b.dataset.p === st));
@@ -2125,7 +2135,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       '<button type="button" class="sm-item' + (c.id === S.activeId ? ' active' : '') + '" data-id="' + esc(c.id) + '">'
       + '<div class="n"><i class="sm-dot' + (S.green.has(c.id) ? ' green' : (c.is_approx ? ' approx' : '')) + '" style="margin:0"></i>' + esc(c.name) + '</div>'
       + '<div class="m">' + esc(c.state) + ' · ' + esc(c.city) + '</div></button>').join('')
-      : '<div class="sm-empty">موردی پیدا نشد</div>';
+      : '<div class="sm-empty">' + (onlyGreen && !window.supTargetCenters ? 'لیست سنترهای تارگت‌دار هنوز آماده نیست...' : 'موردی پیدا نشد') + '</div>';
     $('sm-count').textContent = faNum(rows.length) + ' سنتر از ' + faNum(S.rows.length);
     if (fit && rows.length) S.map.fitBounds(L.latLngBounds(rows.map(c => [c.lat, c.lng])).pad(0.15), { maxZoom: 13 });
   }
@@ -2167,7 +2177,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       const mk = S.markers.get(c.id);
       if (mk) { mk.setIcon(iconFor(c)); mk.setPopupContent(popupHtml(c)); }
     });
-    render(false);
+    render($('sm-only-green').checked);
     updateGreenInfo();
   });
 
@@ -2225,6 +2235,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   let t;
   $('sm-q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => S.map && S.rows.length && render(true), 150); });
   $('sm-state').addEventListener('change', () => S.map && S.rows.length && render(true));
+  $('sm-only-green').addEventListener('change', () => S.map && S.rows.length && render(true));
   $('sm-refresh').addEventListener('click', () => { if (S.map) fetchRows(); else openMap(); });
   $('sm-list').addEventListener('click', e => {
     const el = e.target.closest('.sm-item'); if (!el) return;
@@ -4746,4 +4757,3 @@ document.addEventListener('visibilitychange', () => {
 
 </body>
 </html>
- 
