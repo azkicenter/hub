@@ -1434,6 +1434,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
         خطای تیم
       </button>
+      <button class="tab-btn" data-team-tab="azki-compare" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
+        مقایسه شرکت‌ها
+      </button>
     </div>
 
     <div class="panel" id="panel-team">
@@ -1461,6 +1465,8 @@
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
     </div>
+
+    <div class="panel" id="panel-azki-compare"></div>
 
     <div class="tabs" id="center-tabs" style="display:none;">
       <button class="tab-btn active" data-center-tab="center">
@@ -1892,8 +1898,15 @@ document.querySelectorAll('#team-tabs .tab-btn').forEach(btn => {
     document.querySelectorAll('#team-tabs .tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('panel-team').classList.remove('active');
     document.getElementById('panel-team-bugs').classList.remove('active');
+    const azkiCompanyPanel = document.getElementById('panel-azki-compare');
+    if (azkiCompanyPanel) azkiCompanyPanel.classList.remove('active');
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.teamTab).classList.add('active');
+    // نوار فیلتر (شرکت بیمه/بازه/گرانولاریتی) بین تب تارگت‌تیم/خطای‌تیم و تب مقایسه‌شرکت‌ها مشترکه؛
+    // فقط وقتی تب مقایسه‌شرکت‌ها فعاله نشونش بده و در اولین بار دیتاش رو بگیر.
+    const azkiFilterEl = document.getElementById('azki-filter');
+    if (azkiFilterEl) azkiFilterEl.style.display = btn.dataset.teamTab === 'azki-compare' ? '' : 'none';
+    if (btn.dataset.teamTab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   });
 });
@@ -1982,7 +1995,9 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   function centerKey(s) {
     return norm(s)
       .replace(/[\s\u200c\u200b\u200e\u200f\u00a0\-_.,،؛:()\[\]\/|]+/g, '')
-      .replace(/^(ازکیسنتر|سنتر|مرکزصدور|مرکز|شعبه)+/, '');
+      // پیشوندهای «سنتر»/«مرکز» و بعدش (احتمالاً) عنوان «آقای»/«خانم» و مشابه، هر دو رو پشت‌سرهم حذف کن
+      // مثال: «سنتر آقای موسوی» -> «موسوی» ، «سنتر خانم کیانی» -> «کیانی»
+      .replace(/^(ازکیسنتر|سنتر|مرکزصدور|مرکز|شعبه|آقای|خانم|جنابآقای|سرکارخانم|دکتر|مهندس)+/, '');
   }
 
   // === تطبیق دستی (override) برای سنترهایی که اسمشون در تب «تارگت‌ها» با اسمشون در
@@ -2368,7 +2383,7 @@ function currentPeriodBounds() {
 const JALALI_MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 
 let currentUserRole = null;
-function azkiAllowed() { return currentUserRole === 'supervisor'; }
+function azkiAllowed() { return currentUserRole === 'supervisor' || currentUserRole === 'leader'; }
 
 const azkiState = {
   granularity: 'daily',   // مشترک بین هر سه تب
@@ -3262,6 +3277,18 @@ async function enterApp(user) {
     document.getElementById('center-agent-tabs').style.display = 'none';
     document.getElementById('panel-center-agent').classList.remove('active');
     document.getElementById('panel-supervisor').classList.remove('active');
+    // تب «مقایسه شرکت‌ها» با پنل سرپرست مشتره؛ چون هر کاربر فقط یک نقش داره، همین یه‌بار
+    // خودِ عنصرهای مشترک (نوار فیلتر + جدول مقایسه) رو به پنل لیدر منتقل می‌کنیم.
+    (function relocateAzkiCompareForLeader() {
+      const host = document.getElementById('panel-azki-compare');
+      const filterEl = document.getElementById('azki-filter');
+      const compareViewEl = document.getElementById('sup-view-azki-compare');
+      if (host && filterEl && compareViewEl && !host.contains(filterEl)) {
+        host.appendChild(filterEl);
+        host.appendChild(compareViewEl);
+        compareViewEl.style.display = '';
+      }
+    })();
     loadTeamView(user.id);
   } else if (isSupervisor) {
     document.getElementById('main-tabs').style.display = 'none';
@@ -4791,4 +4818,3 @@ document.addEventListener('visibilitychange', () => {
 
 </body>
 </html>
- 
