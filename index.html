@@ -1148,6 +1148,88 @@
   }
 
 
+
+  /* ===== نقشه سنتر (پنل سرپرست) ===== */
+  .sm-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .sm-bar input, .sm-bar select {
+    font-family: var(--font); font-size: 13.5px; padding: 9px 12px; min-width: 0;
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--ink);
+  }
+  .sm-bar input { flex: 1 1 220px; }
+  .sm-bar select { flex: 0 1 190px; }
+  .sm-btn {
+    font-family: var(--font); font-size: 13px; padding: 9px 14px; cursor: pointer;
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--ink);
+  }
+  .sm-btn:hover { background: var(--accent-soft); }
+  .sm-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
+  .sm-legend { display: inline-flex; align-items: center; gap: 6px; }
+  .sm-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1a6dff; margin-inline-start: 8px; }
+  .sm-dot.approx { background: #e8891f; }
+  .sm-wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 12px; height: min(72vh, 640px); min-height: 440px; }
+  .sm-card {
+    background: var(--surface);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    border: 1px solid var(--line); border-radius: var(--radius-lg);
+    overflow: hidden; box-shadow: var(--shadow-card);
+  }
+  .sm-list { overflow: auto; }
+  .sm-mapbox { position: relative; }
+  #sm-map { position: absolute; inset: 0; z-index: 0; background: #dfe9ee; font-family: var(--font); }
+  .sm-status {
+    position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 20px; font-size: 14px; color: var(--ink-soft);
+    background: var(--surface);
+  }
+  .sm-status.err { color: var(--danger); }
+  .sm-item {
+    display: block; width: 100%; text-align: right; cursor: pointer;
+    background: none; border: 0; border-bottom: 1px solid var(--line);
+    padding: 10px 14px; font-family: var(--font); color: var(--ink);
+  }
+  .sm-item:hover, .sm-item.active { background: var(--accent-soft); }
+  .sm-item .n { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 7px; }
+  .sm-item .m { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .sm-empty { padding: 30px 16px; text-align: center; color: var(--ink-soft); font-size: 13px; }
+  @media (max-width: 720px) {
+    .sm-wrap { grid-template-columns: 1fr; grid-template-rows: 380px 240px; height: auto; min-height: 0; }
+    .sm-mapbox { order: -1; }
+  }
+  /* نقطه‌ها و خوشه‌ها */
+  .sm-pinwrap { background: none; border: 0; }
+  .sm-pin { position: relative; display: block; width: 22px; height: 22px; }
+  .sm-pin .core { position: absolute; inset: 4px; border-radius: 50%; background: #1a6dff; border: 2.5px solid #fff; box-shadow: 0 0 0 1px rgba(10,40,120,.55), 0 2px 6px rgba(0,0,0,.35); transition: transform .15s; }
+  .sm-pin .ring { position: absolute; inset: 0; border-radius: 50%; background: #1a6dff; opacity: 0; animation: sm-pulse 1.6s ease-out infinite; }
+  .sm-pin.approx .core, .sm-pin.approx .ring { background: #e8891f; }
+  .sm-pin:hover .core { transform: scale(1.25); }
+  .sm-pin.active .core { transform: scale(1.35); }
+  .sm-pin.active .ring { animation-duration: .9s; }
+  @keyframes sm-pulse { 0% { transform: scale(.6); opacity: .65; } 100% { transform: scale(2.8); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .sm-pin .ring { animation: none; opacity: .25; transform: scale(1.6); } }
+  .sm-pin .badge { display: none; position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: rgba(26,109,255,.28); }
+  .sm-pin .badge u { position: absolute; inset: 5px; border-radius: 50%; background: rgba(26,109,255,.92); color: #fff; font-size: 13px; font-weight: 700; line-height: 30px; text-align: center; text-decoration: none; }
+  .sm-pin.approx .badge { background: rgba(232,137,31,.3); }
+  .sm-pin.approx .badge u { background: rgba(232,137,31,.95); }
+  .sm-low .sm-pin .ring, .sm-low .sm-pin .core { display: none; }
+  .sm-low .sm-pin .badge { display: block; }
+  .sm-cl { border-radius: 50%; background: rgba(26,109,255,.28); }
+  .sm-cl div { position: absolute; inset: 5px; border-radius: 50%; background: rgba(26,109,255,.92); color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  /* پاپ‌آپ */
+  #sm-map .leaflet-popup-content-wrapper, #sm-map .leaflet-popup-tip { background: #fff; color: #0F1B33; }
+  [data-theme="dark"] #sm-map .leaflet-popup-content-wrapper, [data-theme="dark"] #sm-map .leaflet-popup-tip { background: #17233d; color: #EAF0FB; }
+  .sm-pop { direction: rtl; text-align: right; font-family: var(--font); min-width: 220px; max-width: 280px; }
+  .sm-pop h3 { margin: 0 0 6px; font-size: 15px; }
+  .sm-pop .row { font-size: 12.5px; margin: 3px 0; line-height: 1.7; }
+  .sm-pop .k { color: var(--ink-soft); }
+  .sm-pop .num { direction: ltr; unicode-bidi: embed; display: inline-block; }
+  .sm-pop .warn { background: var(--amber-soft); border: 1px solid var(--amber); padding: 6px 8px; border-radius: 6px; font-size: 12px; margin: 8px 0; }
+  .sm-pop .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+  .sm-pop .acts a { font-size: 12px; padding: 5px 9px; border-radius: 5px; border: 1px solid var(--accent-strong); color: var(--accent-strong); text-decoration: none; }
+  .sm-pop .acts a:hover { background: var(--accent-strong); color: #fff; }
+  #sm-map .leaflet-popup-content { margin: 12px 14px; }
 </style>
 </head>
 <body>
@@ -1359,6 +1441,18 @@
     </div>
 
     <div class="panel" id="panel-supervisor">
+      <div class="tabs" id="supervisor-tabs">
+        <button class="tab-btn active" data-sup-tab="targets" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+          تارگت‌ها
+        </button>
+        <button class="tab-btn" data-sup-tab="map" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          نقشه سنتر
+        </button>
+      </div>
+
+      <div id="sup-view-targets">
       <div class="period-label" id="supervisor-period-label"></div>
       <div class="summary-row">
         <div class="summary-card">
@@ -1376,6 +1470,26 @@
       </div>
       <div class="list-card" id="supervisor-list">
         <div class="loading-state">در حال بارگذاری...</div>
+      </div>
+      </div>
+
+      <div id="sup-view-map" style="display:none;">
+        <div class="sm-bar">
+          <input id="sm-q" type="search" placeholder="جستجو: نام، کد، شهر، تلفن یا آدرس" autocomplete="off">
+          <select id="sm-state"><option value="">همه استان‌ها</option></select>
+          <button type="button" class="sm-btn" id="sm-refresh">بروزرسانی</button>
+        </div>
+        <div class="sm-meta">
+          <span id="sm-count"></span>
+          <span class="sm-legend"><i class="sm-dot"></i>موقعیت دقیق<i class="sm-dot approx"></i>موقعیت تقریبی</span>
+        </div>
+        <div class="sm-wrap">
+          <div class="sm-card sm-list" id="sm-list"></div>
+          <div class="sm-card sm-mapbox">
+            <div id="sm-map"></div>
+            <div id="sm-status" class="sm-status">در حال بارگذاری نقشه...</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1487,6 +1601,7 @@ const TABLE_META = "app_meta";
 const TABLE_CENTER_AGENT_REPORT = "center_agent_report";
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
+const TABLE_SELLER_LOCATIONS = "seller_locations";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const loginScreen = document.getElementById('login-screen');
@@ -1596,6 +1711,218 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   });
 });
+
+/* ====== نقشه سنتر (تب جدید در پنل سرپرست) ======
+   داده از جدول seller_locations در Supabase خوانده می‌شود.
+   کتابخانه‌ی نقشه (Leaflet) فقط وقتی سرپرست تب نقشه را باز کند لود می‌شود. */
+(function () {
+  const LIB_CSS = [
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',
+    'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css'
+  ];
+  const LIB_JS = [
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
+    'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js'
+  ];
+  const LOW_ZOOM = 9; // زیر این زوم، نقطه‌های تکی هم مثل خوشه به شکل دایره‌ی «۱» دیده می‌شوند
+  const IRAN_BOUNDS = [[25.0, 43.9], [39.8, 63.4]];
+
+  const S = { map: null, cluster: null, markers: new Map(), rows: [], activeId: null, busy: false, libs: null };
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const norm = s => String(s == null ? '' : s)
+    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/ي/g, 'ی').replace(/ك/g, 'ک').toLowerCase();
+  const faNum = n => Number(n).toLocaleString('fa-IR');
+
+  function setStatus(msg, isErr) {
+    const el = $('sm-status');
+    el.textContent = msg || '';
+    el.classList.toggle('err', !!isErr);
+    el.style.display = msg ? 'flex' : 'none';
+  }
+
+  function loadCss(href) {
+    return new Promise(res => {
+      if (document.querySelector('link[href="' + href + '"]')) return res();
+      const l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = href; l.onload = res; l.onerror = res;
+      document.head.appendChild(l);
+    });
+  }
+  function loadJs(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = () => rej(new Error('load failed: ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  function ensureLibs() {
+    if (window.L && window.L.markerClusterGroup) return Promise.resolve();
+    if (!S.libs) {
+      S.libs = (async () => {
+        await Promise.all(LIB_CSS.map(loadCss));
+        for (const src of LIB_JS) await loadJs(src);   // ترتیب مهم است: اول Leaflet بعد markercluster
+      })();
+      S.libs.catch(() => { S.libs = null; });
+    }
+    return S.libs;
+  }
+
+  function popupHtml(c) {
+    const phones = (norm(c.phone).match(/\d{10,11}/g) || [])
+      .filter(p => /^0?9\d{9}$/.test(p)).map(p => p[0] === '0' ? p : '0' + p);
+    const phoneHtml = phones.length
+      ? phones.map(p => '<a class="num" href="tel:' + p + '">' + p + '</a>').join(' ، ')
+      : esc(c.phone || '—');
+    const link = /^https?:\/\//i.test(c.location_link || '') ? c.location_link : '';
+    const ownLink = link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">لینک ثبت‌شده</a>' : '';
+    const g = 'https://www.google.com/maps/search/?api=1&query=' + c.lat + ',' + c.lng;
+    const b = 'https://balad.ir/location?latitude=' + c.lat + '&longitude=' + c.lng + '&zoom=17';
+    return '<div class="sm-pop">'
+      + '<h3>' + esc(c.name) + '</h3>'
+      + '<div class="row"><span class="k">کد:</span> <span class="num">' + esc(c.id) + '</span></div>'
+      + '<div class="row"><span class="k">تلفن:</span> ' + phoneHtml + '</div>'
+      + '<div class="row"><span class="k">استان / شهر:</span> ' + esc(c.state) + ' / ' + esc(c.city) + '</div>'
+      + '<div class="row"><span class="k">آدرس:</span> ' + esc(c.address) + '</div>'
+      + (c.area ? '<div class="row"><span class="k">متراژ:</span> ' + esc(c.area) + '</div>' : '')
+      + (c.is_approx
+        ? '<div class="warn">مختصات دقیق این سنتر ثبت نشده؛ نشانگر روی حدود مرکز شهر است.' + (link ? ' برای موقعیت دقیق «لینک ثبت‌شده» را باز کنید.' : '') + '</div>'
+        : '<div class="row"><span class="k">مختصات:</span> <span class="num">' + Number(c.lat).toFixed(6) + ', ' + Number(c.lng).toFixed(6) + '</span></div>')
+      + '<div class="acts">'
+      + (c.is_approx ? ownLink : '<a href="' + g + '" target="_blank" rel="noopener">گوگل‌مپ</a><a href="' + b + '" target="_blank" rel="noopener">بلد</a>' + ownLink)
+      + '</div></div>';
+  }
+
+  function makeMarker(c) {
+    const icon = L.divIcon({
+      className: 'sm-pinwrap', iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10],
+      html: '<span class="sm-pin' + (c.is_approx ? ' approx' : '') + '"><i class="ring"></i><i class="core"></i><b class="badge"><u>1</u></b></span>'
+    });
+    const m = L.marker([c.lat, c.lng], { icon: icon, riseOnHover: true, title: c.name });
+    m.bindPopup(popupHtml(c), { maxWidth: 300 });
+    m.on('click', () => setActive(c.id));
+    m.on('add', () => {
+      if (c.id === S.activeId && m.getElement()) {
+        const p = m.getElement().querySelector('.sm-pin'); if (p) p.classList.add('active');
+      }
+    });
+    return m;
+  }
+
+  function setActive(id) {
+    S.activeId = id;
+    document.querySelectorAll('#sm-map .sm-pin.active').forEach(p => p.classList.remove('active'));
+    const mk = S.markers.get(id), el = mk && mk.getElement && mk.getElement();
+    if (el) { const p = el.querySelector('.sm-pin'); if (p) p.classList.add('active'); }
+    document.querySelectorAll('#sm-list .sm-item').forEach(b => b.classList.toggle('active', b.dataset.id === String(id)));
+    const item = document.querySelector('#sm-list .sm-item[data-id="' + id + '"]');
+    if (item) item.scrollIntoView({ block: 'nearest' });
+  }
+
+  function applyZoomStyle() {
+    if (S.map) $('sm-map').classList.toggle('sm-low', S.map.getZoom() < LOW_ZOOM);
+  }
+
+  function initMap() {
+    const layers = {
+      'نقشه خیابانی': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' }),
+      'ماهواره': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' })
+    };
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      layers['OpenStreetMap'] = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+    }
+    S.map = L.map('sm-map', { layers: [layers['نقشه خیابانی']], scrollWheelZoom: true, minZoom: 4, zoomSnap: 0.5, maxBounds: [[15, 30], [45, 75]] });
+    S.map.fitBounds(IRAN_BOUNDS);
+    L.control.layers(layers, null, { position: 'topleft' }).addTo(S.map);
+    L.control.scale({ imperial: false }).addTo(S.map);
+    S.cluster = L.markerClusterGroup({
+      showCoverageOnHover: false, maxClusterRadius: 45, spiderfyOnMaxZoom: true, disableClusteringAtZoom: 16,
+      iconCreateFunction: cl => {
+        const n = cl.getChildCount(), s = n < 10 ? 40 : n < 30 ? 46 : 54;
+        return L.divIcon({ html: '<div>' + n + '</div>', className: 'sm-cl', iconSize: [s, s] });
+      }
+    }).addTo(S.map);
+    S.map.on('zoomend', applyZoomStyle);
+    applyZoomStyle();
+  }
+
+  function render(fit) {
+    const q = norm($('sm-q').value.trim()), st = $('sm-state').value;
+    const rows = S.rows.filter(c => (!st || c.state === st) && (!q || c._h.includes(q)));
+    S.cluster.clearLayers();
+    S.cluster.addLayers(rows.map(c => S.markers.get(c.id)));
+    $('sm-list').innerHTML = rows.length ? rows.map(c =>
+      '<button type="button" class="sm-item' + (c.id === S.activeId ? ' active' : '') + '" data-id="' + esc(c.id) + '">'
+      + '<div class="n"><i class="sm-dot' + (c.is_approx ? ' approx' : '') + '" style="margin:0"></i>' + esc(c.name) + '</div>'
+      + '<div class="m">' + esc(c.state) + ' · ' + esc(c.city) + '</div></button>').join('')
+      : '<div class="sm-empty">موردی پیدا نشد</div>';
+    $('sm-count').textContent = faNum(rows.length) + ' سنتر از ' + faNum(S.rows.length);
+    if (fit && rows.length) S.map.fitBounds(L.latLngBounds(rows.map(c => [c.lat, c.lng])).pad(0.15), { maxZoom: 13 });
+  }
+
+  async function fetchRows() {
+    setStatus('در حال دریافت اطلاعات سنترها...');
+    const { data, error } = await fetchAllRows((from, to) =>
+      supabaseClient
+        .from(TABLE_SELLER_LOCATIONS)
+        .select('id, name, phone, state, city, address, area, lat, lng, is_approx, location_link')
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    if (error) { setStatus('خطا در دریافت اطلاعات: ' + (error.message || 'نامشخص'), true); return; }
+    const rows = (data || []).filter(r => Number.isFinite(Number(r.lat)) && Number.isFinite(Number(r.lng)))
+      .map(r => Object.assign({}, r, { lat: Number(r.lat), lng: Number(r.lng) }));
+    if (!rows.length) { setStatus('اطلاعاتی برای نمایش نیست (یا دسترسی این حساب به جدول مجاز نیست).', true); return; }
+    rows.forEach(c => { c._h = norm([c.name, c.id, c.city, c.state, c.address, c.phone].join(' ')); });
+    S.rows = rows;
+    S.cluster.clearLayers();
+    S.markers = new Map(rows.map(c => [c.id, makeMarker(c)]));
+    const sel = $('sm-state'), keep = sel.value;
+    sel.innerHTML = '<option value="">همه استان‌ها</option>' + [...new Set(rows.map(c => c.state).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'fa')).map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
+    sel.value = keep;
+    setStatus('');
+    render(!keep && !$('sm-q').value);
+    S.map.invalidateSize();
+  }
+
+  async function openMap() {
+    if (S.map) { setTimeout(() => S.map.invalidateSize(), 50); return; }
+    if (S.busy) return;
+    S.busy = true;
+    setStatus('در حال بارگذاری نقشه...');
+    try { await ensureLibs(); }
+    catch (e) { setStatus('بارگذاری کتابخانه‌ی نقشه ناموفق بود. اتصال اینترنت را بررسی کنید و دوباره تب را باز کنید.', true); S.busy = false; return; }
+    initMap();
+    await fetchRows();
+    S.busy = false;
+  }
+
+  document.querySelectorAll('#supervisor-tabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#supervisor-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const which = btn.dataset.supTab;
+      $('sup-view-targets').style.display = which === 'targets' ? '' : 'none';
+      $('sup-view-map').style.display = which === 'map' ? '' : 'none';
+      if (which === 'map') openMap();
+      if (window.refreshGlassReveals) window.refreshGlassReveals();
+    });
+  });
+
+  let t;
+  $('sm-q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => S.map && S.rows.length && render(true), 150); });
+  $('sm-state').addEventListener('change', () => S.map && S.rows.length && render(true));
+  $('sm-refresh').addEventListener('click', () => { if (S.map) fetchRows(); else openMap(); });
+  $('sm-list').addEventListener('click', e => {
+    const el = e.target.closest('.sm-item'); if (!el) return;
+    const c = S.rows.find(r => String(r.id) === el.dataset.id); if (!c) return;
+    const m = S.markers.get(c.id); setActive(c.id);
+    S.cluster.zoomToShowLayer(m, () => { S.map.flyTo(m.getLatLng(), Math.max(S.map.getZoom(), 15), { duration: .8 }); m.openPopup(); setActive(c.id); });
+  });
+})();
 
 function toJalaliDisplay(jalaliText) {
   return jalaliText || '—';
