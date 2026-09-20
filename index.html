@@ -1221,6 +1221,14 @@
   }
   .sm-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .sm-btn.primary:hover { filter: brightness(1.06); background: var(--accent); }
+  /* آمار هر شرکت در تب مقایسه (بدون کادر آبی) */
+  .leader-header.azki-head { flex-wrap: wrap; }
+  .azki-stats { display: flex; align-items: center; justify-content: flex-end; gap: 24px; flex-wrap: wrap; min-width: 0; }
+  .azki-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .azki-stat .k { font-size: 11.5px; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
+  .azki-stat .v { font-size: 16px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .azki-stat.pct .v { color: var(--accent-deep); }
+  @media (max-width: 640px) { .azki-stats { gap: 14px; } .azki-stat .k { font-size: 10.5px; } .azki-stat .v { font-size: 14.5px; } }
   .azki-error { color: #c0392b; font-size: 12.5px; min-height: 16px; margin-top: 6px; }
   .sm-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
   .sm-legend { display: inline-flex; align-items: center; gap: 6px; }
@@ -2645,7 +2653,7 @@ function azkiPeriodRowHtml(g) {
   return `
     <div class="row-item">
       <div class="row-date">${g.label}</div>
-      <div class="row-main">کل: ${formatNumber(g.total)} — ازکی سنتر: ${formatNumber(g.center)}</div>
+      <div class="row-main">کل صدور: ${formatNumber(g.total)} — تعداد صدور ازکی سنتر: ${formatNumber(g.center)}</div>
       <div class="row-badge">${formatNumber(pct)}٪</div>
     </div>`;
 }
@@ -2673,7 +2681,7 @@ function renderAzkiCompareView() {
   const grandHtml = `
     <div class="row-item">
       <div class="row-date"><strong>جمع کل</strong></div>
-      <div class="row-main">کل: ${formatNumber(grandTotal)} — ازکی سنتر: ${formatNumber(grandCenter)}</div>
+      <div class="row-main">کل صدور: ${formatNumber(grandTotal)} — تعداد صدور ازکی سنتر: ${formatNumber(grandCenter)}</div>
       <div class="row-badge">${formatNumber(grandPct)}٪</div>
     </div>`;
 
@@ -2684,13 +2692,15 @@ function renderAzkiCompareView() {
       : '<div class="empty-state">ردیفی برای این شرکت پیدا نشد</div>';
     return `
       <div class="leader-item">
-        <button class="leader-header" type="button">
+        <button class="leader-header azki-head" type="button">
           <div class="leader-name-wrap">
             <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             <span class="leader-name">${s.company}</span>
           </div>
-          <div class="leader-right">
-            <span class="leader-total">کل ${formatNumber(s.total)} — ازکی سنتر ${formatNumber(s.center)} — ${formatNumber(pct)}٪</span>
+          <div class="azki-stats">
+            <div class="azki-stat"><span class="k">کل صدور</span><span class="v">${formatNumber(s.total)}</span></div>
+            <div class="azki-stat"><span class="k">تعداد صدور ازکی سنتر</span><span class="v">${formatNumber(s.center)}</span></div>
+            <div class="azki-stat pct"><span class="k">درصد صدور ازکی سنتر</span><span class="v">${formatNumber(pct)}٪</span></div>
           </div>
         </button>
         <div class="leader-details"><div class="leader-details-inner">${inner}</div></div>
