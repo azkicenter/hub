@@ -1164,6 +1164,21 @@
     background: var(--surface); color: var(--ink);
   }
   .sm-btn:hover { background: var(--accent-soft); }
+  /* فیلتر بازه و تفکیک (تب‌های ازکی سنتر) */
+  .azki-filter { margin-bottom: 14px; }
+  .azki-filter .sm-stabs { margin-bottom: 10px; }
+  .azki-range-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .azki-range { display: flex; gap: 6px; align-items: center; }
+  .azki-range-title { font-size: 13px; color: var(--ink-soft); min-width: 22px; }
+  .azki-filter select {
+    font-family: var(--font); font-size: 13.5px; padding: 8px 8px; min-width: 0;
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--ink);
+  }
+  .azki-presets { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .sm-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .sm-btn.primary:hover { filter: brightness(1.06); background: var(--accent); }
+  .azki-error { color: #c0392b; font-size: 12.5px; min-height: 16px; margin-top: 6px; }
   .sm-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
   .sm-legend { display: inline-flex; align-items: center; gap: 6px; }
   .sm-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1a6dff; margin-inline-start: 8px; }
@@ -1536,12 +1551,36 @@
         </div>
       </div>
 
-      <div id="sup-view-azki-period" style="display:none;">
-        <div class="sm-stabs" id="azki-period-gran">
+      <div id="azki-filter" class="azki-filter" style="display:none;">
+        <div class="sm-stabs" id="azki-gran">
           <button type="button" class="sm-stab active" data-gran="daily">روزانه</button>
           <button type="button" class="sm-stab" data-gran="weekly">هفتگی</button>
           <button type="button" class="sm-stab" data-gran="monthly">ماهانه</button>
         </div>
+        <div class="azki-range-row">
+          <div class="azki-range">
+            <span class="azki-range-title">از</span>
+            <select id="azki-from-d" aria-label="روز شروع"></select>
+            <select id="azki-from-m" aria-label="ماه شروع"></select>
+            <select id="azki-from-y" aria-label="سال شروع"></select>
+          </div>
+          <div class="azki-range">
+            <span class="azki-range-title">تا</span>
+            <select id="azki-to-d" aria-label="روز پایان"></select>
+            <select id="azki-to-m" aria-label="ماه پایان"></select>
+            <select id="azki-to-y" aria-label="سال پایان"></select>
+          </div>
+        </div>
+        <div class="azki-presets">
+          <button type="button" class="sm-btn primary" id="azki-apply">اعمال بازه</button>
+          <button type="button" class="sm-btn" data-azki-preset="period">دوره‌ی جاری</button>
+          <button type="button" class="sm-btn" data-azki-preset="week">۷ روز اخیر</button>
+          <button type="button" class="sm-btn" data-azki-preset="today">امروز</button>
+        </div>
+        <div class="azki-error" id="azki-filter-error"></div>
+      </div>
+
+      <div id="sup-view-azki-period" style="display:none;">
         <div class="period-label" id="azki-period-label"></div>
         <div class="summary-row">
           <div class="summary-card">
@@ -1563,11 +1602,6 @@
       </div>
 
       <div id="sup-view-azki-centers" style="display:none;">
-        <div class="sm-stabs" id="azki-centers-gran">
-          <button type="button" class="sm-stab active" data-gran="daily">روزانه</button>
-          <button type="button" class="sm-stab" data-gran="weekly">هفتگی</button>
-          <button type="button" class="sm-stab" data-gran="monthly">ماهانه</button>
-        </div>
         <div class="period-label" id="azki-centers-label"></div>
         <div class="list-card" id="azki-centers-list">
           <div class="loading-state">در حال بارگذاری...</div>
@@ -2033,6 +2067,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       $('sup-view-azki-period').style.display = which === 'azki-period' ? '' : 'none';
       $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
       $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
+      $('azki-filter').style.display = which.startsWith('azki-') ? '' : 'none';
       document.querySelector('main').classList.toggle('sm-wide', which === 'map');
       if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
       if (which === 'azki-period' && !azkiState.period.loaded) loadAzkiPeriodView();
@@ -2042,26 +2077,8 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     });
   });
 
-  document.querySelectorAll('#azki-period-gran .sm-stab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#azki-period-gran .sm-stab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      azkiState.period.granularity = btn.dataset.gran;
-      renderAzkiPeriodView();
-    });
-  });
-
-  document.querySelectorAll('#azki-centers-gran .sm-stab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#azki-centers-gran .sm-stab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      azkiState.centers.granularity = btn.dataset.gran;
-      renderAzkiCentersView();
-    });
-  });
-
-  document.querySelectorAll('.sm-stab').forEach(b => b.addEventListener('click', () => {
-    document.querySelectorAll('.sm-stab').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.sm-stab[data-side]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.sm-stab[data-side]').forEach(x => x.classList.toggle('active', x === b));
     $('sm-list').style.display = b.dataset.side === 'list' ? '' : 'none';
     $('sm-prov').style.display = b.dataset.side === 'prov' ? '' : 'none';
   }));
@@ -2179,11 +2196,22 @@ function currentPeriodBounds() {
 // ============================================================
 const JALALI_MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 
+let currentUserRole = null;
+function azkiAllowed() { return currentUserRole === 'supervisor'; }
+
 const azkiState = {
-  period:   { loaded: false, granularity: 'daily', rows: [], bounds: null },
-  centers:  { loaded: false, granularity: 'daily', rows: [], bounds: null },
-  compare:  { loaded: false, byScope: {}, bounds: null },
+  granularity: 'daily',   // مشترک بین هر سه تب
+  bounds: null,           // بازه‌ی انتخابی مشترک بین هر سه تب
+  period:  { loaded: false, rows: [] },
+  centers: { loaded: false, rows: [] },
+  compare: { loaded: false, byScope: {} },
 };
+
+function getAzkiBounds() {
+  if (!azkiState.bounds) azkiState.bounds = azkiPeriodDateBounds();
+  return azkiState.bounds;
+}
+function azkiRangeText(b) { return `بازه‌ی نمایش: ${b.startLabel} تا ${b.endLabel}`; }
 
 function round2(x) { return (x === null || x === undefined || isNaN(x)) ? null : Math.round(x * 100) / 100; }
 
@@ -2342,11 +2370,12 @@ async function fetchAzkiBreakdownRows(companyScope, bounds) {
 
 // ---------- تب «گزارش دوره‌ای» ----------
 async function loadAzkiPeriodView() {
-  const bounds = azkiPeriodDateBounds();
-  azkiState.period.bounds = bounds;
-  document.getElementById('azki-period-label').textContent = `بازه‌ی جاری: ${bounds.startLabel} تا ${bounds.endLabel}`;
+  if (!azkiAllowed()) return;
+  const bounds = getAzkiBounds();
+  document.getElementById('azki-period-label').textContent = azkiRangeText(bounds);
 
   const { data, error } = await fetchAzkiPeriodRows('کل', bounds);
+  if (bounds !== azkiState.bounds) return; // بازه در این فاصله عوض شده
   if (error) {
     document.getElementById('azki-period-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
     return;
@@ -2367,7 +2396,7 @@ function renderAzkiPeriodView() {
     return;
   }
 
-  const groups = groupAzkiPeriodRows(rows, azkiState.period.granularity);
+  const groups = groupAzkiPeriodRows(rows, azkiState.granularity);
 
   const grandTotal = groups.reduce((s, g) => s + g.total, 0);
   const grandCenter = groups.reduce((s, g) => s + g.center, 0);
@@ -2392,11 +2421,12 @@ function renderAzkiPeriodView() {
 
 // ---------- تب «به تفکیک نام مرکز» ----------
 async function loadAzkiCentersView() {
-  const bounds = azkiPeriodDateBounds();
-  azkiState.centers.bounds = bounds;
-  document.getElementById('azki-centers-label').textContent = `بازه‌ی جاری: ${bounds.startLabel} تا ${bounds.endLabel}`;
+  if (!azkiAllowed()) return;
+  const bounds = getAzkiBounds();
+  document.getElementById('azki-centers-label').textContent = azkiRangeText(bounds);
 
   const { data, error } = await fetchAzkiBreakdownRows('کل', bounds);
+  if (bounds !== azkiState.bounds) return;
   if (error) {
     document.getElementById('azki-centers-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
     return;
@@ -2414,7 +2444,7 @@ function renderAzkiCentersView() {
     return;
   }
 
-  const groups = groupAzkiBreakdownRows(rows, azkiState.centers.granularity);
+  const groups = groupAzkiBreakdownRows(rows, azkiState.granularity);
 
   // مجموع کل هر مرکز (برای مرتب‌سازی: پرکارترین مرکز اول)
   const totalsByCenter = {};
@@ -2452,12 +2482,13 @@ function renderAzkiCentersView() {
 
 // ---------- تب «مقایسه شرکت‌ها» ----------
 async function loadAzkiCompareView() {
-  const bounds = azkiPeriodDateBounds();
-  azkiState.compare.bounds = bounds;
-  document.getElementById('azki-compare-label').textContent = `بازه‌ی جاری: ${bounds.startLabel} تا ${bounds.endLabel}`;
+  if (!azkiAllowed()) return;
+  const bounds = getAzkiBounds();
+  document.getElementById('azki-compare-label').textContent = azkiRangeText(bounds);
   const container = document.getElementById('azki-compare-list');
 
   const results = await Promise.all(AZKI_COMPANIES.map(c => fetchAzkiPeriodRows(c, bounds)));
+  if (bounds !== azkiState.bounds) return;
   const failed = results.find(r => r.error);
   if (failed) {
     container.innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${failed.error.message}</div>`;
@@ -2470,34 +2501,41 @@ async function loadAzkiCompareView() {
   renderAzkiCompareView();
 }
 
+function azkiPeriodRowHtml(g) {
+  const pct = g.total ? round2(g.center / g.total * 100) : 0;
+  const octAvg = g.octN ? round2(g.octSum / g.octN) : null;
+  return `
+    <div class="row-item">
+      <div class="row-date">${g.label}</div>
+      <div class="row-main">
+        کل: ${formatNumber(g.total)} — ازکی سنتر: ${formatNumber(g.center)}
+        ${octAvg !== null ? ` — میانگین OCT: ${formatNumber(octAvg)} ساعت` : ''}
+      </div>
+      <div class="row-badge">${formatNumber(pct)}٪</div>
+    </div>`;
+}
+
 function renderAzkiCompareView() {
   const container = document.getElementById('azki-compare-list');
+  const anyRows = AZKI_COMPANIES.some(c => (azkiState.compare.byScope[c] || []).length);
+  if (!anyRows) {
+    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
+    return;
+  }
+
   const summaries = AZKI_COMPANIES.map(company => {
-    const rows = azkiState.compare.byScope[company] || [];
-    const total = rows.reduce((s, r) => s + (r.total_orders || 0), 0);
-    const center = rows.reduce((s, r) => s + (r.center_orders || 0), 0);
-    const octSum = rows.reduce((s, r) => s + (Number(r.oct_sum_hours) || 0), 0);
-    const octN = rows.reduce((s, r) => s + (r.oct_n || 0), 0);
-    return { company, total, center, octAvg: octN ? round2(octSum / octN) : null };
+    const groups = groupAzkiPeriodRows(azkiState.compare.byScope[company] || [], azkiState.granularity);
+    const total = groups.reduce((s, g) => s + g.total, 0);
+    const center = groups.reduce((s, g) => s + g.center, 0);
+    const octSum = groups.reduce((s, g) => s + g.octSum, 0);
+    const octN = groups.reduce((s, g) => s + g.octN, 0);
+    return { company, groups, total, center, octAvg: octN ? round2(octSum / octN) : null };
   }).sort((a, b) => b.total - a.total);
 
   const grandTotal = summaries.reduce((s, x) => s + x.total, 0);
   const grandCenter = summaries.reduce((s, x) => s + x.center, 0);
-
-  const rowsHtml = summaries.map(s => {
-    const pct = s.total ? round2(s.center / s.total * 100) : 0;
-    return `
-      <div class="row-item">
-        <div class="row-date">${s.company}</div>
-        <div class="row-main">
-          کل: ${formatNumber(s.total)} — ازکی سنتر: ${formatNumber(s.center)}
-          ${s.octAvg !== null ? ` — میانگین OCT: ${formatNumber(s.octAvg)} ساعت` : ''}
-        </div>
-        <div class="row-badge">${formatNumber(pct)}٪</div>
-      </div>`;
-  }).join('');
-
   const grandPct = grandTotal ? round2(grandCenter / grandTotal * 100) : 0;
+
   const grandHtml = `
     <div class="row-item">
       <div class="row-date"><strong>جمع کل</strong></div>
@@ -2505,8 +2543,160 @@ function renderAzkiCompareView() {
       <div class="row-badge">${formatNumber(grandPct)}٪</div>
     </div>`;
 
-  container.innerHTML = rowsHtml + grandHtml;
+  const companiesHtml = summaries.map(s => {
+    const pct = s.total ? round2(s.center / s.total * 100) : 0;
+    const inner = s.groups.length
+      ? s.groups.map(azkiPeriodRowHtml).join('')
+      : '<div class="empty-state">ردیفی برای این شرکت پیدا نشد</div>';
+    return `
+      <div class="leader-item">
+        <button class="leader-header" type="button">
+          <div class="leader-name-wrap">
+            <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="leader-name">${s.company}</span>
+          </div>
+          <div class="leader-right">
+            <span class="leader-total">کل ${formatNumber(s.total)} — ازکی سنتر ${formatNumber(s.center)} — ${formatNumber(pct)}٪${s.octAvg !== null ? ` — OCT ${formatNumber(s.octAvg)} ساعت` : ''}</span>
+          </div>
+        </button>
+        <div class="leader-details"><div class="leader-details-inner">${inner}</div></div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = grandHtml + companiesHtml;
+  bindExpandableToggles(container);
 }
+
+// ---------- فیلتر مشترک: بازه‌ی تاریخ (شمسی) + روزانه/هفتگی/ماهانه ----------
+function azkiJalaliMonthLength(jy, jm) {
+  if (jm <= 6) return 31;
+  if (jm <= 11) return 30;
+  const [gy, gm, gd] = jalaliToGregorian(jy, 12, 30).split('-').map(Number);
+  const back = gregorianToJalali(gy, gm, gd);
+  return (back[0] === jy && back[1] === 12 && back[2] === 30) ? 30 : 29;
+}
+
+function azkiAddJalaliDays(jy, jm, jd, delta) {
+  const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd).split('-').map(Number);
+  const d = new Date(Date.UTC(gy, gm - 1, gd + delta));
+  return gregorianToJalali(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+}
+
+function azkiSelVal(id) { return parseInt(document.getElementById(id).value, 10); }
+
+function azkiRefreshDayOptions(prefix) {
+  const jy = azkiSelVal(`azki-${prefix}-y`), jm = azkiSelVal(`azki-${prefix}-m`);
+  const daySel = document.getElementById(`azki-${prefix}-d`);
+  const keep = parseInt(daySel.value, 10) || 1;
+  const len = azkiJalaliMonthLength(jy, jm);
+  daySel.innerHTML = Array.from({ length: len }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+  daySel.value = String(Math.min(keep, len));
+}
+
+function azkiSetRange(prefix, [jy, jm, jd]) {
+  document.getElementById(`azki-${prefix}-y`).value = String(jy);
+  document.getElementById(`azki-${prefix}-m`).value = String(jm);
+  azkiRefreshDayOptions(prefix);
+  document.getElementById(`azki-${prefix}-d`).value = String(jd);
+}
+
+function azkiReadBounds() {
+  const read = prefix => [azkiSelVal(`azki-${prefix}-y`), azkiSelVal(`azki-${prefix}-m`), azkiSelVal(`azki-${prefix}-d`)];
+  const [fy, fm, fd] = read('from');
+  const [ty, tm, td] = read('to');
+  return {
+    startDate: jalaliToGregorian(fy, fm, fd),
+    endDate: jalaliToGregorian(ty, tm, td),
+    startLabel: `${fy}/${pad2(fm)}/${pad2(fd)}`,
+    endLabel: `${ty}/${pad2(tm)}/${pad2(td)}`,
+  };
+}
+
+function azkiActiveTab() {
+  const btn = document.querySelector('#supervisor-tabs .tab-btn.active');
+  return btn ? btn.dataset.supTab : null;
+}
+
+function azkiRenderLoadedViews() {
+  if (azkiState.period.loaded) renderAzkiPeriodView();
+  if (azkiState.centers.loaded) renderAzkiCentersView();
+  if (azkiState.compare.loaded) renderAzkiCompareView();
+}
+
+function azkiApplyRange() {
+  if (!azkiAllowed()) return;
+  const errEl = document.getElementById('azki-filter-error');
+  const b = azkiReadBounds();
+  if (b.startDate > b.endDate) {
+    errEl.textContent = 'تاریخ شروع نباید بعد از تاریخ پایان باشد.';
+    return;
+  }
+  const days = (Date.parse(b.endDate) - Date.parse(b.startDate)) / 86400000 + 1;
+  if (days > 366) {
+    errEl.textContent = 'حداکثر بازه‌ی قابل نمایش یک سال است.';
+    return;
+  }
+  errEl.textContent = '';
+
+  azkiState.bounds = b;
+  azkiState.period.loaded = false;
+  azkiState.centers.loaded = false;
+  azkiState.compare.loaded = false;
+  ['azki-period-list', 'azki-centers-list', 'azki-compare-list'].forEach(id => {
+    document.getElementById(id).innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+  });
+
+  const tab = azkiActiveTab();
+  if (tab === 'azki-period') loadAzkiPeriodView();
+  else if (tab === 'azki-centers') loadAzkiCentersView();
+  else if (tab === 'azki-compare') loadAzkiCompareView();
+}
+
+function initAzkiFilter() {
+  const [tjy] = tehranTodayJalali();
+  const years = [];
+  for (let y = tjy - 2; y <= tjy + 1; y++) years.push(y);
+  ['from', 'to'].forEach(prefix => {
+    document.getElementById(`azki-${prefix}-y`).innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    document.getElementById(`azki-${prefix}-m`).innerHTML = JALALI_MONTHS_FA.map((n, i) => `<option value="${i + 1}">${n}</option>`).join('');
+    document.getElementById(`azki-${prefix}-y`).addEventListener('change', () => azkiRefreshDayOptions(prefix));
+    document.getElementById(`azki-${prefix}-m`).addEventListener('change', () => azkiRefreshDayOptions(prefix));
+  });
+
+  const def = getAzkiBounds();
+  const s = parseJalaliParts(def.startLabel), e = parseJalaliParts(def.endLabel);
+  azkiSetRange('from', [s.jy, s.jm, s.jd]);
+  azkiSetRange('to', [e.jy, e.jm, e.jd]);
+
+  document.getElementById('azki-apply').addEventListener('click', azkiApplyRange);
+
+  document.querySelectorAll('[data-azki-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const today = tehranTodayJalali();
+      const kind = btn.dataset.azkiPreset;
+      if (kind === 'today') {
+        azkiSetRange('from', today); azkiSetRange('to', today);
+      } else if (kind === 'week') {
+        azkiSetRange('from', azkiAddJalaliDays(today[0], today[1], today[2], -6)); azkiSetRange('to', today);
+      } else {
+        const d = azkiPeriodDateBounds();
+        const ps = parseJalaliParts(d.startLabel), pe = parseJalaliParts(d.endLabel);
+        azkiSetRange('from', [ps.jy, ps.jm, ps.jd]); azkiSetRange('to', [pe.jy, pe.jm, pe.jd]);
+      }
+      azkiApplyRange();
+    });
+  });
+
+  document.querySelectorAll('#azki-gran .sm-stab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#azki-gran .sm-stab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      azkiState.granularity = btn.dataset.gran;
+      azkiRenderLoadedViews();
+    });
+  });
+}
+initAzkiFilter();
 
 async function loadLastUpdate() {
   const bar = document.getElementById('last-update-bar');
@@ -2679,6 +2869,7 @@ async function enterApp(user) {
   const isLeader = !profileError && profile && profile.role === 'leader';
   const isCenterAgent = !profileError && profile && profile.role === 'center_agent';
   const isSupervisor = !profileError && profile && profile.role === 'supervisor';
+  currentUserRole = (!profileError && profile) ? profile.role : null;
 
   startPresenceHeartbeat();
 
