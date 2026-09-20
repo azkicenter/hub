@@ -1474,6 +1474,18 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
           نقشه سنتر
         </button>
+        <button class="tab-btn" data-sup-tab="azki-period" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 3 5-8"/></svg>
+          گزارش دوره‌ای
+        </button>
+        <button class="tab-btn" data-sup-tab="azki-centers" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="4" height="9"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="3" width="4" height="17"/></svg>
+          به تفکیک نام مرکز
+        </button>
+        <button class="tab-btn" data-sup-tab="azki-compare" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
+          مقایسه شرکت‌ها
+        </button>
       </div>
 
       <div id="sup-view-targets">
@@ -1521,6 +1533,51 @@
             <div id="sm-map"></div>
             <div id="sm-status" class="sm-status">در حال بارگذاری نقشه...</div>
           </div>
+        </div>
+      </div>
+
+      <div id="sup-view-azki-period" style="display:none;">
+        <div class="sm-stabs" id="azki-period-gran">
+          <button type="button" class="sm-stab active" data-gran="daily">روزانه</button>
+          <button type="button" class="sm-stab" data-gran="weekly">هفتگی</button>
+          <button type="button" class="sm-stab" data-gran="monthly">ماهانه</button>
+        </div>
+        <div class="period-label" id="azki-period-label"></div>
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="label">کل صادره</div>
+            <div class="value" id="azki-period-total">—</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">صادره ازکی سنترها</div>
+            <div class="value" id="azki-period-center">—</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">درصد ازکی سنتر</div>
+            <div class="value" id="azki-period-pct">—</div>
+          </div>
+        </div>
+        <div class="list-card" id="azki-period-list">
+          <div class="loading-state">در حال بارگذاری...</div>
+        </div>
+      </div>
+
+      <div id="sup-view-azki-centers" style="display:none;">
+        <div class="sm-stabs" id="azki-centers-gran">
+          <button type="button" class="sm-stab active" data-gran="daily">روزانه</button>
+          <button type="button" class="sm-stab" data-gran="weekly">هفتگی</button>
+          <button type="button" class="sm-stab" data-gran="monthly">ماهانه</button>
+        </div>
+        <div class="period-label" id="azki-centers-label"></div>
+        <div class="list-card" id="azki-centers-list">
+          <div class="loading-state">در حال بارگذاری...</div>
+        </div>
+      </div>
+
+      <div id="sup-view-azki-compare" style="display:none;">
+        <div class="period-label" id="azki-compare-label"></div>
+        <div class="list-card" id="azki-compare-list">
+          <div class="loading-state">در حال بارگذاری...</div>
         </div>
       </div>
     </div>
@@ -1630,6 +1687,9 @@ const TABLE_BUGS = "bug_reports";
 const TABLE_PROFILES = "profiles";
 const TABLE_TEAM_ASSIGNMENTS = "team_assignments";
 const TABLE_META = "app_meta";
+const TABLE_AZKI_PERIOD = "azki_center_period_report";
+const TABLE_AZKI_BREAKDOWN = "azki_center_breakdown_report";
+const AZKI_COMPANIES = ["رازی", "هوشمند فردا"]; // پیش‌فرض فعلی - بعداً قابل تغییر
 const TABLE_CENTER_AGENT_REPORT = "center_agent_report";
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
@@ -1970,9 +2030,33 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       const which = btn.dataset.supTab;
       $('sup-view-targets').style.display = which === 'targets' ? '' : 'none';
       $('sup-view-map').style.display = which === 'map' ? '' : 'none';
+      $('sup-view-azki-period').style.display = which === 'azki-period' ? '' : 'none';
+      $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
+      $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
       document.querySelector('main').classList.toggle('sm-wide', which === 'map');
       if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
+      if (which === 'azki-period' && !azkiState.period.loaded) loadAzkiPeriodView();
+      if (which === 'azki-centers' && !azkiState.centers.loaded) loadAzkiCentersView();
+      if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
       if (window.refreshGlassReveals) window.refreshGlassReveals();
+    });
+  });
+
+  document.querySelectorAll('#azki-period-gran .sm-stab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#azki-period-gran .sm-stab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      azkiState.period.granularity = btn.dataset.gran;
+      renderAzkiPeriodView();
+    });
+  });
+
+  document.querySelectorAll('#azki-centers-gran .sm-stab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#azki-centers-gran .sm-stab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      azkiState.centers.granularity = btn.dataset.gran;
+      renderAzkiCentersView();
     });
   });
 
@@ -2086,6 +2170,342 @@ function currentPeriodBounds() {
     startLabel: `${startJy}/${pad2(startJm)}/21`,
     endLabel: `${endJy}/${pad2(endJm)}/20`
   };
+}
+
+// ============================================================
+// تب‌های «گزارش دوره‌ای» / «به تفکیک نام مرکز» / «مقایسه شرکت‌ها»
+// (ازکی سنتر) - می‌خونه از azki_center_period_report و
+// azki_center_breakdown_report که ورک‌فلوی n8n هر ۲ ساعت پر می‌کنه.
+// ============================================================
+const JALALI_MONTHS_FA = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+
+const azkiState = {
+  period:   { loaded: false, granularity: 'daily', rows: [], bounds: null },
+  centers:  { loaded: false, granularity: 'daily', rows: [], bounds: null },
+  compare:  { loaded: false, byScope: {}, bounds: null },
+};
+
+function round2(x) { return (x === null || x === undefined || isNaN(x)) ? null : Math.round(x * 100) / 100; }
+
+function jalaliToGregorian(jy, jm, jd) {
+  jy += 1595;
+  let days = -355668 + (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + jd +
+    ((jm < 7) ? (jm - 1) * 31 : (((jm - 7) * 30) + 186));
+  let gy = 400 * Math.floor(days / 146097);
+  days %= 146097;
+  if (days > 36524) {
+    gy += 100 * Math.floor(--days / 36524);
+    days %= 36524;
+    if (days >= 365) days++;
+  }
+  gy += 4 * Math.floor(days / 1461);
+  days %= 1461;
+  if (days > 365) {
+    gy += Math.floor((days - 1) / 365);
+    days = (days - 1) % 365;
+  }
+  let gd = days + 1;
+  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0);
+  const monthDays = [0, 31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  let gm;
+  for (gm = 1; gm <= 12; gm++) {
+    if (gd <= monthDays[gm]) break;
+    gd -= monthDays[gm];
+  }
+  return `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+}
+
+function jalaliToGregorianDate(jy, jm, jd) {
+  const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd).split('-').map(Number);
+  return new Date(Date.UTC(gy, gm - 1, gd));
+}
+
+function parseJalaliParts(jalaliStr) {
+  const [jy, jm, jd] = String(jalaliStr).trim().split('/').map(Number);
+  return { jy, jm, jd };
+}
+
+function jalaliWeekOfYear(jy, jm, jd) {
+  const gDate = jalaliToGregorianDate(jy, jm, jd);
+  const gNewYear = jalaliToGregorianDate(jy, 1, 1);
+  const dayOfYear = Math.round((gDate - gNewYear) / 86400000) + 1;
+  return Math.floor((dayOfYear - 1) / 7) + 1;
+}
+
+// بازه‌ی «دوره‌ی جاری» (۲۱ام تا ۲۰ام) - همون منطق currentPeriodBounds، ولی
+// خروجی به‌صورت تاریخ میلادی (برای فیلتر gte/lte روی ستون report_date)
+function azkiPeriodDateBounds() {
+  const [jy, jm, jd] = tehranTodayJalali();
+  let startJy, startJm, endJy, endJm;
+  if (jd >= 21) {
+    startJy = jy; startJm = jm;
+    endJy = (jm < 12) ? jy : jy + 1;
+    endJm = (jm < 12) ? jm + 1 : 1;
+  } else {
+    startJy = (jm > 1) ? jy : jy - 1;
+    startJm = (jm > 1) ? jm - 1 : 12;
+    endJy = jy; endJm = jm;
+  }
+  return {
+    startDate: jalaliToGregorian(startJy, startJm, 21),
+    endDate: jalaliToGregorian(endJy, endJm, 20),
+    startLabel: `${startJy}/${pad2(startJm)}/21`,
+    endLabel: `${endJy}/${pad2(endJm)}/20`,
+  };
+}
+
+function azkiPeriodGroupKey(jy, jm, jd, granularity) {
+  if (granularity === 'monthly') return { key: `${jy}-${pad2(jm)}`, label: `${JALALI_MONTHS_FA[jm - 1]} ${jy}` };
+  if (granularity === 'weekly') {
+    const week = jalaliWeekOfYear(jy, jm, jd);
+    return { key: `${jy}-W${week}`, label: `هفته ${week} (${jy})` };
+  }
+  return { key: `${jy}/${pad2(jm)}/${pad2(jd)}`, label: `${jy}/${pad2(jm)}/${pad2(jd)}` };
+}
+
+// جمع زدن ردیف‌های روزانه‌ی جدول اول روی بازه‌ی خواسته‌شده (روزانه/هفتگی/ماهانه)
+// میانگین OCT از روی مجموع خام / تعداد خام حساب می‌شه (میانگین وزنی درست، نه میانگینِ میانگین‌ها)
+function groupAzkiPeriodRows(rows, granularity) {
+  const groups = {};
+  for (const r of rows) {
+    const { jy, jm, jd } = parseJalaliParts(r.report_date_jalali);
+    const { key, label } = azkiPeriodGroupKey(jy, jm, jd, granularity);
+    if (!groups[key]) {
+      groups[key] = {
+        key, label, sortKey: jy * 10000 + jm * 100 + jd,
+        total: 0, center: 0,
+        octSum: 0, octN: 0, centerOctSum: 0, centerOctN: 0,
+        oct1Sum: 0, oct1N: 0, oct3Sum: 0, oct3N: 0,
+      };
+    }
+    const g = groups[key];
+    g.total += r.total_orders || 0;
+    g.center += r.center_orders || 0;
+    g.octSum += Number(r.oct_sum_hours) || 0;
+    g.octN += r.oct_n || 0;
+    g.centerOctSum += Number(r.center_oct_sum_hours) || 0;
+    g.centerOctN += r.center_oct_n || 0;
+    g.oct1Sum += Number(r.oct_lt_1h_sum_hours) || 0;
+    g.oct1N += r.oct_lt_1h_n || 0;
+    g.oct3Sum += Number(r.oct_lt_3h_sum_hours) || 0;
+    g.oct3N += r.oct_lt_3h_n || 0;
+  }
+  return Object.values(groups).sort((a, b) => a.sortKey - b.sortKey);
+}
+
+function groupAzkiBreakdownRows(rows, granularity) {
+  const groups = {}; // key: periodKey|centerName
+  for (const r of rows) {
+    const { jy, jm, jd } = parseJalaliParts(r.report_date_jalali);
+    const { key, label } = azkiPeriodGroupKey(jy, jm, jd, granularity);
+    const gkey = `${key}|${r.center_name}`;
+    if (!groups[gkey]) {
+      groups[gkey] = {
+        periodKey: key, label, centerName: r.center_name,
+        sortKey: jy * 10000 + jm * 100 + jd,
+        count: 0, octSum: 0, octN: 0,
+      };
+    }
+    const g = groups[gkey];
+    g.count += r.orders_count || 0;
+    g.octSum += Number(r.oct_sum_hours) || 0;
+    g.octN += r.oct_n || 0;
+  }
+  return Object.values(groups).sort((a, b) => a.sortKey - b.sortKey);
+}
+
+async function fetchAzkiPeriodRows(companyScope, bounds) {
+  return fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_AZKI_PERIOD)
+      .select('*')
+      .eq('company_scope', companyScope)
+      .gte('report_date', bounds.startDate)
+      .lte('report_date', bounds.endDate)
+      .order('report_date', { ascending: true })
+      .range(from, to)
+  );
+}
+
+async function fetchAzkiBreakdownRows(companyScope, bounds) {
+  return fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_AZKI_BREAKDOWN)
+      .select('*')
+      .eq('company_scope', companyScope)
+      .gte('report_date', bounds.startDate)
+      .lte('report_date', bounds.endDate)
+      .order('report_date', { ascending: true })
+      .range(from, to)
+  );
+}
+
+// ---------- تب «گزارش دوره‌ای» ----------
+async function loadAzkiPeriodView() {
+  const bounds = azkiPeriodDateBounds();
+  azkiState.period.bounds = bounds;
+  document.getElementById('azki-period-label').textContent = `بازه‌ی جاری: ${bounds.startLabel} تا ${bounds.endLabel}`;
+
+  const { data, error } = await fetchAzkiPeriodRows('کل', bounds);
+  if (error) {
+    document.getElementById('azki-period-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
+    return;
+  }
+  azkiState.period.rows = data || [];
+  azkiState.period.loaded = true;
+  renderAzkiPeriodView();
+}
+
+function renderAzkiPeriodView() {
+  const rows = azkiState.period.rows;
+  const container = document.getElementById('azki-period-list');
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
+    document.getElementById('azki-period-total').textContent = '۰';
+    document.getElementById('azki-period-center').textContent = '۰';
+    document.getElementById('azki-period-pct').textContent = '—';
+    return;
+  }
+
+  const groups = groupAzkiPeriodRows(rows, azkiState.period.granularity);
+
+  const grandTotal = groups.reduce((s, g) => s + g.total, 0);
+  const grandCenter = groups.reduce((s, g) => s + g.center, 0);
+  document.getElementById('azki-period-total').textContent = formatNumber(grandTotal);
+  document.getElementById('azki-period-center').textContent = formatNumber(grandCenter);
+  document.getElementById('azki-period-pct').textContent = grandTotal ? `${formatNumber(grandCenter / grandTotal * 100)}٪` : '—';
+
+  container.innerHTML = groups.map(g => {
+    const pct = g.total ? round2(g.center / g.total * 100) : 0;
+    const octAvg = g.octN ? round2(g.octSum / g.octN) : null;
+    return `
+      <div class="row-item">
+        <div class="row-date">${g.label}</div>
+        <div class="row-main">
+          کل: ${formatNumber(g.total)} — ازکی سنتر: ${formatNumber(g.center)}
+          ${octAvg !== null ? ` — میانگین OCT: ${formatNumber(octAvg)} ساعت` : ''}
+        </div>
+        <div class="row-badge">${formatNumber(pct)}٪</div>
+      </div>`;
+  }).join('');
+}
+
+// ---------- تب «به تفکیک نام مرکز» ----------
+async function loadAzkiCentersView() {
+  const bounds = azkiPeriodDateBounds();
+  azkiState.centers.bounds = bounds;
+  document.getElementById('azki-centers-label').textContent = `بازه‌ی جاری: ${bounds.startLabel} تا ${bounds.endLabel}`;
+
+  const { data, error } = await fetchAzkiBreakdownRows('کل', bounds);
+  if (error) {
+    document.getElementById('azki-centers-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
+    return;
+  }
+  azkiState.centers.rows = data || [];
+  azkiState.centers.loaded = true;
+  renderAzkiCentersView();
+}
+
+function renderAzkiCentersView() {
+  const rows = azkiState.centers.rows;
+  const container = document.getElementById('azki-centers-list');
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
+    return;
+  }
+
+  const groups = groupAzkiBreakdownRows(rows, azkiState.centers.granularity);
+
+  // مجموع کل هر مرکز (برای مرتب‌سازی: پرکارترین مرکز اول)
+  const totalsByCenter = {};
+  groups.forEach(g => { totalsByCenter[g.centerName] = (totalsByCenter[g.centerName] || 0) + g.count; });
+  const orderedCenters = Object.keys(totalsByCenter).sort((a, b) => totalsByCenter[b] - totalsByCenter[a]);
+
+  container.innerHTML = orderedCenters.map(centerName => {
+    const centerGroups = groups.filter(g => g.centerName === centerName).sort((a, b) => a.sortKey - b.sortKey);
+    const rowsHtml = centerGroups.map(g => {
+      const octAvg = g.octN ? round2(g.octSum / g.octN) : null;
+      return `
+        <div class="row-item">
+          <div class="row-date">${g.label}</div>
+          <div class="row-main">تعداد صدور: ${formatNumber(g.count)}${octAvg !== null ? ` — میانگین OCT: ${formatNumber(octAvg)} ساعت` : ''}</div>
+          <div class="row-badge">${formatNumber(totalsByCenter[centerName])}</div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="leader-item">
+        <button class="leader-header" type="button">
+          <div class="leader-name-wrap">
+            <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="leader-name">${centerName}</span>
+          </div>
+          <div class="leader-right">
+            <span class="leader-total">${formatNumber(totalsByCenter[centerName])}</span>
+          </div>
+        </button>
+        <div class="leader-details"><div class="leader-details-inner">${rowsHtml}</div></div>
+      </div>`;
+  }).join('');
+
+  bindExpandableToggles(container);
+}
+
+// ---------- تب «مقایسه شرکت‌ها» ----------
+async function loadAzkiCompareView() {
+  const bounds = azkiPeriodDateBounds();
+  azkiState.compare.bounds = bounds;
+  document.getElementById('azki-compare-label').textContent = `بازه‌ی جاری: ${bounds.startLabel} تا ${bounds.endLabel}`;
+  const container = document.getElementById('azki-compare-list');
+
+  const results = await Promise.all(AZKI_COMPANIES.map(c => fetchAzkiPeriodRows(c, bounds)));
+  const failed = results.find(r => r.error);
+  if (failed) {
+    container.innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${failed.error.message}</div>`;
+    return;
+  }
+
+  azkiState.compare.byScope = {};
+  AZKI_COMPANIES.forEach((company, i) => { azkiState.compare.byScope[company] = results[i].data || []; });
+  azkiState.compare.loaded = true;
+  renderAzkiCompareView();
+}
+
+function renderAzkiCompareView() {
+  const container = document.getElementById('azki-compare-list');
+  const summaries = AZKI_COMPANIES.map(company => {
+    const rows = azkiState.compare.byScope[company] || [];
+    const total = rows.reduce((s, r) => s + (r.total_orders || 0), 0);
+    const center = rows.reduce((s, r) => s + (r.center_orders || 0), 0);
+    const octSum = rows.reduce((s, r) => s + (Number(r.oct_sum_hours) || 0), 0);
+    const octN = rows.reduce((s, r) => s + (r.oct_n || 0), 0);
+    return { company, total, center, octAvg: octN ? round2(octSum / octN) : null };
+  }).sort((a, b) => b.total - a.total);
+
+  const grandTotal = summaries.reduce((s, x) => s + x.total, 0);
+  const grandCenter = summaries.reduce((s, x) => s + x.center, 0);
+
+  const rowsHtml = summaries.map(s => {
+    const pct = s.total ? round2(s.center / s.total * 100) : 0;
+    return `
+      <div class="row-item">
+        <div class="row-date">${s.company}</div>
+        <div class="row-main">
+          کل: ${formatNumber(s.total)} — ازکی سنتر: ${formatNumber(s.center)}
+          ${s.octAvg !== null ? ` — میانگین OCT: ${formatNumber(s.octAvg)} ساعت` : ''}
+        </div>
+        <div class="row-badge">${formatNumber(pct)}٪</div>
+      </div>`;
+  }).join('');
+
+  const grandPct = grandTotal ? round2(grandCenter / grandTotal * 100) : 0;
+  const grandHtml = `
+    <div class="row-item">
+      <div class="row-date"><strong>جمع کل</strong></div>
+      <div class="row-main">کل: ${formatNumber(grandTotal)} — ازکی سنتر: ${formatNumber(grandCenter)}</div>
+      <div class="row-badge">${formatNumber(grandPct)}٪</div>
+    </div>`;
+
+  container.innerHTML = rowsHtml + grandHtml;
 }
 
 async function loadLastUpdate() {
