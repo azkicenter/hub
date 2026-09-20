@@ -1164,18 +1164,60 @@
     background: var(--surface); color: var(--ink);
   }
   .sm-btn:hover { background: var(--accent-soft); }
-  /* فیلتر بازه و تفکیک (تب‌های ازکی سنتر) */
+  /* فیلتر تب‌های ازکی سنتر */
   .azki-filter { margin-bottom: 14px; }
   .azki-filter .sm-stabs { margin-bottom: 10px; }
-  .azki-range-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
-  .azki-range { display: flex; gap: 6px; align-items: center; }
-  .azki-range-title { font-size: 13px; color: var(--ink-soft); min-width: 22px; }
-  .azki-filter select {
-    font-family: var(--font); font-size: 13.5px; padding: 8px 8px; min-width: 0;
-    border: 1px solid var(--line); border-radius: var(--radius-sm);
-    background: var(--surface); color: var(--ink);
+  .azki-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; padding: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
   }
-  .azki-presets { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .azki-fld { display: flex; flex-direction: column; gap: 4px; position: relative; min-width: 0; }
+  .azki-fld-label { font-size: 12px; color: var(--ink-soft); }
+  .azki-ctl {
+    font-family: var(--font); font-size: 13.5px; padding: 9px 12px; min-width: 150px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  .azki-ctl:hover { background: var(--accent-soft); }
+  .azki-ctl svg { width: 16px; height: 16px; flex: none; opacity: .7; }
+  .azki-pop {
+    position: absolute; top: calc(100% + 6px); inset-inline-start: 0; z-index: 60;
+    background: #fff; color: var(--ink); border: 1px solid var(--line);
+    border-radius: 14px; box-shadow: 0 12px 34px rgba(15,72,150,.25); padding: 12px;
+  }
+  html[data-theme="dark"] .azki-pop { background: #18233a; }
+  .azki-pop[hidden] { display: none; }
+  .azki-cal { width: 288px; max-width: 86vw; }
+  .azki-cal-head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .azki-cal-head select {
+    flex: 1; min-width: 0; font-family: var(--font); font-size: 13px; padding: 6px 6px;
+    border: 1px solid var(--line); border-radius: var(--radius-sm); background: transparent; color: inherit;
+  }
+  .azki-cal-head select option { color: #0F1B33; }
+  .azki-cal-nav {
+    flex: none; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: transparent; color: inherit; cursor: pointer; font-size: 18px; line-height: 1;
+  }
+  .azki-cal-nav:hover { background: var(--accent-soft); }
+  .azki-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+  .azki-cal-wd { font-size: 11.5px; color: var(--ink-soft); padding: 4px 0; }
+  .azki-cal-day {
+    border: 0; background: none; border-radius: 8px; padding: 7px 0; cursor: pointer;
+    font-family: var(--font); font-size: 13px; color: inherit;
+  }
+  .azki-cal-day:hover { background: var(--accent-soft); }
+  .azki-cal-day.today { outline: 1px solid var(--accent); }
+  .azki-cal-day.sel { background: var(--accent); color: #fff; font-weight: 700; }
+  .azki-pop-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
+  .azki-dd-pop { width: 300px; max-width: 86vw; }
+  .azki-chk { display: flex; align-items: center; gap: 8px; padding: 6px 4px; font-size: 13.5px; cursor: pointer; }
+  .azki-chk input { accent-color: var(--accent-deep); width: 16px; height: 16px; }
+  .azki-chk-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; max-height: 260px; overflow: auto;
+    margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line);
+  }
   .sm-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .sm-btn.primary:hover { filter: brightness(1.06); background: var(--accent); }
   .azki-error { color: #c0392b; font-size: 12.5px; min-height: 16px; margin-top: 6px; }
@@ -1557,25 +1599,32 @@
           <button type="button" class="sm-stab" data-gran="weekly">هفتگی</button>
           <button type="button" class="sm-stab" data-gran="monthly">ماهانه</button>
         </div>
-        <div class="azki-range-row">
-          <div class="azki-range">
-            <span class="azki-range-title">از</span>
-            <select id="azki-from-d" aria-label="روز شروع"></select>
-            <select id="azki-from-m" aria-label="ماه شروع"></select>
-            <select id="azki-from-y" aria-label="سال شروع"></select>
+        <div class="azki-bar">
+          <div class="azki-fld">
+            <span class="azki-fld-label">شرکت بیمه</span>
+            <button type="button" class="azki-ctl" id="azki-comp-btn"><span id="azki-comp-summary">همه شرکت‌ها</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+            <div class="azki-pop azki-dd-pop" id="azki-comp-pop" hidden>
+              <label class="azki-chk"><input type="checkbox" id="azki-comp-all" checked><strong>همه شرکت‌ها</strong></label>
+              <div class="azki-chk-grid" id="azki-comp-list"></div>
+              <div class="azki-pop-foot">
+                <button type="button" class="sm-btn" id="azki-comp-clear">پاک کردن</button>
+                <button type="button" class="sm-btn primary" id="azki-comp-close">تأیید</button>
+              </div>
+            </div>
           </div>
-          <div class="azki-range">
-            <span class="azki-range-title">تا</span>
-            <select id="azki-to-d" aria-label="روز پایان"></select>
-            <select id="azki-to-m" aria-label="ماه پایان"></select>
-            <select id="azki-to-y" aria-label="سال پایان"></select>
+          <div class="azki-fld">
+            <span class="azki-fld-label">از تاریخ</span>
+            <button type="button" class="azki-ctl" id="azki-from-btn"><span id="azki-from-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
+            <div class="azki-pop azki-cal" id="azki-from-cal" hidden></div>
           </div>
-        </div>
-        <div class="azki-presets">
-          <button type="button" class="sm-btn primary" id="azki-apply">اعمال بازه</button>
-          <button type="button" class="sm-btn" data-azki-preset="period">دوره‌ی جاری</button>
-          <button type="button" class="sm-btn" data-azki-preset="week">۷ روز اخیر</button>
-          <button type="button" class="sm-btn" data-azki-preset="today">امروز</button>
+          <div class="azki-fld">
+            <span class="azki-fld-label">تا تاریخ</span>
+            <button type="button" class="azki-ctl" id="azki-to-btn"><span id="azki-to-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
+            <div class="azki-pop azki-cal" id="azki-to-cal" hidden></div>
+          </div>
+          <div class="azki-fld">
+            <button type="button" class="sm-btn" id="azki-reset">دوره‌ی جاری</button>
+          </div>
         </div>
         <div class="azki-error" id="azki-filter-error"></div>
       </div>
@@ -1723,7 +1772,7 @@ const TABLE_TEAM_ASSIGNMENTS = "team_assignments";
 const TABLE_META = "app_meta";
 const TABLE_AZKI_PERIOD = "azki_center_period_report";
 const TABLE_AZKI_BREAKDOWN = "azki_center_breakdown_report";
-const AZKI_COMPANIES = ["رازی", "هوشمند فردا"]; // پیش‌فرض فعلی - بعداً قابل تغییر
+const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "پارسیان", "پردیس", "تجارت نو", "تعاون", "حکمت", "دی", "رازی", "سامان", "سینا", "کوثر", "ما", "معلم", "نوین", "هوشمند فردا"]; // شرکت‌های قابل انتخاب (باید با SELECTED_COMPANIES نود n8n یکی باشه)
 const TABLE_CENTER_AGENT_REPORT = "center_agent_report";
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
@@ -2202,16 +2251,30 @@ function azkiAllowed() { return currentUserRole === 'supervisor'; }
 const azkiState = {
   granularity: 'daily',   // مشترک بین هر سه تب
   bounds: null,           // بازه‌ی انتخابی مشترک بین هر سه تب
+  companies: { all: true, selected: new Set() }, // all=true یعنی ردیف‌های «کل» (همه‌ی شرکت‌ها، حتی خارج از لیست)
   period:  { loaded: false, rows: [] },
   centers: { loaded: false, rows: [] },
-  compare: { loaded: false, byScope: {} },
+  compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
 };
+
+function faDigits(v) { return String(v).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
+
+// scope(ها)ی ردیف‌هایی که باید از دیتابیس بخونیم
+function azkiActiveScopes() {
+  const c = azkiState.companies;
+  return c.all ? ['کل'] : AZKI_COMPANIES.filter(n => c.selected.has(n));
+}
+// شرکت‌هایی که تب مقایسه نشون می‌ده
+function azkiCompareCompanies() {
+  const c = azkiState.companies;
+  return c.all ? AZKI_COMPANIES.slice() : AZKI_COMPANIES.filter(n => c.selected.has(n));
+}
 
 function getAzkiBounds() {
   if (!azkiState.bounds) azkiState.bounds = azkiPeriodDateBounds();
   return azkiState.bounds;
 }
-function azkiRangeText(b) { return `بازه‌ی نمایش: ${b.startLabel} تا ${b.endLabel}`; }
+function azkiRangeText(b) { return `بازه‌ی نمایش: ${faDigits(b.startLabel)} تا ${faDigits(b.endLabel)}`; }
 
 function round2(x) { return (x === null || x === undefined || isNaN(x)) ? null : Math.round(x * 100) / 100; }
 
@@ -2342,28 +2405,30 @@ function groupAzkiBreakdownRows(rows, granularity) {
   return Object.values(groups).sort((a, b) => a.sortKey - b.sortKey);
 }
 
-async function fetchAzkiPeriodRows(companyScope, bounds) {
+async function fetchAzkiPeriodRows(scopes, bounds) {
   return fetchAllRows((from, to) =>
     supabaseClient
       .from(TABLE_AZKI_PERIOD)
       .select('*')
-      .eq('company_scope', companyScope)
+      .in('company_scope', scopes)
       .gte('report_date', bounds.startDate)
       .lte('report_date', bounds.endDate)
       .order('report_date', { ascending: true })
+      .order('id', { ascending: true })
       .range(from, to)
   );
 }
 
-async function fetchAzkiBreakdownRows(companyScope, bounds) {
+async function fetchAzkiBreakdownRows(scopes, bounds) {
   return fetchAllRows((from, to) =>
     supabaseClient
       .from(TABLE_AZKI_BREAKDOWN)
       .select('*')
-      .eq('company_scope', companyScope)
+      .in('company_scope', scopes)
       .gte('report_date', bounds.startDate)
       .lte('report_date', bounds.endDate)
       .order('report_date', { ascending: true })
+      .order('id', { ascending: true })
       .range(from, to)
   );
 }
@@ -2374,7 +2439,7 @@ async function loadAzkiPeriodView() {
   const bounds = getAzkiBounds();
   document.getElementById('azki-period-label').textContent = azkiRangeText(bounds);
 
-  const { data, error } = await fetchAzkiPeriodRows('کل', bounds);
+  const { data, error } = await fetchAzkiPeriodRows(azkiActiveScopes(), bounds);
   if (bounds !== azkiState.bounds) return; // بازه در این فاصله عوض شده
   if (error) {
     document.getElementById('azki-period-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
@@ -2425,7 +2490,7 @@ async function loadAzkiCentersView() {
   const bounds = getAzkiBounds();
   document.getElementById('azki-centers-label').textContent = azkiRangeText(bounds);
 
-  const { data, error } = await fetchAzkiBreakdownRows('کل', bounds);
+  const { data, error } = await fetchAzkiBreakdownRows(azkiActiveScopes(), bounds);
   if (bounds !== azkiState.bounds) return;
   if (error) {
     document.getElementById('azki-centers-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
@@ -2487,16 +2552,20 @@ async function loadAzkiCompareView() {
   document.getElementById('azki-compare-label').textContent = azkiRangeText(bounds);
   const container = document.getElementById('azki-compare-list');
 
-  const results = await Promise.all(AZKI_COMPANIES.map(c => fetchAzkiPeriodRows(c, bounds)));
+  const companies = azkiCompareCompanies();
+  const { data, error } = await fetchAzkiPeriodRows(companies, bounds);
   if (bounds !== azkiState.bounds) return;
-  const failed = results.find(r => r.error);
-  if (failed) {
-    container.innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${failed.error.message}</div>`;
+  if (error) {
+    container.innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
     return;
   }
 
-  azkiState.compare.byScope = {};
-  AZKI_COMPANIES.forEach((company, i) => { azkiState.compare.byScope[company] = results[i].data || []; });
+  const byScope = {};
+  companies.forEach(c => { byScope[c] = []; });
+  (data || []).forEach(r => { if (byScope[r.company_scope]) byScope[r.company_scope].push(r); });
+  azkiState.compare.byScope = byScope;
+  azkiState.compare.list = companies;
+  azkiState.compare.hideEmpty = azkiState.companies.all; // وقتی «همه» انتخاب شده، شرکت‌های بدون داده نمایش داده نمی‌شن
   azkiState.compare.loaded = true;
   renderAzkiCompareView();
 }
@@ -2517,20 +2586,21 @@ function azkiPeriodRowHtml(g) {
 
 function renderAzkiCompareView() {
   const container = document.getElementById('azki-compare-list');
-  const anyRows = AZKI_COMPANIES.some(c => (azkiState.compare.byScope[c] || []).length);
+  const list = azkiState.compare.list;
+  const anyRows = list.some(c => (azkiState.compare.byScope[c] || []).length);
   if (!anyRows) {
     container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
     return;
   }
 
-  const summaries = AZKI_COMPANIES.map(company => {
+  const summaries = list.map(company => {
     const groups = groupAzkiPeriodRows(azkiState.compare.byScope[company] || [], azkiState.granularity);
     const total = groups.reduce((s, g) => s + g.total, 0);
     const center = groups.reduce((s, g) => s + g.center, 0);
     const octSum = groups.reduce((s, g) => s + g.octSum, 0);
     const octN = groups.reduce((s, g) => s + g.octN, 0);
     return { company, groups, total, center, octAvg: octN ? round2(octSum / octN) : null };
-  }).sort((a, b) => b.total - a.total);
+  }).filter(x => !azkiState.compare.hideEmpty || x.total > 0).sort((a, b) => b.total - a.total);
 
   const grandTotal = summaries.reduce((s, x) => s + x.total, 0);
   const grandCenter = summaries.reduce((s, x) => s + x.center, 0);
@@ -2567,7 +2637,11 @@ function renderAzkiCompareView() {
   bindExpandableToggles(container);
 }
 
-// ---------- فیلتر مشترک: بازه‌ی تاریخ (شمسی) + روزانه/هفتگی/ماهانه ----------
+// ---------- فیلتر مشترک: شرکت (چک‌باکس) + بازه‌ی تاریخ با تقویم شمسی + روزانه/هفتگی/ماهانه ----------
+const AZKI_WEEKDAYS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+const azkiFilterState = { from: null, to: null };   // [jy, jm, jd]
+const azkiCalView = { from: [0, 0], to: [0, 0] };   // ماه/سالی که تقویم الان نشون می‌ده
+
 function azkiJalaliMonthLength(jy, jm) {
   if (jm <= 6) return 31;
   if (jm <= 11) return 30;
@@ -2576,34 +2650,16 @@ function azkiJalaliMonthLength(jy, jm) {
   return (back[0] === jy && back[1] === 12 && back[2] === 30) ? 30 : 29;
 }
 
-function azkiAddJalaliDays(jy, jm, jd, delta) {
+function azkiWeekdayIndex(jy, jm, jd) { // 0 = شنبه
   const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd).split('-').map(Number);
-  const d = new Date(Date.UTC(gy, gm - 1, gd + delta));
-  return gregorianToJalali(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+  return (new Date(Date.UTC(gy, gm - 1, gd)).getUTCDay() + 1) % 7;
 }
 
-function azkiSelVal(id) { return parseInt(document.getElementById(id).value, 10); }
-
-function azkiRefreshDayOptions(prefix) {
-  const jy = azkiSelVal(`azki-${prefix}-y`), jm = azkiSelVal(`azki-${prefix}-m`);
-  const daySel = document.getElementById(`azki-${prefix}-d`);
-  const keep = parseInt(daySel.value, 10) || 1;
-  const len = azkiJalaliMonthLength(jy, jm);
-  daySel.innerHTML = Array.from({ length: len }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
-  daySel.value = String(Math.min(keep, len));
-}
-
-function azkiSetRange(prefix, [jy, jm, jd]) {
-  document.getElementById(`azki-${prefix}-y`).value = String(jy);
-  document.getElementById(`azki-${prefix}-m`).value = String(jm);
-  azkiRefreshDayOptions(prefix);
-  document.getElementById(`azki-${prefix}-d`).value = String(jd);
-}
+function azkiFmtDate(t) { return faDigits(`${t[0]}/${pad2(t[1])}/${pad2(t[2])}`); }
 
 function azkiReadBounds() {
-  const read = prefix => [azkiSelVal(`azki-${prefix}-y`), azkiSelVal(`azki-${prefix}-m`), azkiSelVal(`azki-${prefix}-d`)];
-  const [fy, fm, fd] = read('from');
-  const [ty, tm, td] = read('to');
+  const [fy, fm, fd] = azkiFilterState.from;
+  const [ty, tm, td] = azkiFilterState.to;
   return {
     startDate: jalaliToGregorian(fy, fm, fd),
     endDate: jalaliToGregorian(ty, tm, td),
@@ -2636,6 +2692,10 @@ function azkiApplyRange() {
     errEl.textContent = 'حداکثر بازه‌ی قابل نمایش یک سال است.';
     return;
   }
+  if (!azkiActiveScopes().length) {
+    errEl.textContent = 'حداقل یک شرکت را انتخاب کنید.';
+    return;
+  }
   errEl.textContent = '';
 
   azkiState.bounds = b;
@@ -2652,39 +2712,190 @@ function azkiApplyRange() {
   else if (tab === 'azki-compare') loadAzkiCompareView();
 }
 
-function initAzkiFilter() {
-  const [tjy] = tehranTodayJalali();
-  const years = [];
-  for (let y = tjy - 2; y <= tjy + 1; y++) years.push(y);
-  ['from', 'to'].forEach(prefix => {
-    document.getElementById(`azki-${prefix}-y`).innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
-    document.getElementById(`azki-${prefix}-m`).innerHTML = JALALI_MONTHS_FA.map((n, i) => `<option value="${i + 1}">${n}</option>`).join('');
-    document.getElementById(`azki-${prefix}-y`).addEventListener('change', () => azkiRefreshDayOptions(prefix));
-    document.getElementById(`azki-${prefix}-m`).addEventListener('change', () => azkiRefreshDayOptions(prefix));
+let azkiApplyTimer = null;
+function azkiApplySoon() {
+  clearTimeout(azkiApplyTimer);
+  azkiApplyTimer = setTimeout(azkiApplyRange, 300);
+}
+
+// ----- تقویم شمسی -----
+function azkiCalRender(key) {
+  const pop = document.getElementById(`azki-${key}-cal`);
+  let [vy, vm] = azkiCalView[key];
+  const sel = azkiFilterState[key];
+  const today = tehranTodayJalali();
+  const len = azkiJalaliMonthLength(vy, vm);
+  const offset = azkiWeekdayIndex(vy, vm, 1);
+
+  const yMin = Math.min(today[0] - 4, vy), yMax = Math.max(today[0] + 1, vy);
+  let yearOpts = '';
+  for (let y = yMin; y <= yMax; y++) yearOpts += `<option value="${y}"${y === vy ? ' selected' : ''}>${faDigits(y)}</option>`;
+  const monthOpts = JALALI_MONTHS_FA.map((n, i) => `<option value="${i + 1}"${i + 1 === vm ? ' selected' : ''}>${n}</option>`).join('');
+
+  let cells = '';
+  for (let i = 0; i < offset; i++) cells += '<span></span>';
+  for (let d = 1; d <= len; d++) {
+    const isSel = sel && sel[0] === vy && sel[1] === vm && sel[2] === d;
+    const isToday = today[0] === vy && today[1] === vm && today[2] === d;
+    cells += `<button type="button" class="azki-cal-day${isSel ? ' sel' : ''}${isToday ? ' today' : ''}" data-day="${d}">${faDigits(d)}</button>`;
+  }
+
+  pop.innerHTML = `
+    <div class="azki-cal-head">
+      <button type="button" class="azki-cal-nav" data-nav="-1" aria-label="ماه قبل">›</button>
+      <select data-role="m" aria-label="ماه">${monthOpts}</select>
+      <select data-role="y" aria-label="سال">${yearOpts}</select>
+      <button type="button" class="azki-cal-nav" data-nav="1" aria-label="ماه بعد">‹</button>
+    </div>
+    <div class="azki-cal-grid">
+      ${AZKI_WEEKDAYS.map(w => `<span class="azki-cal-wd">${w}</span>`).join('')}
+      ${cells}
+    </div>
+    <div class="azki-pop-foot">
+      <button type="button" class="sm-btn" data-today="1">امروز</button>
+      <button type="button" class="sm-btn" data-close="1">بستن</button>
+    </div>`;
+}
+
+function azkiPlacePop(pop) {
+  pop.style.transform = '';
+  const r = pop.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  let dx = 0;
+  if (r.left < 8) dx = 8 - r.left;
+  else if (r.right > vw - 8) dx = (vw - 8) - r.right;
+  if (dx) pop.style.transform = `translateX(${dx}px)`;
+}
+
+function azkiClosePops(exceptId) {
+  document.querySelectorAll('.azki-pop').forEach(p => { if (p.id !== exceptId) p.hidden = true; });
+}
+
+function azkiSetDate(key, t) {
+  azkiFilterState[key] = t;
+  document.getElementById(`azki-${key}-text`).textContent = azkiFmtDate(t);
+}
+
+function azkiOpenCal(key) {
+  const pop = document.getElementById(`azki-${key}-cal`);
+  const willOpen = pop.hidden;
+  azkiClosePops(pop.id);
+  if (!willOpen) { pop.hidden = true; return; }
+  const cur = azkiFilterState[key] || tehranTodayJalali();
+  azkiCalView[key] = [cur[0], cur[1]];
+  azkiCalRender(key);
+  pop.hidden = false;
+  azkiPlacePop(pop);
+}
+
+function azkiBindCal(key) {
+  const pop = document.getElementById(`azki-${key}-cal`);
+  document.getElementById(`azki-${key}-btn`).addEventListener('click', () => azkiOpenCal(key));
+
+  pop.addEventListener('click', e => {
+    const nav = e.target.closest('[data-nav]');
+    const day = e.target.closest('[data-day]');
+    if (nav) {
+      let [vy, vm] = azkiCalView[key];
+      vm += parseInt(nav.dataset.nav, 10);
+      if (vm < 1) { vm = 12; vy--; } else if (vm > 12) { vm = 1; vy++; }
+      azkiCalView[key] = [vy, vm];
+      azkiCalRender(key);
+    } else if (day) {
+      const [vy, vm] = azkiCalView[key];
+      azkiSetDate(key, [vy, vm, parseInt(day.dataset.day, 10)]);
+      pop.hidden = true;
+      azkiApplyRange();
+    } else if (e.target.closest('[data-today]')) {
+      azkiSetDate(key, tehranTodayJalali());
+      pop.hidden = true;
+      azkiApplyRange();
+    } else if (e.target.closest('[data-close]')) {
+      pop.hidden = true;
+    }
+  });
+  pop.addEventListener('change', e => {
+    const role = e.target.dataset.role;
+    if (!role) return;
+    const v = parseInt(e.target.value, 10);
+    if (role === 'm') azkiCalView[key][1] = v; else azkiCalView[key][0] = v;
+    azkiCalRender(key);
+  });
+}
+
+// ----- فیلتر شرکت (چک‌باکس) -----
+function azkiCompanySummary() {
+  const c = azkiState.companies;
+  if (c.all) return 'همه شرکت‌ها';
+  const sel = AZKI_COMPANIES.filter(n => c.selected.has(n));
+  if (!sel.length) return 'هیچ شرکتی انتخاب نشده';
+  if (sel.length <= 2) return sel.join('، ');
+  return `${faDigits(sel.length)} شرکت انتخاب‌شده`;
+}
+
+function azkiRenderCompanyFilter() {
+  const c = azkiState.companies;
+  document.getElementById('azki-comp-all').checked = c.all;
+  document.getElementById('azki-comp-list').innerHTML = AZKI_COMPANIES.map((n, i) =>
+    `<label class="azki-chk"><input type="checkbox" data-comp="${i}"${(!c.all && c.selected.has(n)) ? ' checked' : ''}><span>${n}</span></label>`
+  ).join('');
+  document.getElementById('azki-comp-summary').textContent = azkiCompanySummary();
+}
+
+function azkiBindCompanyFilter() {
+  const c = azkiState.companies;
+  const pop = document.getElementById('azki-comp-pop');
+
+  document.getElementById('azki-comp-btn').addEventListener('click', () => {
+    const willOpen = pop.hidden;
+    azkiClosePops(pop.id);
+    pop.hidden = !willOpen;
+    if (willOpen) azkiPlacePop(pop);
   });
 
+  document.getElementById('azki-comp-all').addEventListener('change', e => {
+    if (e.target.checked) { c.all = true; c.selected = new Set(); }
+    else { c.all = false; c.selected = new Set(AZKI_COMPANIES); } // بعد از برداشتن «همه»، همه تیک‌دار می‌مونن و خودتون کم می‌کنید
+    azkiRenderCompanyFilter();
+    azkiApplySoon();
+  });
+
+  document.getElementById('azki-comp-list').addEventListener('change', e => {
+    const idx = e.target.dataset.comp;
+    if (idx === undefined) return;
+    const name = AZKI_COMPANIES[parseInt(idx, 10)];
+    if (c.all) { c.all = false; c.selected = new Set([name]); }   // از حالت «همه» → فقط همین شرکت
+    else if (e.target.checked) c.selected.add(name);
+    else c.selected.delete(name);
+    azkiRenderCompanyFilter();
+    azkiApplySoon();
+  });
+
+  document.getElementById('azki-comp-clear').addEventListener('click', () => {
+    c.all = false; c.selected = new Set();
+    azkiRenderCompanyFilter();
+    azkiApplySoon();
+  });
+  document.getElementById('azki-comp-close').addEventListener('click', () => { pop.hidden = true; });
+}
+
+function initAzkiFilter() {
   const def = getAzkiBounds();
-  const s = parseJalaliParts(def.startLabel), e = parseJalaliParts(def.endLabel);
-  azkiSetRange('from', [s.jy, s.jm, s.jd]);
-  azkiSetRange('to', [e.jy, e.jm, e.jd]);
+  const st = parseJalaliParts(def.startLabel), en = parseJalaliParts(def.endLabel);
+  azkiSetDate('from', [st.jy, st.jm, st.jd]);
+  azkiSetDate('to', [en.jy, en.jm, en.jd]);
 
-  document.getElementById('azki-apply').addEventListener('click', azkiApplyRange);
+  azkiBindCal('from');
+  azkiBindCal('to');
+  azkiRenderCompanyFilter();
+  azkiBindCompanyFilter();
 
-  document.querySelectorAll('[data-azki-preset]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const today = tehranTodayJalali();
-      const kind = btn.dataset.azkiPreset;
-      if (kind === 'today') {
-        azkiSetRange('from', today); azkiSetRange('to', today);
-      } else if (kind === 'week') {
-        azkiSetRange('from', azkiAddJalaliDays(today[0], today[1], today[2], -6)); azkiSetRange('to', today);
-      } else {
-        const d = azkiPeriodDateBounds();
-        const ps = parseJalaliParts(d.startLabel), pe = parseJalaliParts(d.endLabel);
-        azkiSetRange('from', [ps.jy, ps.jm, ps.jd]); azkiSetRange('to', [pe.jy, pe.jm, pe.jd]);
-      }
-      azkiApplyRange();
-    });
+  document.getElementById('azki-reset').addEventListener('click', () => {
+    const d = azkiPeriodDateBounds();
+    const a = parseJalaliParts(d.startLabel), b = parseJalaliParts(d.endLabel);
+    azkiSetDate('from', [a.jy, a.jm, a.jd]);
+    azkiSetDate('to', [b.jy, b.jm, b.jd]);
+    azkiApplyRange();
   });
 
   document.querySelectorAll('#azki-gran .sm-stab').forEach(btn => {
@@ -2695,6 +2906,13 @@ function initAzkiFilter() {
       azkiRenderLoadedViews();
     });
   });
+
+  // بستن پاپ‌آپ‌ها با کلیک بیرون از اون‌ها یا Escape
+  document.addEventListener('click', e => {
+    const path = e.composedPath ? e.composedPath() : [];
+    if (!path.some(n => n.classList && n.classList.contains('azki-fld'))) azkiClosePops();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') azkiClosePops(); });
 }
 initAzkiFilter();
 
