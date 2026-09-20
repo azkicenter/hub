@@ -1225,6 +1225,7 @@
   .sm-legend { display: inline-flex; align-items: center; gap: 6px; }
   .sm-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1a6dff; margin-inline-start: 8px; }
   .sm-dot.approx { background: #e8891f; }
+  .sm-dot.green { background: #1fa855; }
   main.sm-wide { max-width: 1500px; }
   .sm-wrap { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 12px; height: min(82vh, 880px); min-height: 540px; }
   .sm-wrap:fullscreen { height: 100vh; padding: 12px; box-sizing: border-box; background: #eaf0f8; }
@@ -1274,6 +1275,8 @@
   .sm-item:hover, .sm-item.active { background: var(--accent-soft); }
   .sm-item .n { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 7px; }
   .sm-item .m { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .sm-green-info { display: block; width: 100%; font-size: 12px; color: var(--ink-soft); }
+  .sm-green-info.warn { color: #b26a00; }
   .sm-empty { padding: 30px 16px; text-align: center; color: var(--ink-soft); font-size: 13px; }
   @media (max-width: 720px) {
     .sm-wrap { grid-template-columns: 1fr; grid-template-rows: 460px 320px; height: auto; min-height: 0; }
@@ -1285,6 +1288,7 @@
   .sm-pin .core { position: absolute; inset: 4px; border-radius: 50%; background: #1a6dff; border: 2.5px solid #fff; box-shadow: 0 0 0 1px rgba(10,40,120,.55), 0 2px 6px rgba(0,0,0,.35); transition: transform .15s; }
   .sm-pin .ring { position: absolute; inset: 0; border-radius: 50%; background: #1a6dff; opacity: 0; animation: sm-pulse 1.6s ease-out infinite; }
   .sm-pin.approx .core, .sm-pin.approx .ring { background: #e8891f; }
+  .sm-pin.green .core, .sm-pin.green .ring { background: #1fa855; }
   .sm-pin:hover .core { transform: scale(1.25); }
   .sm-pin.active .core { transform: scale(1.35); }
   .sm-pin.active .ring { animation-duration: .9s; }
@@ -1294,6 +1298,8 @@
   .sm-pin .badge u { position: absolute; inset: 5px; border-radius: 50%; background: rgba(26,109,255,.92); color: #fff; font-size: 13px; font-weight: 700; line-height: 30px; text-align: center; text-decoration: none; }
   .sm-pin.approx .badge { background: rgba(232,137,31,.3); }
   .sm-pin.approx .badge u { background: rgba(232,137,31,.95); }
+  .sm-pin.green .badge { background: rgba(31,168,85,.3); }
+  .sm-pin.green .badge u { background: rgba(31,168,85,.95); }
   .sm-low .sm-pin .ring, .sm-low .sm-pin .core { display: none; }
   .sm-low .sm-pin .badge { display: block; }
   .sm-cl { border-radius: 50%; background: rgba(26,109,255,.28); }
@@ -1575,7 +1581,8 @@
         </div>
         <div class="sm-meta">
           <span id="sm-count"></span>
-          <span class="sm-legend"><i class="sm-dot"></i>موقعیت دقیق<i class="sm-dot approx"></i>موقعیت تقریبی</span>
+          <span class="sm-legend"><i class="sm-dot green"></i>سنتر دارای تارگت<i class="sm-dot"></i>موقعیت دقیق<i class="sm-dot approx"></i>موقعیت تقریبی</span>
+          <span class="sm-green-info" id="sm-green-info"></span>
         </div>
         <div class="sm-wrap">
           <div class="sm-card sm-side">
@@ -1906,7 +1913,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   // نام‌های غلط رایج در داده که باید به استان درست برگردند
   const STATE_ALIAS = { 'آذربایجان': 'آذربایجان غربی' };
 
-  const S = { map: null, cluster: null, markers: new Map(), rows: [], activeId: null, busy: false, libs: null };
+  const S = { map: null, cluster: null, markers: new Map(), rows: [], activeId: null, busy: false, libs: null, green: new Set(), unmatched: [] };
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const norm = s => String(s == null ? '' : s)
@@ -1956,6 +1963,52 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     return S.libs;
   }
 
+  // کلید مقایسه‌ی نام سنتر: بدون فاصله/نیم‌فاصله/علامت و بدون پیشوندهای «سنتر»، «مرکز صدور» و ...
+  function centerKey(s) {
+    return norm(s)
+      .replace(/[\s\u200c\u200b\u200e\u200f\u00a0\-_.,،؛:()\[\]\/|]+/g, '')
+      .replace(/^(ازکیسنتر|سنتر|مرکزصدور|مرکز|شعبه)+/, '');
+  }
+
+  // سنترهای تارگت‌دار (از تب تارگت‌ها) رو با نقطه‌های نقشه تطبیق می‌ده
+  function computeGreen() {
+    const targets = window.supTargetCenters || [];
+    S.green = new Set();
+    S.unmatched = [];
+    const byKey = new Map();
+    S.rows.forEach(c => {
+      const k = centerKey(c.name);
+      if (!k) return;
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k).push(c);
+    });
+    targets.forEach(t => {
+      const k = centerKey(t.name);
+      let hits = k && byKey.has(k) ? byKey.get(k) : [];
+      if (!hits.length && k.length >= 5) {           // تطبیق نرم‌تر: یکی داخل اون یکی
+        const soft = S.rows.filter(c => { const ck = centerKey(c.name); return ck.length >= 5 && (ck.includes(k) || k.includes(ck)); });
+        if (soft.length && soft.length <= 3) hits = soft;
+      }
+      if (hits.length) hits.forEach(c => S.green.add(c.id));
+      else S.unmatched.push(t.name);
+    });
+  }
+
+  function updateGreenInfo() {
+    const el = $('sm-green-info');
+    if (!el) return;
+    const targets = window.supTargetCenters;
+    if (!targets) { el.textContent = ''; el.classList.remove('warn'); return; }
+    const found = targets.length - S.unmatched.length;
+    let txt = 'سبز: ' + faNum(found) + ' از ' + faNum(targets.length) + ' سنتر تارگت‌دار روی نقشه پیدا شد.';
+    if (S.unmatched.length) {
+      const shown = S.unmatched.slice(0, 6).join('، ');
+      txt += ' پیدا نشد: ' + shown + (S.unmatched.length > 6 ? ' و ' + faNum(S.unmatched.length - 6) + ' مورد دیگر' : '');
+    }
+    el.textContent = txt;
+    el.classList.toggle('warn', S.unmatched.length > 0);
+  }
+
   function popupHtml(c) {
     const phones = (norm(c.phone).match(/\d{10,11}/g) || [])
       .filter(p => /^0?9\d{9}$/.test(p)).map(p => p[0] === '0' ? p : '0' + p);
@@ -1968,6 +2021,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     const b = 'https://balad.ir/location?latitude=' + c.lat + '&longitude=' + c.lng + '&zoom=17';
     return '<div class="sm-pop">'
       + '<h3>' + esc(c.name) + '</h3>'
+      + (S.green.has(c.id) ? '<div class="row"><span class="k">تارگت:</span> سنتر دارای تارگت</div>' : '')
       + '<div class="row"><span class="k">کد:</span> <span class="num">' + esc(c.id) + '</span></div>'
       + '<div class="row"><span class="k">تلفن:</span> ' + phoneHtml + '</div>'
       + '<div class="row"><span class="k">استان / شهر:</span> ' + esc(c.state) + ' / ' + esc(c.city) + '</div>'
@@ -1981,12 +2035,15 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       + '</div></div>';
   }
 
-  function makeMarker(c) {
-    const icon = L.divIcon({
+  function iconFor(c) {
+    return L.divIcon({
       className: 'sm-pinwrap', iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10],
-      html: '<span class="sm-pin' + (c.is_approx ? ' approx' : '') + '"><i class="ring"></i><i class="core"></i><b class="badge"><u>1</u></b></span>'
+      html: '<span class="sm-pin' + (S.green.has(c.id) ? ' green' : '') + (c.is_approx ? ' approx' : '') + '"><i class="ring"></i><i class="core"></i><b class="badge"><u>1</u></b></span>'
     });
-    const m = L.marker([c.lat, c.lng], { icon: icon, riseOnHover: true, title: c.name });
+  }
+
+  function makeMarker(c) {
+    const m = L.marker([c.lat, c.lng], { icon: iconFor(c), riseOnHover: true, title: c.name });
     m.bindPopup(popupHtml(c), { maxWidth: 300 });
     m.on('click', () => setActive(c.id));
     m.on('add', () => {
@@ -2060,7 +2117,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     document.querySelectorAll('#sm-prov .sm-prow[data-p]').forEach(b => b.classList.toggle('active', b.dataset.p === st));
     $('sm-list').innerHTML = rows.length ? rows.map(c =>
       '<button type="button" class="sm-item' + (c.id === S.activeId ? ' active' : '') + '" data-id="' + esc(c.id) + '">'
-      + '<div class="n"><i class="sm-dot' + (c.is_approx ? ' approx' : '') + '" style="margin:0"></i>' + esc(c.name) + '</div>'
+      + '<div class="n"><i class="sm-dot' + (S.green.has(c.id) ? ' green' : (c.is_approx ? ' approx' : '')) + '" style="margin:0"></i>' + esc(c.name) + '</div>'
       + '<div class="m">' + esc(c.state) + ' · ' + esc(c.city) + '</div></button>').join('')
       : '<div class="sm-empty">موردی پیدا نشد</div>';
     $('sm-count').textContent = faNum(rows.length) + ' سنتر از ' + faNum(S.rows.length);
@@ -2082,6 +2139,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (!rows.length) { setStatus('اطلاعاتی برای نمایش نیست (یا دسترسی این حساب به جدول مجاز نیست).', true); return; }
     rows.forEach(c => { c._h = norm([c.name, c.id, c.city, c.state, c.address, c.phone].join(' ')); });
     S.rows = rows;
+    computeGreen();
     S.cluster.clearLayers();
     S.markers = new Map(rows.map(c => [c.id, makeMarker(c)]));
     const sel = $('sm-state'), keep = sel.value;
@@ -2091,8 +2149,21 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     setStatus('');
     renderProvinces();
     render(!keep && !$('sm-q').value);
+    updateGreenInfo();
     S.map.invalidateSize();
   }
+
+  // اگه لیست سنترهای تارگت‌دار بعد از لود نقشه رسید (یا عوض شد)، رنگ نقطه‌ها رو دوباره حساب کن
+  document.addEventListener('sup-target-centers', () => {
+    if (!S.map || !S.rows.length) return;
+    computeGreen();
+    S.rows.forEach(c => {
+      const mk = S.markers.get(c.id);
+      if (mk) { mk.setIcon(iconFor(c)); mk.setPopupContent(popupHtml(c)); }
+    });
+    render(false);
+    updateGreenInfo();
+  });
 
   async function openMap() {
     if (S.map) { setTimeout(() => S.map.invalidateSize(), 50); return; }
@@ -3651,6 +3722,12 @@ function buildSupervisorLeadersHtml(leaderGroups) {
   `).join('');
 }
 
+// لیست سنترهای دارای اسم در تب «تارگت‌ها» رو برای تب نقشه منتشر می‌کنه
+function publishSupTargetCenters(list) {
+  window.supTargetCenters = list;
+  document.dispatchEvent(new CustomEvent('sup-target-centers'));
+}
+
 async function loadSupervisorView() {
   const container = document.getElementById('supervisor-list');
   const period = currentPeriodBounds();
@@ -3705,6 +3782,7 @@ async function loadSupervisorView() {
   if (allAgentIds.length === 0) {
     container.innerHTML = '<div class="empty-state">هنوز نیرویی به هیچ سنتری اساین نشده است</div>';
     setTotals('۰', '۰', '۰');
+    publishSupTargetCenters([]);
     return;
   }
 
@@ -3776,6 +3854,12 @@ async function loadSupervisorView() {
     const myTotal = myRows.reduce((sum, r) => sum + (Number(r.target_count) || 0), 0);
     return { m: { ...m, centerName: centerNameByAgentId[agentId] || 'بدون سنتر' }, myRows, myBugs, myTotal };
   }).filter(Boolean);
+
+  // سنترهایی که اسمشون تو همین لیست تارگت‌ها می‌آد (برای سبز شدن نقطه‌شون تو تب نقشه)
+  const targetCenterIds = new Set((centerAgentLinks || [])
+    .filter(l => agentProfileById[l.agent_id] && centerNameById[l.center_id])
+    .map(l => l.center_id));
+  publishSupTargetCenters([...targetCenterIds].map(id => ({ id, name: centerNameById[id] })));
 
   const grandTotal = items.reduce((sum, it) => sum + it.myTotal, 0);
   const grandAgentCount = items.length;
