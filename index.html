@@ -1168,7 +1168,11 @@
   .sm-legend { display: inline-flex; align-items: center; gap: 6px; }
   .sm-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1a6dff; margin-inline-start: 8px; }
   .sm-dot.approx { background: #e8891f; }
-  .sm-wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 12px; height: min(72vh, 640px); min-height: 440px; }
+  main.sm-wide { max-width: 1500px; }
+  .sm-wrap { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 12px; height: min(82vh, 880px); min-height: 540px; }
+  .sm-wrap:fullscreen { height: 100vh; padding: 12px; box-sizing: border-box; background: #eaf0f8; }
+  .sm-wrap:-webkit-full-screen { height: 100vh; padding: 12px; box-sizing: border-box; background: #eaf0f8; }
+  [data-theme="dark"] .sm-wrap:fullscreen { background: #0b1220; }
   .sm-card {
     background: var(--surface);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
@@ -1176,7 +1180,27 @@
     border: 1px solid var(--line); border-radius: var(--radius-lg);
     overflow: hidden; box-shadow: var(--shadow-card);
   }
-  .sm-list { overflow: auto; }
+  .sm-side { display: flex; flex-direction: column; min-height: 0; }
+  .sm-stabs { display: flex; border-bottom: 1px solid var(--line); flex: none; }
+  .sm-stab { flex: 1; padding: 11px 8px; background: none; border: 0; border-bottom: 2.5px solid transparent; cursor: pointer; font-family: var(--font); font-size: 13.5px; color: var(--ink-soft); }
+  .sm-stab.active { color: var(--accent-deep); border-bottom-color: var(--accent); font-weight: 700; }
+  .sm-scroll { flex: 1; min-height: 0; overflow: auto; }
+  .sm-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+  .sm-sum div { background: var(--surface-tint); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 6px; text-align: center; }
+  .sm-sum b { display: block; font-size: 20px; color: var(--accent-deep); }
+  .sm-sum span { font-size: 11.5px; color: var(--ink-soft); }
+  .sm-sum .bad b { color: var(--danger); }
+  .sm-prov-h { padding: 8px 14px; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); background: var(--surface-tint); border-block: 1px solid var(--line); }
+  .sm-prov-h.bad { color: var(--danger); }
+  .sm-prow { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; width: 100%; text-align: right; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 8px 14px; font-family: var(--font); color: var(--ink); cursor: pointer; }
+  .sm-prow:hover, .sm-prow.active { background: var(--accent-soft); }
+  .sm-prow .pn { font-size: 13px; }
+  .sm-prow .pc { font-size: 13px; font-weight: 700; color: var(--accent-deep); }
+  .sm-prow .bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; display: block; }
+  .sm-prow .bar u { display: block; height: 100%; background: var(--accent); text-decoration: none; }
+  .sm-prow.zero { cursor: default; grid-template-columns: 1fr auto; }
+  .sm-prow.zero:hover { background: none; }
+  .sm-prow.zero .pn, .sm-prow.zero .pc { color: var(--danger); }
   .sm-mapbox { position: relative; }
   #sm-map { position: absolute; inset: 0; z-index: 0; background: #dfe9ee; font-family: var(--font); }
   .sm-status {
@@ -1195,7 +1219,7 @@
   .sm-item .m { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
   .sm-empty { padding: 30px 16px; text-align: center; color: var(--ink-soft); font-size: 13px; }
   @media (max-width: 720px) {
-    .sm-wrap { grid-template-columns: 1fr; grid-template-rows: 380px 240px; height: auto; min-height: 0; }
+    .sm-wrap { grid-template-columns: 1fr; grid-template-rows: 460px 320px; height: auto; min-height: 0; }
     .sm-mapbox { order: -1; }
   }
   /* نقطه‌ها و خوشه‌ها */
@@ -1478,13 +1502,21 @@
           <input id="sm-q" type="search" placeholder="جستجو: نام، کد، شهر، تلفن یا آدرس" autocomplete="off">
           <select id="sm-state"><option value="">همه استان‌ها</option></select>
           <button type="button" class="sm-btn" id="sm-refresh">بروزرسانی</button>
+          <button type="button" class="sm-btn" id="sm-full">تمام‌صفحه</button>
         </div>
         <div class="sm-meta">
           <span id="sm-count"></span>
           <span class="sm-legend"><i class="sm-dot"></i>موقعیت دقیق<i class="sm-dot approx"></i>موقعیت تقریبی</span>
         </div>
         <div class="sm-wrap">
-          <div class="sm-card sm-list" id="sm-list"></div>
+          <div class="sm-card sm-side">
+            <div class="sm-stabs">
+              <button type="button" class="sm-stab active" data-side="list">سنترها</button>
+              <button type="button" class="sm-stab" data-side="prov">آمار استان‌ها</button>
+            </div>
+            <div class="sm-scroll" id="sm-list"></div>
+            <div class="sm-scroll" id="sm-prov" style="display:none;"></div>
+          </div>
           <div class="sm-card sm-mapbox">
             <div id="sm-map"></div>
             <div id="sm-status" class="sm-status">در حال بارگذاری نقشه...</div>
@@ -1727,6 +1759,10 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   const LOW_ZOOM = 9; // زیر این زوم، نقطه‌های تکی هم مثل خوشه به شکل دایره‌ی «۱» دیده می‌شوند
   const IRAN_BOUNDS = [[25.0, 43.9], [39.8, 63.4]];
 
+  const PROVINCES = ['آذربایجان شرقی', 'آذربایجان غربی', 'اردبیل', 'اصفهان', 'البرز', 'ایلام', 'بوشهر', 'تهران', 'چهارمحال و بختیاری', 'خراسان جنوبی', 'خراسان رضوی', 'خراسان شمالی', 'خوزستان', 'زنجان', 'سمنان', 'سیستان و بلوچستان', 'فارس', 'قزوین', 'قم', 'کردستان', 'کرمان', 'کرمانشاه', 'کهگیلویه و بویراحمد', 'گلستان', 'گیلان', 'لرستان', 'مازندران', 'مرکزی', 'هرمزگان', 'همدان', 'یزد'];
+  // نام‌های غلط رایج در داده که باید به استان درست برگردند
+  const STATE_ALIAS = { 'آذربایجان': 'آذربایجان غربی' };
+
   const S = { map: null, cluster: null, markers: new Map(), rows: [], activeId: null, busy: false, libs: null };
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1734,6 +1770,13 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
     .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
     .replace(/ي/g, 'ی').replace(/ك/g, 'ک').toLowerCase();
+  function canonState(s) {
+    const raw = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(), n = norm(raw);
+    const hit = PROVINCES.find(p => norm(p) === n);
+    if (hit) return hit;
+    const al = Object.keys(STATE_ALIAS).find(a => norm(a) === n);
+    return al ? STATE_ALIAS[al] : raw;
+  }
   const faNum = n => Number(n).toLocaleString('fa-IR');
 
   function setStatus(msg, isErr) {
@@ -1826,14 +1869,13 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   }
 
   function initMap() {
-    const layers = {
-      'نقشه خیابانی': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' }),
-      'ماهواره': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' })
-    };
-    if (location.protocol === 'http:' || location.protocol === 'https:') {
-      layers['OpenStreetMap'] = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
-    }
-    S.map = L.map('sm-map', { layers: [layers['نقشه خیابانی']], scrollWheelZoom: true, minZoom: 4, zoomSnap: 0.5, maxBounds: [[15, 30], [45, 75]] });
+    const isWeb = location.protocol === 'http:' || location.protocol === 'https:';
+    const layers = {};
+    // OpenStreetMap پیش‌فرض است (فقط وقتی صفحه از روی http/https باز شده باشد؛ روی file:// بلاک می‌شود)
+    if (isWeb) layers['OpenStreetMap'] = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+    layers['نقشه خیابانی (Esri)'] = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' });
+    layers['ماهواره'] = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' });
+    S.map = L.map('sm-map', { layers: [isWeb ? layers['OpenStreetMap'] : layers['نقشه خیابانی (Esri)']], scrollWheelZoom: true, minZoom: 4, zoomSnap: 0.5, maxBounds: [[15, 30], [45, 75]] });
     S.map.fitBounds(IRAN_BOUNDS);
     L.control.layers(layers, null, { position: 'topleft' }).addTo(S.map);
     L.control.scale({ imperial: false }).addTo(S.map);
@@ -1848,11 +1890,31 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     applyZoomStyle();
   }
 
+  function renderProvinces() {
+    const counts = new Map();
+    S.rows.forEach(c => counts.set(c.state, (counts.get(c.state) || 0) + 1));
+    const withC = PROVINCES.filter(p => counts.get(p)).sort((a, b) => counts.get(b) - counts.get(a) || a.localeCompare(b, 'fa'));
+    const without = PROVINCES.filter(p => !counts.get(p)).sort((a, b) => a.localeCompare(b, 'fa'));
+    const others = [...counts.keys()].filter(k => !PROVINCES.includes(k));
+    const max = Math.max(1, ...withC.map(p => counts.get(p)));
+    const row = p => '<button type="button" class="sm-prow" data-p="' + esc(p) + '"><span class="pn">' + esc(p) + '</span><span class="pc">' + faNum(counts.get(p)) + '</span>'
+      + '<i class="bar"><u style="width:' + Math.max(4, Math.round(counts.get(p) / max * 100)) + '%"></u></i></button>';
+    const zero = p => '<div class="sm-prow zero"><span class="pn">' + esc(p) + '</span><span class="pc">۰</span></div>';
+    $('sm-prov').innerHTML =
+      '<div class="sm-sum"><div><b>' + faNum(S.rows.length) + '</b><span>کل سنترها</span></div>'
+      + '<div><b>' + faNum(withC.length) + '</b><span>استان دارای سنتر</span></div>'
+      + '<div class="bad"><b>' + faNum(without.length) + '</b><span>استان بدون سنتر</span></div></div>'
+      + '<div class="sm-prov-h">استان‌های دارای سنتر (از ' + faNum(PROVINCES.length) + ' استان)</div>' + withC.map(row).join('')
+      + (without.length ? '<div class="sm-prov-h bad">استان‌های بدون سنتر</div>' + without.map(zero).join('') : '')
+      + (others.length ? '<div class="sm-prov-h bad">نام استان نامعتبر در داده</div>' + others.map(p => '<div class="sm-prow zero"><span class="pn">' + esc(p || '—') + '</span><span class="pc">' + faNum(counts.get(p)) + '</span></div>').join('') : '');
+  }
+
   function render(fit) {
     const q = norm($('sm-q').value.trim()), st = $('sm-state').value;
     const rows = S.rows.filter(c => (!st || c.state === st) && (!q || c._h.includes(q)));
     S.cluster.clearLayers();
     S.cluster.addLayers(rows.map(c => S.markers.get(c.id)));
+    document.querySelectorAll('#sm-prov .sm-prow[data-p]').forEach(b => b.classList.toggle('active', b.dataset.p === st));
     $('sm-list').innerHTML = rows.length ? rows.map(c =>
       '<button type="button" class="sm-item' + (c.id === S.activeId ? ' active' : '') + '" data-id="' + esc(c.id) + '">'
       + '<div class="n"><i class="sm-dot' + (c.is_approx ? ' approx' : '') + '" style="margin:0"></i>' + esc(c.name) + '</div>'
@@ -1873,7 +1935,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     );
     if (error) { setStatus('خطا در دریافت اطلاعات: ' + (error.message || 'نامشخص'), true); return; }
     const rows = (data || []).filter(r => Number.isFinite(Number(r.lat)) && Number.isFinite(Number(r.lng)))
-      .map(r => Object.assign({}, r, { lat: Number(r.lat), lng: Number(r.lng) }));
+      .map(r => Object.assign({}, r, { lat: Number(r.lat), lng: Number(r.lng), state: canonState(r.state) }));
     if (!rows.length) { setStatus('اطلاعاتی برای نمایش نیست (یا دسترسی این حساب به جدول مجاز نیست).', true); return; }
     rows.forEach(c => { c._h = norm([c.name, c.id, c.city, c.state, c.address, c.phone].join(' ')); });
     S.rows = rows;
@@ -1884,6 +1946,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       .sort((a, b) => a.localeCompare(b, 'fa')).map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
     sel.value = keep;
     setStatus('');
+    renderProvinces();
     render(!keep && !$('sm-q').value);
     S.map.invalidateSize();
   }
@@ -1907,10 +1970,30 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       const which = btn.dataset.supTab;
       $('sup-view-targets').style.display = which === 'targets' ? '' : 'none';
       $('sup-view-map').style.display = which === 'map' ? '' : 'none';
-      if (which === 'map') openMap();
+      document.querySelector('main').classList.toggle('sm-wide', which === 'map');
+      if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
       if (window.refreshGlassReveals) window.refreshGlassReveals();
     });
   });
+
+  document.querySelectorAll('.sm-stab').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.sm-stab').forEach(x => x.classList.toggle('active', x === b));
+    $('sm-list').style.display = b.dataset.side === 'list' ? '' : 'none';
+    $('sm-prov').style.display = b.dataset.side === 'prov' ? '' : 'none';
+  }));
+  $('sm-prov').addEventListener('click', e => {
+    const b = e.target.closest('.sm-prow[data-p]'); if (!b || !S.map) return;
+    const sel = $('sm-state');
+    sel.value = sel.value === b.dataset.p ? '' : b.dataset.p;
+    render(true);
+  });
+  const fsBtn = $('sm-full');
+  if (!document.documentElement.requestFullscreen) fsBtn.style.display = 'none';
+  fsBtn.addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.querySelector('.sm-wrap').requestFullscreen().catch(() => {});
+  });
+  document.addEventListener('fullscreenchange', () => { if (S.map) setTimeout(() => S.map.invalidateSize(), 150); });
 
   let t;
   $('sm-q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => S.map && S.rows.length && render(true), 150); });
