@@ -870,7 +870,8 @@
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
   .team-item.open > .team-details { grid-template-rows: 1fr; }
-  .team-details-inner { overflow: hidden; min-height: 0; padding: 4px 34px 14px 20px; }
+  .team-details-inner { overflow: hidden; min-height: 0; padding: 0 34px 0 20px; transition: padding .3s cubic-bezier(.4,0,.2,1); }
+  .team-item.open > .team-details > .team-details-inner { padding: 4px 34px 14px 20px; }
   .team-day-row {
     display: flex;
     align-items: center;
@@ -1083,7 +1084,8 @@
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   }
   .leader-item.open > .leader-details { grid-template-rows: 1fr; }
-  .leader-details-inner { overflow: hidden; min-height: 0; padding: 12px 32px 16px 14px; }
+  .leader-details-inner { overflow: hidden; min-height: 0; padding: 0 32px 0 14px; transition: padding .3s cubic-bezier(.4,0,.2,1); }
+  .leader-item.open > .leader-details > .leader-details-inner { padding: 12px 32px 16px 14px; }
 
   /* ====== شیشه‌ای‌سازی نشان‌ها و کادرهای رنگی کوچک ====== */
   .row-badge,
