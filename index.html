@@ -894,6 +894,22 @@
     text-align: center;
   }
   .team-empty-days { padding: 14px 4px; font-size: 12.5px; color: var(--ink-faint); text-align: center; }
+  /* میانگین زمان صدور (SLA) کنار عدد صدور هر کارشناس */
+  .team-sla {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .team-sla b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) {
+    .team-header:has(.team-sla) { flex-wrap: wrap; }
+    .team-header:has(.team-sla) .team-right { width: 100%; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  }
   .team-bug-total {
     font-size: 12.5px;
     font-weight: 700;
@@ -1805,6 +1821,7 @@ const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "�
 const TABLE_CENTER_AGENT_REPORT = "center_agent_report";
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
+const TABLE_AGENT_SLA = "agent_sla";
 const TABLE_SELLER_LOCATIONS = "seller_locations";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -2294,6 +2311,40 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     S.cluster.zoomToShowLayer(m, () => { S.map.flyTo(m.getLatLng(), Math.max(S.map.getZoom(), 15), { duration: .8 }); m.openPopup(); setActive(c.id); });
   });
 })();
+
+// ===== میانگین زمان صدور (SLA) کارشناس‌ها: از جدول agent_sla که ورک‌فلوی n8n برای هر بازه‌ی ۲۱ تا ۲۰ پر می‌کنه =====
+let agentSlaMap = null;          // { agent_id: دقیقه } ؛ null یعنی نمایش داده نشه
+let agentSlaPeriodLabel = '';
+
+function periodLabelFromStartSort(startSort) {
+  const jy = Math.floor(startSort / 10000), jm = Math.floor(startSort / 100) % 100;
+  const ey = jm < 12 ? jy : jy + 1, em = jm < 12 ? jm + 1 : 1;
+  return `${jy}/${String(jm).padStart(2, '0')}/21 تا ${ey}/${String(em).padStart(2, '0')}/20`;
+}
+
+// اولین روز (۲۱ام) بازه‌ای که این تاریخ شمسی تویش قرار داره
+function periodStartSortOfJalali(jy, jm, jd) {
+  if (jd >= 21) return jy * 10000 + jm * 100 + 21;
+  return jm > 1 ? jy * 10000 + (jm - 1) * 100 + 21 : (jy - 1) * 10000 + 12 * 100 + 21;
+}
+
+async function loadAgentSla(periodStartSort) {
+  const { data, error } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_AGENT_SLA)
+      .select('agent_id, avg_issuance_minutes')
+      .eq('period_start_sort', periodStartSort)
+      .range(from, to)
+  );
+  if (error) {
+    console.error('خطا در دریافت میانگین زمان صدور:', error.message);
+    return null; // جدول/دسترسی نبود: SLA نشون داده نمی‌شه ولی بقیه‌ی صفحه سالمه
+  }
+  const map = {};
+  (data || []).forEach(r => { if (r.avg_issuance_minutes != null) map[r.agent_id] = Number(r.avg_issuance_minutes); });
+  agentSlaPeriodLabel = periodLabelFromStartSort(periodStartSort);
+  return map;
+}
 
 // ترتیب روزها همیشه صعودی (۱۴۰۵/۰۶/۲۱ بعد ۱۴۰۵/۰۶/۲۲ و ...)، مستقل از ترتیبی که دیتابیس برمی‌گردونه.
 // کلید مرتب‌سازی از خود متن تاریخ شمسی (با پشتیبانی از ارقام فارسی/عربی) ساخته می‌شه و اگه نشد از report_date_sort.
@@ -3522,6 +3573,12 @@ function buildMemberItemsHtml(membersWithTotals) {
   return membersWithTotals.map(({ m, myRows, myBugs, myTotal }) => {
     const displayName = m.full_name || m.backoffice_id || '—';
 
+    // میانگین زمان صدور (SLA): فقط وقتی دیتای بازه لود شده باشه نشون داده می‌شه؛ کارشناسی که ردیف نداره «—» می‌گیره
+    const slaMin = agentSlaMap ? agentSlaMap[m.id] : undefined;
+    const slaHtml = agentSlaMap
+      ? `<span class="team-sla" title="میانگین کل دوره‌ی ${agentSlaPeriodLabel}">میانگین زمان صدور: <b>${slaMin != null ? formatNumber(slaMin) + ' دقیقه' : '—'}</b></span>`
+      : '';
+
     const daysHtml = myRows.length
       ? sortRowsByDateAsc(myRows).map(r => `
           <div class="team-day-row">
@@ -3539,6 +3596,7 @@ function buildMemberItemsHtml(membersWithTotals) {
             <span class="team-name">${displayName}</span>
           </div>
           <div class="team-right">
+            ${slaHtml}
             <span class="team-bug-total">${myBugs.length} خطا</span>
             <span class="team-total">${formatNumber(myTotal)}</span>
           </div>
@@ -3767,6 +3825,7 @@ async function loadTeamView(leaderId) {
 
   membersWithTotals.sort((a, b) => b.myTotal - a.myTotal);
 
+  agentSlaMap = await loadAgentSla(period.startSort);
   const memberBlocks = buildGroupedMemberItemsHtml(membersWithTotals);
 
   container.innerHTML = memberBlocks;
@@ -3952,6 +4011,7 @@ async function loadSupervisorView() {
   // کارشناس‌هایی که برای بازه‌ی جاری حداقل یک ردیف تارگت ثبت‌شده دارن (یونیک، نه صرفاً اساین‌شده)
   const grandAgentWithTargetCount = items.filter(it => it.myRows.length > 0).length;
 
+  agentSlaMap = await loadAgentSla(period.startSort);
   container.innerHTML = items.length
     ? buildGroupedMemberItemsHtml(items)
     : '<div class="empty-state">هنوز نیرویی به هیچ سنتری اساین نشده است</div>';
@@ -4443,6 +4503,9 @@ async function loadCenterData() {
   document.getElementById('center-period-label').textContent = label;
   document.getElementById('center-bugs-period-label').textContent = label;
 
+  const spansPeriods = periodStartSortOfJalali(f[0], f[1], f[2]) !== periodStartSortOfJalali(to[0], to[1], to[2]);
+  document.getElementById('center-period-label').textContent = label + (spansPeriods ? ' — میانگین زمان صدور فقط برای بازه‌ای داخل یک دوره‌ی ۲۱ تا ۲۰ نمایش داده می‌شود' : '');
+
   const agentIds = centerNormalAgentsAll.map(a => a.id);
   if (agentIds.length === 0) {
     centerTargetRowsAll = [];
@@ -4455,6 +4518,11 @@ async function loadCenterData() {
   const loading = '<div class="loading-state">در حال بارگذاری...</div>';
   listEl.innerHTML = loading;
   bugsListEl.innerHTML = loading;
+
+  // SLA فقط وقتی معنی داره که کل بازه‌ی انتخابی داخل یک دوره‌ی ۲۱ تا ۲۰ باشه (SLA برای کل دوره ثبت می‌شه)
+  const slaStart = periodStartSortOfJalali(f[0], f[1], f[2]);
+  const slaSame = slaStart === periodStartSortOfJalali(to[0], to[1], to[2]);
+  const slaPromise = slaSame ? loadAgentSla(slaStart) : Promise.resolve(null);
 
   const [targetsRes, bugsRes] = await Promise.all([
     fetchAllRows((from, toIdx) =>
@@ -4481,7 +4549,11 @@ async function loadCenterData() {
     )
   ]);
 
+  const slaMap = await slaPromise;
+
   if (seq !== centerLoadSeq) return; // یه فیلتر جدیدتر زده شده؛ نتیجه‌ی این درخواست کنار می‌ره
+
+  agentSlaMap = slaMap;
 
   if (targetsRes.error) {
     listEl.innerHTML = `<div class="empty-state">خطا در دریافت تارگت‌ها: ${targetsRes.error.message}</div>`;
