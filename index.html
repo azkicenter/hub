@@ -1477,58 +1477,57 @@
       </button>
       <button class="tab-btn" data-center-tab="center-bugs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
-        خطای کل
+        خطا
       </button>
     </div>
 
+    <div id="center-filter" class="azki-filter" style="display:none;">
+      <div class="azki-bar">
+        <div class="azki-fld">
+          <span class="azki-fld-label">از تاریخ</span>
+          <button type="button" class="azki-ctl" id="center-from-btn"><span id="center-from-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
+          <div class="azki-pop azki-cal" id="center-from-cal" hidden></div>
+        </div>
+        <div class="azki-fld">
+          <span class="azki-fld-label">تا تاریخ</span>
+          <button type="button" class="azki-ctl" id="center-to-btn"><span id="center-to-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
+          <div class="azki-pop azki-cal" id="center-to-cal" hidden></div>
+        </div>
+        <div class="azki-fld">
+          <span class="azki-fld-label">&nbsp;</span>
+          <button type="button" class="sm-btn" id="center-filter-reset">بازه‌ی جاری</button>
+        </div>
+      </div>
+      <div class="azki-error" id="center-filter-error"></div>
+    </div>
 
     <div class="panel" id="panel-center">
       <div class="period-label" id="center-period-label"></div>
-
-      <div class="admin-login-chart-card">
-        <div class="admin-group-header">
-          <span class="admin-group-title" id="center-chart-title">تعداد صدور</span>
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="label">مجموع صدور</div>
+          <div class="value" id="center-period-total">—</div>
         </div>
-        <div id="center-chart">
-          <div class="loading-state">در حال بارگذاری...</div>
+        <div class="summary-card">
+          <div class="label">مجموع کارشناس‌ها</div>
+          <div class="value" id="center-agent-count">—</div>
         </div>
       </div>
-
       <div class="team-bugs-search-wrap">
-        <input type="text" id="center-member-search" class="team-bugs-search" placeholder="جستجو بر اساس یوزر بک‌آفیس کارشناس...">
+        <input type="text" id="center-member-search" class="team-bugs-search" placeholder="جستجو بر اساس نام یا یوزر بک‌آفیس کارشناس...">
       </div>
-      <div class="admin-group-card">
-        <div class="admin-group-header">
-          <span class="admin-group-title">نفرات</span>
-          <span class="admin-group-count" id="center-member-count">—</span>
-        </div>
-        <div class="admin-group-list" id="center-member-list">
-          <div class="loading-state">در حال بارگذاری...</div>
-        </div>
+      <div class="list-card" id="center-list">
+        <div class="loading-state">در حال بارگذاری...</div>
       </div>
     </div>
 
     <div class="panel" id="panel-center-bugs">
-      <div class="admin-login-chart-card">
-        <div class="admin-group-header">
-          <span class="admin-group-title" id="center-bugs-chart-title">تعداد خطا</span>
-        </div>
-        <div id="center-bugs-chart">
-          <div class="loading-state">در حال بارگذاری...</div>
-        </div>
-      </div>
-
+      <div class="period-label" id="center-bugs-period-label"></div>
       <div class="team-bugs-search-wrap">
-        <input type="text" id="center-bugs-member-search" class="team-bugs-search" placeholder="جستجو بر اساس یوزر بک‌آفیس کارشناس...">
+        <input type="text" id="center-bugs-search" class="team-bugs-search" placeholder="جستجو بر اساس نام یا یوزر بک‌آفیس کارشناس...">
       </div>
-      <div class="admin-group-card">
-        <div class="admin-group-header">
-          <span class="admin-group-title">نفرات</span>
-          <span class="admin-group-count" id="center-bugs-member-count">—</span>
-        </div>
-        <div class="admin-group-list" id="center-bugs-member-list">
-          <div class="loading-state">در حال بارگذاری...</div>
-        </div>
+      <div class="list-card" id="center-bugs-list">
+        <div class="loading-state">در حال بارگذاری...</div>
       </div>
     </div>
 
@@ -2295,6 +2294,20 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     S.cluster.zoomToShowLayer(m, () => { S.map.flyTo(m.getLatLng(), Math.max(S.map.getZoom(), 15), { duration: .8 }); m.openPopup(); setActive(c.id); });
   });
 })();
+
+// ترتیب روزها همیشه صعودی (۱۴۰۵/۰۶/۲۱ بعد ۱۴۰۵/۰۶/۲۲ و ...)، مستقل از ترتیبی که دیتابیس برمی‌گردونه.
+// کلید مرتب‌سازی از خود متن تاریخ شمسی (با پشتیبانی از ارقام فارسی/عربی) ساخته می‌شه و اگه نشد از report_date_sort.
+function jalaliRowSortKey(r) {
+  const s = String(r.report_date_jalali || '')
+    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  if (m) return Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3]);
+  return Number(r.report_date_sort) || 0;
+}
+function sortRowsByDateAsc(rows) {
+  return [...(rows || [])].sort((a, b) => jalaliRowSortKey(a) - jalaliRowSortKey(b));
+}
 
 function toJalaliDisplay(jalaliText) {
   return jalaliText || '—';
@@ -3261,6 +3274,7 @@ async function enterApp(user) {
     document.getElementById('panel-team-bugs').classList.remove('active');
     document.getElementById('center-tabs').style.display = 'flex';
     document.getElementById('panel-center').classList.add('active');
+    document.getElementById('center-filter').style.display = '';
     document.getElementById('panel-center-bugs').classList.remove('active');
     document.getElementById('center-agent-tabs').style.display = 'none';
     document.getElementById('panel-center-agent').classList.remove('active');
@@ -3509,7 +3523,7 @@ function buildMemberItemsHtml(membersWithTotals) {
     const displayName = m.full_name || m.backoffice_id || '—';
 
     const daysHtml = myRows.length
-      ? myRows.map(r => `
+      ? sortRowsByDateAsc(myRows).map(r => `
           <div class="team-day-row">
             <span class="team-day-date">${toJalaliDisplay(r.report_date_jalali)}</span>
             <span class="team-day-badge">${r.target_count != null ? formatNumber(r.target_count) : '—'}</span>
@@ -3707,6 +3721,7 @@ async function loadTeamView(leaderId) {
       .gte('report_date_sort', period.startSort)
       .lte('report_date_sort', period.endSort)
       .order('report_date_sort', { ascending: true })
+      .order('agent_id', { ascending: true })
       .range(from, to)
   );
 
@@ -3878,10 +3893,12 @@ async function loadSupervisorView() {
   const { data: rows, error: rowsError } = await fetchAllRows((from, to) =>
     supabaseClient
       .from(TABLE_TARGETS)
-      .select('agent_id, report_date_jalali, target_count')
+      .select('agent_id, report_date_jalali, report_date_sort, target_count')
       .in('agent_id', allAgentIds)
       .gte('report_date_sort', period.startSort)
       .lte('report_date_sort', period.endSort)
+      .order('report_date_sort', { ascending: true })
+      .order('agent_id', { ascending: true })
       .range(from, to)
   );
 
@@ -4128,10 +4145,13 @@ let centerMyFields = [];
 
 let centerNormalAgentsAll = [];
 let centerTargetRowsAll = [];
-let centerSelectedMemberId = null;
-
 let centerBugRowsAll = [];
-let centerBugsSelectedMemberId = null;
+let centerBugsFlat = [];
+let centerViewName = '';
+let centerViewId = null;
+let centerLoadSeq = 0;
+const centerFilterState = { from: null, to: null };   // [jy, jm, jd]
+const centerCalView = { from: [0, 0], to: [0, 0] };   // ماه/سالی که تقویم الان نشون می‌ده
 
 let centerCenterAgentsAll = [];
 let centerCenterAgentReportRowsAll = [];
@@ -4181,26 +4201,6 @@ function renderCenterMemberSelectList(listElId, countElId, searchElId, members, 
   });
 }
 
-function refreshCenterMemberList() {
-  renderCenterMemberSelectList('center-member-list', 'center-member-count', 'center-member-search', centerNormalAgentsAll, centerSelectedMemberId, onCenterMemberClick);
-}
-
-function onCenterMemberClick(memberId) {
-  centerSelectedMemberId = memberId;
-  refreshCenterMemberList();
-  renderCenterChart();
-}
-
-function refreshCenterBugsMemberList() {
-  renderCenterMemberSelectList('center-bugs-member-list', 'center-bugs-member-count', 'center-bugs-member-search', centerNormalAgentsAll, centerBugsSelectedMemberId, onCenterBugsMemberClick);
-}
-
-function onCenterBugsMemberClick(memberId) {
-  centerBugsSelectedMemberId = memberId;
-  refreshCenterBugsMemberList();
-  renderCenterBugsChart();
-}
-
 function refreshCenterCenterAgentsList() {
   renderCenterMemberSelectList('center-center-agents-list', 'center-center-agents-count', 'center-center-agents-search', centerCenterAgentsAll, centerSelectedCenterAgentId, onCenterCenterAgentClick);
 }
@@ -4209,90 +4209,6 @@ function onCenterCenterAgentClick(memberId) {
   centerSelectedCenterAgentId = memberId;
   refreshCenterCenterAgentsList();
   renderCenterCenterAgentDetail();
-}
-
-function renderCenterChart() {
-  const container = document.getElementById('center-chart');
-  const titleEl = document.getElementById('center-chart-title');
-  if (!container) return;
-
-  let rows = centerTargetRowsAll;
-  let scopeLabel = 'کل نفرات';
-  if (centerSelectedMemberId) {
-    rows = rows.filter(r => r.agent_id === centerSelectedMemberId);
-    const m = centerNormalAgentsAll.find(x => x.id === centerSelectedMemberId);
-    scopeLabel = m ? (m.full_name || m.backoffice_id || '—') : 'کل نفرات';
-  }
-  if (titleEl) titleEl.textContent = `تعداد صدور — ${scopeLabel}`;
-
-  if (rows.length === 0) {
-    container.innerHTML = '<div class="admin-group-empty">داده‌ای برای این بازه یافت نشد</div>';
-    return;
-  }
-
-  const bySort = new Map();
-  rows.forEach(r => {
-    const sortKey = Number(r.report_date_sort) || 0;
-    if (!bySort.has(sortKey)) bySort.set(sortKey, { jalali: r.report_date_jalali, total: 0 });
-    bySort.get(sortKey).total += (Number(r.target_count) || 0);
-  });
-
-  const sortedDays = Array.from(bySort.entries()).sort((a, b) => a[0] - b[0]);
-  const total = sortedDays.reduce((sum, [, d]) => sum + d.total, 0);
-
-  const rowsHtml = sortedDays.map(([, d]) => `
-    <div class="row-item">
-      <div class="row-date">${toJalaliDisplay(d.jalali)}</div>
-      <div class="row-badge">${formatNumber(d.total)}</div>
-    </div>
-  `).join('');
-
-  container.innerHTML = `
-    <div class="admin-login-chart-total">مجموع بازه: ${formatNumber(total)} صدور</div>
-    <div class="list-card">${rowsHtml}</div>
-  `;
-}
-
-function renderCenterBugsChart() {
-  const container = document.getElementById('center-bugs-chart');
-  const titleEl = document.getElementById('center-bugs-chart-title');
-  if (!container) return;
-
-  let rows = centerBugRowsAll;
-  let scopeLabel = 'کل نفرات';
-  if (centerBugsSelectedMemberId) {
-    rows = rows.filter(r => r.user_id === centerBugsSelectedMemberId);
-    const m = centerNormalAgentsAll.find(x => x.id === centerBugsSelectedMemberId);
-    scopeLabel = m ? (m.full_name || m.backoffice_id || '—') : 'کل نفرات';
-  }
-  if (titleEl) titleEl.textContent = `تعداد خطا — ${scopeLabel}`;
-
-  if (rows.length === 0) {
-    container.innerHTML = '<div class="admin-group-empty">خطایی برای این بازه ثبت نشده است</div>';
-    return;
-  }
-
-  const bySort = new Map();
-  rows.forEach(r => {
-    const sortKey = Number(r.check_date_sort) || 0;
-    if (!bySort.has(sortKey)) bySort.set(sortKey, { jalali: r.check_date_jalali, total: 0 });
-    bySort.get(sortKey).total += 1;
-  });
-
-  const sortedDays = Array.from(bySort.entries()).sort((a, b) => a[0] - b[0]);
-  const total = sortedDays.reduce((sum, [, d]) => sum + d.total, 0);
-
-  const rowsHtml = sortedDays.map(([, d]) => `
-    <div class="row-item">
-      <div class="row-date">${toJalaliDisplay(d.jalali)}</div>
-      <div class="row-badge">${formatNumber(d.total)}</div>
-    </div>
-  `).join('');
-
-  container.innerHTML = `
-    <div class="admin-login-chart-total">مجموع بازه: ${formatNumber(total)} خطا</div>
-    <div class="list-card">${rowsHtml}</div>
-  `;
 }
 
 function renderCenterCenterAgentDetail() {
@@ -4323,19 +4239,280 @@ function renderCenterCenterAgentDetail() {
   `;
 }
 
+// ===== فیلتر تاریخ پنل سنتر (تقویم شمسی؛ از همون استایل و توابع کمکی فیلتر ازکی استفاده می‌کنه) =====
+function centerFmtDate(t) { return `${t[0]}/${pad2(t[1])}/${pad2(t[2])}`; }
+function centerSortKey(t) { return t[0] * 10000 + t[1] * 100 + t[2]; }
+
+function centerSetDate(key, t) {
+  centerFilterState[key] = t;
+  document.getElementById(`center-${key}-text`).textContent = faDigits(centerFmtDate(t));
+}
+
+function centerCalRender(key) {
+  const pop = document.getElementById(`center-${key}-cal`);
+  let [vy, vm] = centerCalView[key];
+  const sel = centerFilterState[key];
+  const today = tehranTodayJalali();
+  const len = azkiJalaliMonthLength(vy, vm);
+  const offset = azkiWeekdayIndex(vy, vm, 1);
+
+  const yMin = Math.min(today[0] - 4, vy), yMax = Math.max(today[0] + 1, vy);
+  let yearOpts = '';
+  for (let y = yMin; y <= yMax; y++) yearOpts += `<option value="${y}"${y === vy ? ' selected' : ''}>${faDigits(y)}</option>`;
+  const monthOpts = JALALI_MONTHS_FA.map((n, i) => `<option value="${i + 1}"${i + 1 === vm ? ' selected' : ''}>${n}</option>`).join('');
+
+  let cells = '';
+  for (let i = 0; i < offset; i++) cells += '<span></span>';
+  for (let d = 1; d <= len; d++) {
+    const isSel = sel && sel[0] === vy && sel[1] === vm && sel[2] === d;
+    const isToday = today[0] === vy && today[1] === vm && today[2] === d;
+    cells += `<button type="button" class="azki-cal-day${isSel ? ' sel' : ''}${isToday ? ' today' : ''}" data-day="${d}">${faDigits(d)}</button>`;
+  }
+
+  pop.innerHTML = `
+    <div class="azki-cal-head">
+      <button type="button" class="azki-cal-nav" data-nav="-1" aria-label="ماه قبل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
+      <select data-role="m" aria-label="ماه">${monthOpts}</select>
+      <select data-role="y" aria-label="سال">${yearOpts}</select>
+      <button type="button" class="azki-cal-nav" data-nav="1" aria-label="ماه بعد"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg></button>
+    </div>
+    <div class="azki-cal-grid">
+      ${AZKI_WEEKDAYS.map(w => `<span class="azki-cal-wd">${w}</span>`).join('')}
+      ${cells}
+    </div>
+    <div class="azki-pop-foot">
+      <button type="button" class="sm-btn" data-today="1">امروز</button>
+      <button type="button" class="sm-btn" data-close="1">بستن</button>
+    </div>`;
+}
+
+function centerOpenCal(key) {
+  const pop = document.getElementById(`center-${key}-cal`);
+  const willOpen = pop.hidden;
+  azkiClosePops(pop.id);
+  if (!willOpen) { pop.hidden = true; return; }
+  const cur = centerFilterState[key] || tehranTodayJalali();
+  centerCalView[key] = [cur[0], cur[1]];
+  centerCalRender(key);
+  pop.hidden = false;
+  azkiPlacePop(pop);
+}
+
+function centerBindCal(key) {
+  const pop = document.getElementById(`center-${key}-cal`);
+  document.getElementById(`center-${key}-btn`).addEventListener('click', () => centerOpenCal(key));
+
+  pop.addEventListener('click', e => {
+    const nav = e.target.closest('[data-nav]');
+    const day = e.target.closest('[data-day]');
+    if (nav) {
+      let [vy, vm] = centerCalView[key];
+      vm += parseInt(nav.dataset.nav, 10);
+      if (vm < 1) { vm = 12; vy--; } else if (vm > 12) { vm = 1; vy++; }
+      centerCalView[key] = [vy, vm];
+      centerCalRender(key);
+    } else if (day) {
+      const [vy, vm] = centerCalView[key];
+      centerSetDate(key, [vy, vm, parseInt(day.dataset.day, 10)]);
+      pop.hidden = true;
+      centerApplyRange();
+    } else if (e.target.closest('[data-today]')) {
+      centerSetDate(key, tehranTodayJalali());
+      pop.hidden = true;
+      centerApplyRange();
+    } else if (e.target.closest('[data-close]')) {
+      pop.hidden = true;
+    }
+  });
+  pop.addEventListener('change', e => {
+    const role = e.target.dataset.role;
+    if (!role) return;
+    const v = parseInt(e.target.value, 10);
+    if (role === 'm') centerCalView[key][1] = v; else centerCalView[key][0] = v;
+    centerCalRender(key);
+  });
+}
+
+function centerApplyRange() {
+  const errEl = document.getElementById('center-filter-error');
+  const f = centerFilterState.from, to = centerFilterState.to;
+  if (!f || !to) return;
+  if (centerSortKey(f) > centerSortKey(to)) {
+    errEl.textContent = 'تاریخ شروع نباید بعد از تاریخ پایان باشد.';
+    return;
+  }
+  const days = (Date.parse(jalaliToGregorian(to[0], to[1], to[2])) - Date.parse(jalaliToGregorian(f[0], f[1], f[2]))) / 86400000 + 1;
+  if (days > 366) {
+    errEl.textContent = 'حداکثر بازه‌ی قابل نمایش یک سال است.';
+    return;
+  }
+  errEl.textContent = '';
+  if (centerViewId) loadCenterData();
+}
+
+function initCenterFilter() {
+  const def = currentPeriodBounds();
+  const st = parseJalaliParts(def.startLabel), en = parseJalaliParts(def.endLabel);
+  centerSetDate('from', [st.jy, st.jm, st.jd]);
+  centerSetDate('to', [en.jy, en.jm, en.jd]);
+  centerBindCal('from');
+  centerBindCal('to');
+  document.getElementById('center-filter-reset').addEventListener('click', () => {
+    const d = currentPeriodBounds();
+    const s = parseJalaliParts(d.startLabel), e = parseJalaliParts(d.endLabel);
+    centerSetDate('from', [s.jy, s.jm, s.jd]);
+    centerSetDate('to', [e.jy, e.jm, e.jd]);
+    centerApplyRange();
+  });
+}
+
+initCenterFilter();
+
+// ===== نمایش تعداد صدور و خطای کارشناس‌های اساین‌شده به سنتر =====
+function centerAgentDisplayName(m) { return m.full_name || m.backoffice_id || '—'; }
+
+function renderCenterTargets() {
+  const listEl = document.getElementById('center-list');
+  if (!listEl) return;
+  const agents = centerNormalAgentsAll;
+
+  if (!agents.length) {
+    listEl.innerHTML = '<div class="empty-state">هنوز نیرویی به شما اساین نشده است</div>';
+    document.getElementById('center-period-total').textContent = '۰';
+    document.getElementById('center-agent-count').textContent = '۰';
+    return;
+  }
+
+  const rowsByUser = {};
+  centerTargetRowsAll.forEach(r => { (rowsByUser[r.agent_id] = rowsByUser[r.agent_id] || []).push(r); });
+  const bugsByUser = {};
+  centerBugRowsAll.forEach(b => { (bugsByUser[b.user_id] = bugsByUser[b.user_id] || []).push(b); });
+
+  let total = 0;
+  const items = agents.map(m => {
+    const myRows = sortRowsByDateAsc(rowsByUser[m.id] || []);
+    const myBugs = bugsByUser[m.id] || [];
+    const myTotal = myRows.reduce((sum, r) => sum + (Number(r.target_count) || 0), 0);
+    total += myTotal;
+    return { m, myRows, myBugs, myTotal };
+  });
+  items.sort((a, b) => b.myTotal - a.myTotal || centerAgentDisplayName(a.m).localeCompare(centerAgentDisplayName(b.m), 'fa'));
+
+  document.getElementById('center-period-total').textContent = formatNumber(total);
+  document.getElementById('center-agent-count').textContent = formatNumber(agents.length);
+
+  const q = (document.getElementById('center-member-search')?.value || '').trim().toLowerCase();
+  const shown = q
+    ? items.filter(it => (it.m.backoffice_id || '').toLowerCase().includes(q) || (it.m.full_name || '').toLowerCase().includes(q))
+    : items;
+
+  listEl.innerHTML = shown.length
+    ? buildMemberItemsHtml(shown)
+    : '<div class="empty-state">کارشناسی با این مشخصات پیدا نشد</div>';
+  bindExpandableToggles(listEl);
+}
+
+function renderCenterBugs() {
+  const listEl = document.getElementById('center-bugs-list');
+  if (!listEl) return;
+  const byId = {};
+  centerNormalAgentsAll.forEach(m => { byId[m.id] = m; });
+
+  centerBugsFlat = centerBugRowsAll.map(b => {
+    const m = byId[b.user_id];
+    return { ...b, _memberName: m ? centerAgentDisplayName(m) : '—', _memberUser: m ? (m.backoffice_id || '') : '' };
+  });
+  centerBugsFlat.sort((a, b) => (Number(b.check_date_sort) || 0) - (Number(a.check_date_sort) || 0));
+
+  const q = (document.getElementById('center-bugs-search')?.value || '').trim().toLowerCase();
+  const shown = q
+    ? centerBugsFlat.filter(r => (r._memberName || '').toLowerCase().includes(q) || (r._memberUser || '').toLowerCase().includes(q))
+    : centerBugsFlat;
+  renderTeamBugsList(shown, 'center-bugs-list');
+}
+
+async function loadCenterData() {
+  const seq = ++centerLoadSeq;
+  const listEl = document.getElementById('center-list');
+  const bugsListEl = document.getElementById('center-bugs-list');
+  const f = centerFilterState.from, to = centerFilterState.to;
+  if (!f || !to) return;
+  const startSort = centerSortKey(f), endSort = centerSortKey(to);
+
+  const label = `${centerViewName ? `سنتر: ${centerViewName} — ` : ''}بازه‌ی انتخابی: ${centerFmtDate(f)} تا ${centerFmtDate(to)}`;
+  document.getElementById('center-period-label').textContent = label;
+  document.getElementById('center-bugs-period-label').textContent = label;
+
+  const agentIds = centerNormalAgentsAll.map(a => a.id);
+  if (agentIds.length === 0) {
+    centerTargetRowsAll = [];
+    centerBugRowsAll = [];
+    renderCenterTargets();
+    renderCenterBugs();
+    return;
+  }
+
+  const loading = '<div class="loading-state">در حال بارگذاری...</div>';
+  listEl.innerHTML = loading;
+  bugsListEl.innerHTML = loading;
+
+  const [targetsRes, bugsRes] = await Promise.all([
+    fetchAllRows((from, toIdx) =>
+      supabaseClient
+        .from(TABLE_TARGETS)
+        .select('agent_id, report_date_jalali, report_date_sort, target_count')
+        .in('agent_id', agentIds)
+        .gte('report_date_sort', startSort)
+        .lte('report_date_sort', endSort)
+        .order('report_date_sort', { ascending: true })
+        .order('agent_id', { ascending: true })
+        .range(from, toIdx)
+    ),
+    fetchAllRows((from, toIdx) =>
+      supabaseClient
+        .from(TABLE_BUGS)
+        .select('*')
+        .in('user_id', agentIds)
+        .gte('check_date_sort', startSort)
+        .lte('check_date_sort', endSort)
+        .order('check_date_sort', { ascending: false })
+        .order('user_id', { ascending: true })
+        .range(from, toIdx)
+    )
+  ]);
+
+  if (seq !== centerLoadSeq) return; // یه فیلتر جدیدتر زده شده؛ نتیجه‌ی این درخواست کنار می‌ره
+
+  if (targetsRes.error) {
+    listEl.innerHTML = `<div class="empty-state">خطا در دریافت تارگت‌ها: ${targetsRes.error.message}</div>`;
+    document.getElementById('center-period-total').textContent = '—';
+  } else {
+    centerTargetRowsAll = targetsRes.data || [];
+  }
+
+  if (bugsRes.error) {
+    bugsListEl.innerHTML = `<div class="empty-state">خطا در دریافت خطاها: ${bugsRes.error.message}</div>`;
+    centerBugRowsAll = [];
+  } else {
+    centerBugRowsAll = bugsRes.data || [];
+    renderCenterBugs();
+  }
+
+  if (!targetsRes.error) renderCenterTargets();
+}
+
 async function loadCenterView(centerId) {
-  const chartContainer = document.getElementById('center-chart');
-  const memberListEl = document.getElementById('center-member-list');
-  const bugsChartContainer = document.getElementById('center-bugs-chart');
-  const bugsMemberListEl = document.getElementById('center-bugs-member-list');
+  centerViewId = centerId;
+  const listEl = document.getElementById('center-list');
+  const bugsListEl = document.getElementById('center-bugs-list');
   const centerAgentsListEl = document.getElementById('center-center-agents-list');
-  const period = currentPeriodBounds();
 
   const { data: myProfile } = await supabaseClient
     .from(TABLE_PROFILES)
     .select('full_name')
     .eq('id', centerId)
     .single();
+  centerViewName = myProfile ? (myProfile.full_name || '') : '';
 
   // نفرات اساین‌شده به این سنتر، از جدول رابطه‌ای center_agents
   const { data: myAgentLinks, error: myAgentLinksError } = await fetchAllRows((from, to) =>
@@ -4349,18 +4526,17 @@ async function loadCenterView(centerId) {
   const myAgentIds = (myAgentLinks || []).map(l => l.agent_id).filter(Boolean);
 
   if (myAgentLinksError || myAgentIds.length === 0) {
-    const msg = '<div class="admin-group-empty">هنوز نیرویی به شما اساین نشده است</div>';
-    document.getElementById('center-period-label').textContent = myProfile ? `سنتر: ${myProfile.full_name}` : '';
-    chartContainer.innerHTML = msg;
-    bugsChartContainer.innerHTML = msg;
-    memberListEl.innerHTML = msg;
-    bugsMemberListEl.innerHTML = msg;
+    const msg = '<div class="empty-state">هنوز نیرویی به شما اساین نشده است</div>';
+    const label = centerViewName ? `سنتر: ${centerViewName}` : '';
+    document.getElementById('center-period-label').textContent = label;
+    document.getElementById('center-bugs-period-label').textContent = label;
+    document.getElementById('center-period-total').textContent = '۰';
+    document.getElementById('center-agent-count').textContent = '۰';
+    listEl.innerHTML = msg;
+    bugsListEl.innerHTML = msg;
     if (centerAgentsListEl) centerAgentsListEl.innerHTML = msg;
     return;
   }
-
-  document.getElementById('center-period-label').textContent =
-    `سنتر: ${myProfile ? myProfile.full_name : '—'} — بازه‌ی جاری: ${period.startLabel} تا ${period.endLabel}`;
 
   const { data: allAssignedMembers, error: agentsError } = await fetchAllRows((from, to) =>
     supabaseClient
@@ -4372,62 +4548,14 @@ async function loadCenterView(centerId) {
   );
 
   if (agentsError) {
-    const msg = `<div class="admin-group-empty">خطا در دریافت کارشناسان: ${agentsError.message}</div>`;
-    chartContainer.innerHTML = msg;
-    bugsChartContainer.innerHTML = msg;
+    const msg = `<div class="empty-state">خطا در دریافت کارشناسان: ${agentsError.message}</div>`;
+    listEl.innerHTML = msg;
+    bugsListEl.innerHTML = msg;
     return;
   }
 
   centerNormalAgentsAll = (allAssignedMembers || []).filter(m => m.role === 'agent');
-  const agentIds = centerNormalAgentsAll.map(a => a.id);
-
-  let targetRows = [];
-  let bugRows = [];
-
-  if (agentIds.length > 0) {
-    const { data: rows, error: rowsError } = await fetchAllRows((from, to) =>
-      supabaseClient
-        .from(TABLE_TARGETS)
-        .select('agent_id, report_date_jalali, report_date_sort, target_count')
-        .in('agent_id', agentIds)
-        .gte('report_date_sort', period.startSort)
-        .lte('report_date_sort', period.endSort)
-        .order('report_date_sort', { ascending: true })
-        .range(from, to)
-    );
-
-    if (rowsError) {
-      chartContainer.innerHTML = `<div class="admin-group-empty">خطا در دریافت تارگت‌ها: ${rowsError.message}</div>`;
-    } else {
-      targetRows = rows || [];
-    }
-
-    const { data: bRows, error: bugRowsError } = await fetchAllRows((from, to) =>
-      supabaseClient
-        .from(TABLE_BUGS)
-        .select('user_id, check_date_jalali, check_date_sort')
-        .in('user_id', agentIds)
-        .gte('check_date_sort', period.startSort)
-        .lte('check_date_sort', period.endSort)
-        .range(from, to)
-    );
-
-    if (bugRowsError) {
-      bugsChartContainer.innerHTML = `<div class="admin-group-empty">خطا در دریافت خطاها: ${bugRowsError.message}</div>`;
-    } else {
-      bugRows = bRows || [];
-    }
-  }
-
-  centerTargetRowsAll = targetRows;
-  centerSelectedMemberId = null;
-  centerBugRowsAll = bugRows;
-  centerBugsSelectedMemberId = null;
-
-  refreshCenterMemberList();
-  renderCenterChart();
-  refreshCenterBugsMemberList();
-  renderCenterBugsChart();
+  loadCenterData();
 
   centerCenterAgentsAll = (allAssignedMembers || []).filter(m => m.role === 'center_agent');
   centerSelectedCenterAgentId = null;
@@ -4457,25 +4585,18 @@ async function loadCenterView(centerId) {
 }
 
 const centerMemberSearchEl = document.getElementById('center-member-search');
-if (centerMemberSearchEl) {
-  centerMemberSearchEl.addEventListener('input', refreshCenterMemberList);
-}
+if (centerMemberSearchEl) centerMemberSearchEl.addEventListener('input', renderCenterTargets);
 
-const centerBugsMemberSearchEl = document.getElementById('center-bugs-member-search');
-if (centerBugsMemberSearchEl) {
-  centerBugsMemberSearchEl.addEventListener('input', refreshCenterBugsMemberList);
-}
+const centerBugsSearchEl = document.getElementById('center-bugs-search');
+if (centerBugsSearchEl) centerBugsSearchEl.addEventListener('input', renderCenterBugs);
 
 const centerCenterAgentsSearchEl = document.getElementById('center-center-agents-search');
 if (centerCenterAgentsSearchEl) {
   centerCenterAgentsSearchEl.addEventListener('input', refreshCenterCenterAgentsList);
 }
 
-
-
-
-function renderTeamBugsList(list) {
-  const teamBugsContainer = document.getElementById('team-bugs-list');
+function renderTeamBugsList(list, containerId = 'team-bugs-list') {
+  const teamBugsContainer = document.getElementById(containerId);
   if (!list || list.length === 0) {
     teamBugsContainer.innerHTML = '<div class="empty-state">خطایی با این مشخصات پیدا نشد</div>';
     return;
@@ -4533,7 +4654,7 @@ async function loadTargets(userId) {
   const periodTotal = data.reduce((sum, r) => sum + (Number(r.target_count) || 0), 0);
   document.getElementById('period-total').textContent = formatNumber(periodTotal);
 
-  container.innerHTML = data.map(r => `
+  container.innerHTML = sortRowsByDateAsc(data).map(r => `
     <div class="row-item">
       <div class="row-date">${toJalaliDisplay(r.report_date_jalali)}</div>
       <div class="row-badge">${r.target_count != null ? formatNumber(r.target_count) : '—'}</div>
