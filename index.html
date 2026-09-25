@@ -1454,7 +1454,7 @@
       </button>
       <button class="tab-btn" data-team-tab="azki-compare" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
-        مقایسه شرکت‌ها
+        مقایسه درصد صدور
       </button>
     </div>
 
@@ -1529,9 +1529,6 @@
           <div class="value" id="center-agent-count">—</div>
         </div>
       </div>
-      <div class="team-bugs-search-wrap">
-        <input type="text" id="center-member-search" class="team-bugs-search" placeholder="جستجو بر اساس نام یا یوزر بک‌آفیس کارشناس...">
-      </div>
       <div class="list-card" id="center-list">
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
@@ -1539,9 +1536,6 @@
 
     <div class="panel" id="panel-center-bugs">
       <div class="period-label" id="center-bugs-period-label"></div>
-      <div class="team-bugs-search-wrap">
-        <input type="text" id="center-bugs-search" class="team-bugs-search" placeholder="جستجو بر اساس نام یا یوزر بک‌آفیس کارشناس...">
-      </div>
       <div class="list-card" id="center-bugs-list">
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
@@ -1571,7 +1565,7 @@
       <div class="tabs" id="supervisor-tabs">
         <button class="tab-btn active" data-sup-tab="targets" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-          تعداد صدور
+          صدور
         </button>
         <button class="tab-btn" data-sup-tab="map" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
@@ -1587,7 +1581,7 @@
         </button>
         <button class="tab-btn" data-sup-tab="azki-compare" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
-          مقایسه شرکت‌ها
+          مقایسه درصد صدور
         </button>
       </div>
 
@@ -4461,13 +4455,8 @@ function renderCenterTargets() {
   document.getElementById('center-period-total').textContent = formatNumber(total);
   document.getElementById('center-agent-count').textContent = formatNumber(agents.length);
 
-  const q = (document.getElementById('center-member-search')?.value || '').trim().toLowerCase();
-  const shown = q
-    ? items.filter(it => (it.m.backoffice_id || '').toLowerCase().includes(q) || (it.m.full_name || '').toLowerCase().includes(q))
-    : items;
-
-  listEl.innerHTML = shown.length
-    ? buildMemberItemsHtml(shown)
+  listEl.innerHTML = items.length
+    ? buildMemberItemsHtml(items)
     : '<div class="empty-state">کارشناسی با این مشخصات پیدا نشد</div>';
   bindExpandableToggles(listEl);
 }
@@ -4484,11 +4473,7 @@ function renderCenterBugs() {
   });
   centerBugsFlat.sort((a, b) => (Number(b.check_date_sort) || 0) - (Number(a.check_date_sort) || 0));
 
-  const q = (document.getElementById('center-bugs-search')?.value || '').trim().toLowerCase();
-  const shown = q
-    ? centerBugsFlat.filter(r => (r._memberName || '').toLowerCase().includes(q) || (r._memberUser || '').toLowerCase().includes(q))
-    : centerBugsFlat;
-  renderTeamBugsList(shown, 'center-bugs-list');
+  renderTeamBugsList(centerBugsFlat, 'center-bugs-list');
 }
 
 async function loadCenterData() {
@@ -4651,12 +4636,6 @@ async function loadCenterView(centerId) {
   refreshCenterCenterAgentsList();
   renderCenterCenterAgentDetail();
 }
-
-const centerMemberSearchEl = document.getElementById('center-member-search');
-if (centerMemberSearchEl) centerMemberSearchEl.addEventListener('input', renderCenterTargets);
-
-const centerBugsSearchEl = document.getElementById('center-bugs-search');
-if (centerBugsSearchEl) centerBugsSearchEl.addEventListener('input', renderCenterBugs);
 
 const centerCenterAgentsSearchEl = document.getElementById('center-center-agents-search');
 if (centerCenterAgentsSearchEl) {
