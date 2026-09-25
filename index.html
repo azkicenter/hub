@@ -116,6 +116,13 @@
     -ms-user-select: none;
     user-select: none;
   }
+  /* برای نقش سرپرست، انتخاب متن (برای کپی) آزاده؛ کلاس allow-select روی <html> بعد از لاگین ست می‌شه */
+  html.allow-select, html.allow-select body, html.allow-select * {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
   input, textarea {
     -webkit-user-select: text;
     -moz-user-select: text;
@@ -1454,7 +1461,7 @@
       </button>
       <button class="tab-btn" data-team-tab="azki-compare" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
-        مقایسه درصد صدور سنتر
+        مقایسه درصد صدور
       </button>
     </div>
 
@@ -1776,11 +1783,17 @@
 
 <script>
 // --- محافظت ساده در برابر کپی (فقط بازدارنده، امنیت واقعی نیست) ---
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('copy', e => e.preventDefault());
-document.addEventListener('cut', e => e.preventDefault());
-document.addEventListener('dragstart', e => e.preventDefault());
+// برای نقش سرپرست (role = supervisor) این محافظت اصلاً فعال نمی‌شه: هم راست‌کلیک آزاده هم کپی/کات.
+// تشخیص نقش بعد از لاگین و خوندن پروفایل انجام می‌شه (currentUserRole)، برای همین این محافظت با
+// یه تاخیر کوتاه فعال می‌شه تا currentUserRole ست شده باشه؛ قبل از تعیین نقش (یعنی تو صفحه‌ی لاگین) هم فعاله.
+function copyProtectionEnabled() { return currentUserRole !== 'supervisor'; }
+
+document.addEventListener('contextmenu', e => { if (copyProtectionEnabled()) e.preventDefault(); });
+document.addEventListener('copy', e => { if (copyProtectionEnabled()) e.preventDefault(); });
+document.addEventListener('cut', e => { if (copyProtectionEnabled()) e.preventDefault(); });
+document.addEventListener('dragstart', e => { if (copyProtectionEnabled()) e.preventDefault(); });
 document.addEventListener('selectstart', e => {
+  if (!copyProtectionEnabled()) return;
   const tag = (e.target && e.target.tagName) || '';
   if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
 });
@@ -1793,6 +1806,7 @@ document.addEventListener('keydown', e => {
   // Ctrl/Cmd + U (view source), S (save), P (print)
   if ((e.ctrlKey || e.metaKey) && ['u', 's', 'p'].includes(k)) { e.preventDefault(); return; }
   // Ctrl/Cmd + C/X (copy/cut) outside inputs
+  if (!copyProtectionEnabled()) return;
   if ((e.ctrlKey || e.metaKey) && ['c', 'x'].includes(k)) {
     const tag = (e.target && e.target.tagName) || '';
     if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
@@ -3274,6 +3288,7 @@ async function enterApp(user) {
   const isCenterAgent = !profileError && profile && profile.role === 'center_agent';
   const isSupervisor = !profileError && profile && profile.role === 'supervisor';
   currentUserRole = (!profileError && profile) ? profile.role : null;
+  document.documentElement.classList.toggle('allow-select', currentUserRole === 'supervisor');
 
   startPresenceHeartbeat();
 
