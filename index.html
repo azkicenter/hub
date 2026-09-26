@@ -447,6 +447,11 @@
     margin-bottom: 20px;
     flex-wrap: wrap;
   }
+  .azki-payroll-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+  }
   .summary-card {
     background: linear-gradient(135deg, rgba(22,86,245,.62) 0%, rgba(23,169,255,.62) 100%);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
@@ -1632,6 +1637,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
           مقایسه درصد صدور
         </button>
+        <button class="tab-btn" data-sup-tab="azki-payroll" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+          محاسبه حقوق
+        </button>
         <button class="tab-btn" data-sup-tab="users" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
           کاربران
@@ -1752,6 +1761,29 @@
       <div id="sup-view-azki-compare" style="display:none;">
         <div class="period-label" id="azki-compare-label"></div>
         <div class="list-card" id="azki-compare-list">
+          <div class="loading-state">در حال بارگذاری...</div>
+        </div>
+      </div>
+
+      <div id="sup-view-azki-payroll" style="display:none;">
+        <div class="period-label" id="azki-payroll-label"></div>
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="label">تعداد سنترها</div>
+            <div class="value" id="azki-payroll-center-count">—</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">مجموع صدور کل سنترها</div>
+            <div class="value" id="azki-payroll-total">—</div>
+          </div>
+        </div>
+        <div class="azki-payroll-actions">
+          <button type="button" class="sm-btn" id="azki-payroll-export">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+            خروجی اکسل
+          </button>
+        </div>
+        <div class="list-card" id="azki-payroll-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
       </div>
@@ -2452,6 +2484,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       $('sup-view-azki-period').style.display = which === 'azki-period' ? '' : 'none';
       $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
       $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
+      $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
       $('sup-view-users').style.display = which === 'users' ? '' : 'none';
       $('azki-filter').style.display = which.startsWith('azki-') ? '' : 'none';
       document.querySelector('main').classList.toggle('sm-wide', which === 'map');
@@ -2459,6 +2492,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       if (which === 'azki-period' && !azkiState.period.loaded) loadAzkiPeriodView();
       if (which === 'azki-centers' && !azkiState.centers.loaded) loadAzkiCentersView();
       if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
+      if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
       if (which === 'users' && !usersViewLoaded) { usersViewLoaded = true; loadUsersList(); }
       if (window.refreshGlassReveals) window.refreshGlassReveals();
     });
@@ -2643,6 +2677,7 @@ const azkiState = {
   period:  { loaded: false, rows: [] },
   centers: { loaded: false, rows: [] },
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
+  payroll: { loaded: false, rows: [] },
 };
 
 function faDigits(v) { return String(v).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
@@ -2934,6 +2969,107 @@ function renderAzkiCentersView() {
   bindExpandableToggles(container);
 }
 
+// ---------- تب «محاسبه حقوق» (مجموع صدور هر سنتر، بدون تفکیک کارشناس و بدون تفکیک روز) ----------
+async function loadAzkiPayrollView() {
+  if (!azkiAllowed()) return;
+  const bounds = getAzkiBounds();
+  document.getElementById('azki-payroll-label').textContent = azkiRangeText(bounds);
+
+  const { data, error } = await fetchAzkiBreakdownRows(azkiActiveScopes(), bounds);
+  if (bounds !== azkiState.bounds) return;
+  if (error) {
+    document.getElementById('azki-payroll-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
+    return;
+  }
+  azkiState.payroll.rows = data || [];
+  azkiState.payroll.loaded = true;
+  renderAzkiPayrollView();
+}
+
+function renderAzkiPayrollView() {
+  const rows = azkiState.payroll.rows;
+  const container = document.getElementById('azki-payroll-list');
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
+    document.getElementById('azki-payroll-center-count').textContent = '۰';
+    document.getElementById('azki-payroll-total').textContent = '۰';
+    return;
+  }
+
+  // جمع کل صدور هر سنتر در کل بازه‌ی انتخابی، بدون تفکیک روز/هفته/ماه و بدون تفکیک کارشناس
+  const totalsByCenter = {};
+  rows.forEach(r => {
+    const name = r.center_name || 'نامشخص';
+    totalsByCenter[name] = (totalsByCenter[name] || 0) + (r.orders_count || 0);
+  });
+  const orderedCenters = Object.keys(totalsByCenter).sort((a, b) => totalsByCenter[b] - totalsByCenter[a]);
+  const grandTotal = orderedCenters.reduce((s, name) => s + totalsByCenter[name], 0);
+
+  document.getElementById('azki-payroll-center-count').textContent = formatNumber(orderedCenters.length);
+  document.getElementById('azki-payroll-total').textContent = formatNumber(grandTotal);
+
+  container.innerHTML = orderedCenters.map(centerName => `
+    <div class="row-item">
+      <div class="row-date">${centerName}</div>
+      <div class="row-main">تعداد صدور برای واریزی: ${formatNumber(totalsByCenter[centerName])}</div>
+      <div class="row-badge">${formatNumber(totalsByCenter[centerName])}</div>
+    </div>`).join('');
+}
+
+// خروجی اکسل تب «محاسبه حقوق»: کتابخانه‌ی SheetJS فقط موقع کلیک روی دکمه لود می‌شه (مثل Leaflet برای نقشه)
+let xlsxLibPromise = null;
+function ensureXlsxLib() {
+  if (window.XLSX) return Promise.resolve();
+  if (!xlsxLibPromise) {
+    xlsxLibPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('load failed: xlsx lib'));
+      document.head.appendChild(s);
+    });
+    xlsxLibPromise.catch(() => { xlsxLibPromise = null; });
+  }
+  return xlsxLibPromise;
+}
+
+async function exportAzkiPayrollExcel() {
+  const btn = document.getElementById('azki-payroll-export');
+  if (!azkiState.payroll.loaded || !azkiState.payroll.rows.length) return;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'در حال آماده‌سازی...';
+  try {
+    await ensureXlsxLib();
+    const totalsByCenter = {};
+    azkiState.payroll.rows.forEach(r => {
+      const name = r.center_name || 'نامشخص';
+      totalsByCenter[name] = (totalsByCenter[name] || 0) + (r.orders_count || 0);
+    });
+    const orderedCenters = Object.keys(totalsByCenter).sort((a, b) => totalsByCenter[b] - totalsByCenter[a]);
+    const grandTotal = orderedCenters.reduce((s, name) => s + totalsByCenter[name], 0);
+
+    const bounds = azkiState.bounds;
+    const aoa = [
+      ['نام سنتر', 'تعداد صدور (واریزی)'],
+      ...orderedCenters.map(name => [name, totalsByCenter[name]]),
+      ['جمع کل', grandTotal],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 32 }, { wch: 20 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'محاسبه حقوق');
+    const fname = `محاسبه-حقوق_${bounds.startLabel.replace(/\//g, '-')}_تا_${bounds.endLabel.replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(wb, fname);
+  } catch (e) {
+    alert('خروجی اکسل با خطا مواجه شد: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+document.getElementById('azki-payroll-export').addEventListener('click', exportAzkiPayrollExcel);
+
 // ---------- تب «مقایسه شرکت‌ها» ----------
 async function loadAzkiCompareView() {
   if (!azkiAllowed()) return;
@@ -3062,6 +3198,7 @@ function azkiRenderLoadedViews() {
   if (azkiState.period.loaded) renderAzkiPeriodView();
   if (azkiState.centers.loaded) renderAzkiCentersView();
   if (azkiState.compare.loaded) renderAzkiCompareView();
+  if (azkiState.payroll.loaded) renderAzkiPayrollView();
 }
 
 function azkiApplyRange() {
@@ -3087,7 +3224,8 @@ function azkiApplyRange() {
   azkiState.period.loaded = false;
   azkiState.centers.loaded = false;
   azkiState.compare.loaded = false;
-  ['azki-period-list', 'azki-centers-list', 'azki-compare-list'].forEach(id => {
+  azkiState.payroll.loaded = false;
+  ['azki-period-list', 'azki-centers-list', 'azki-compare-list', 'azki-payroll-list'].forEach(id => {
     document.getElementById(id).innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
   });
 
@@ -3095,6 +3233,7 @@ function azkiApplyRange() {
   if (tab === 'azki-period') loadAzkiPeriodView();
   else if (tab === 'azki-centers') loadAzkiCentersView();
   else if (tab === 'azki-compare') loadAzkiCompareView();
+  else if (tab === 'azki-payroll') loadAzkiPayrollView();
 }
 
 let azkiApplyTimer = null;
