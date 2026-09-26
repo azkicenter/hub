@@ -2509,7 +2509,7 @@ const azkiState = {
   period:  { loaded: false, rows: [] },
   centers: { loaded: false, rows: [] },
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
-  payroll: { loaded: false, rows: [] },
+  payroll: { loaded: false, rows: [], slaByCenterName: {} },
 };
 
 function faDigits(v) { return String(v).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
@@ -2817,27 +2817,82 @@ function renderAzkiRateRows() {
     </div>`).join('');
 }
 
-function computeAzkiPayrollCenterData(rows) {
+function computeAzkiPayrollCenterData(rows, slaByCenterName) {
   const byCenter = {};
   rows.forEach(r => {
     const name = r.center_name || 'نامشخص';
-    if (!byCenter[name]) byCenter[name] = { count: 0, octSum: 0, octN: 0 };
-    const c = byCenter[name];
-    c.count += r.orders_count || 0;
-    c.octSum += Number(r.oct_sum_hours) || 0;
-    c.octN += r.oct_n || 0;
+    if (!byCenter[name]) byCenter[name] = { count: 0 };
+    byCenter[name].count += r.orders_count || 0;
   });
   return Object.keys(byCenter)
     .map(name => {
       const c = byCenter[name];
-      // Average is total issuance time over the same order count used for "تعداد صدور"
-      // in this tab (orders_count), not the separate oct_n field, so the average
-      // reflects exactly the orders being paid for.
-      const avgMin = c.count ? round2((c.octSum / c.count) * 60) : null;
+      // Average issuance time comes from the agents' SLA report (daily_targets /
+      // avg_issuance_minutes), matched to this center via center_agents — not
+      // from the azki breakdown report's own time fields.
+      const avgMin = (slaByCenterName && slaByCenterName[name] != null) ? slaByCenterName[name] : null;
       const rate = azkiPayrollRateForAvgMinutes(avgMin);
       return { name, count: c.count, avgMin, rate, amount: rate * c.count };
     })
     .sort((a, b) => b.count - a.count);
+}
+
+// Builds { centerName: avgIssuanceMinutes } from the same SLA source used for
+// agents' "میانگین زمان صدور" elsewhere (daily_targets.avg_issuance_minutes via
+// center_agents). Unlike the team/target views, this does NOT require the agent
+// to have a matching profile row — only that the linked center itself resolves
+// to a name — so agents without a defined profile still count toward their center.
+async function fetchAzkiPayrollCenterSla(bounds) {
+  const { data: centerProfiles, error: centersErr } = await fetchAllRows((from, to) =>
+    supabaseClient.from(TABLE_PROFILES).select('id, full_name').eq('role', 'center').range(from, to)
+  );
+  if (centersErr) return { byCenterName: {}, error: centersErr };
+  const centerNameById = {};
+  (centerProfiles || []).forEach(c => { centerNameById[c.id] = c.full_name || ''; });
+
+  const { data: links, error: linksErr } = await fetchAllRows((from, to) =>
+    supabaseClient.from(TABLE_CENTER_AGENTS).select('center_id, agent_id').range(from, to)
+  );
+  if (linksErr) return { byCenterName: {}, error: linksErr };
+
+  const validLinks = (links || []).filter(l => centerNameById[l.center_id]);
+  const agentIds = [...new Set(validLinks.map(l => l.agent_id).filter(Boolean))];
+  if (!agentIds.length) return { byCenterName: {}, error: null };
+
+  const s = parseJalaliParts(bounds.startLabel);
+  const e = parseJalaliParts(bounds.endLabel);
+  const startSort = s.jy * 10000 + s.jm * 100 + s.jd;
+  const endSort = e.jy * 10000 + e.jm * 100 + e.jd;
+
+  const { data: slaRows, error: slaErr } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_TARGETS)
+      .select('agent_id, report_date_sort, avg_issuance_minutes')
+      .in('agent_id', agentIds)
+      .gte('report_date_sort', startSort)
+      .lte('report_date_sort', endSort)
+      .order('report_date_sort', { ascending: true })
+      .range(from, to)
+  );
+  if (slaErr) return { byCenterName: {}, error: slaErr };
+
+  const agentSla = buildSlaMapFromRows(slaRows || [], startSort) || {};
+
+  const sumByCenter = {};
+  validLinks.forEach(l => {
+    const v = agentSla[l.agent_id];
+    if (v == null) return;
+    const name = centerNameById[l.center_id];
+    if (!sumByCenter[name]) sumByCenter[name] = { sum: 0, n: 0 };
+    sumByCenter[name].sum += v;
+    sumByCenter[name].n += 1;
+  });
+
+  const byCenterName = {};
+  Object.keys(sumByCenter).forEach(name => {
+    byCenterName[name] = round2(sumByCenter[name].sum / sumByCenter[name].n);
+  });
+  return { byCenterName, error: null };
 }
 
 async function loadAzkiPayrollView() {
@@ -2846,13 +2901,18 @@ async function loadAzkiPayrollView() {
   document.getElementById('azki-payroll-label').textContent = azkiRangeText(bounds);
   renderAzkiRateRows();
 
-  const { data, error } = await fetchAzkiBreakdownRows(azkiActiveScopes(), bounds);
+  const [breakdownRes, slaRes] = await Promise.all([
+    fetchAzkiBreakdownRows(azkiActiveScopes(), bounds),
+    fetchAzkiPayrollCenterSla(bounds),
+  ]);
   if (bounds !== azkiState.bounds) return;
-  if (error) {
-    document.getElementById('azki-payroll-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
+  if (breakdownRes.error) {
+    document.getElementById('azki-payroll-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${breakdownRes.error.message}</div>`;
     return;
   }
-  azkiState.payroll.rows = data || [];
+  if (slaRes.error) console.error('خطا در دریافت گزارش SLA کارشناسان:', slaRes.error.message);
+  azkiState.payroll.rows = breakdownRes.data || [];
+  azkiState.payroll.slaByCenterName = slaRes.byCenterName || {};
   azkiState.payroll.loaded = true;
   renderAzkiPayrollView();
 }
@@ -2869,7 +2929,7 @@ function renderAzkiPayrollView() {
     return;
   }
 
-  const centerData = computeAzkiPayrollCenterData(rows);
+  const centerData = computeAzkiPayrollCenterData(rows, azkiState.payroll.slaByCenterName);
   const grandCount = centerData.reduce((s, c) => s + c.count, 0);
   const grandAmount = centerData.reduce((s, c) => s + c.amount, 0);
 
@@ -2912,7 +2972,7 @@ async function exportAzkiPayrollExcel() {
   btn.textContent = 'در حال آماده‌سازی...';
   try {
     await ensureXlsxLib();
-    const centerData = computeAzkiPayrollCenterData(azkiState.payroll.rows);
+    const centerData = computeAzkiPayrollCenterData(azkiState.payroll.rows, azkiState.payroll.slaByCenterName);
     const grandCount = centerData.reduce((s, c) => s + c.count, 0);
     const grandAmount = centerData.reduce((s, c) => s + c.amount, 0);
 
