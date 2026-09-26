@@ -485,48 +485,6 @@
   .summary-card .label { font-size: 16px; color: rgba(255,255,255,.9); margin-bottom: 0; font-weight: 700; position: relative; }
   .summary-card .value { font-size: 30px; font-weight: 800; color: #fff; letter-spacing: -.01em; position: relative; }
 
-  .user-form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px;
-  }
-  .user-form-grid input, .user-form-grid select {
-    height: 42px;
-    padding: 0 12px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--surface);
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 14px;
-  }
-  .user-form-grid .sm-btn { grid-column: span 1; height: 42px; }
-  .user-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--line);
-  }
-  .user-row:last-child { border-bottom: none; }
-  .user-row-info { display: flex; flex-direction: column; gap: 2px; }
-  .user-row-name { font-weight: 700; font-size: 14px; color: var(--ink); }
-  .user-row-meta { font-size: 12px; color: var(--ink-soft); }
-  .user-row-del {
-    border: 1px solid #e0b4b4;
-    background: #fdecea;
-    color: #c0392b;
-    border-radius: 8px;
-    padding: 6px 14px;
-    font-size: 12.5px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .user-row-del:hover { background: #fbdad7; }
-  .user-row-del:disabled { opacity: .5; cursor: default; }
-
   .list-card {
     background: var(--surface);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
@@ -1648,10 +1606,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
           محاسبه حقوق
         </button>
-        <button class="tab-btn" data-sup-tab="users" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
-          کاربران
-        </button>
       </div>
 
       <div id="sup-view-targets">
@@ -1795,29 +1749,6 @@
         </div>
       </div>
 
-      <div id="sup-view-users" style="display:none;">
-        <div class="list-card" id="user-create-card" style="padding:16px;margin-bottom:16px;">
-          <div class="admin-group-title" style="margin-bottom:12px;">افزودن کاربر جدید</div>
-          <div class="user-form-grid">
-            <input type="text" id="user-new-fullname" placeholder="نام و نام خانوادگی">
-            <input type="text" id="user-new-backoffice" placeholder="یوزر بک‌آفیس">
-            <input type="email" id="user-new-email" placeholder="ایمیل ورود" autocomplete="off">
-            <input type="password" id="user-new-password" placeholder="رمز عبور (حداقل ۶ کاراکتر)" autocomplete="new-password">
-            <select id="user-new-role">
-              <option value="agent">کارشناس</option>
-              <option value="center_agent">کارشناس مرکز</option>
-              <option value="center">سنتر</option>
-              <option value="leader">سرگروه</option>
-            </select>
-            <button type="button" class="sm-btn primary" id="user-create-btn">افزودن کاربر</button>
-          </div>
-          <div class="azki-error" id="user-create-msg"></div>
-        </div>
-
-        <div class="list-card" id="user-list">
-          <div class="loading-state">در حال بارگذاری...</div>
-        </div>
-      </div>
     </div>
 
     <div class="panel" id="panel-admin">
@@ -1891,111 +1822,6 @@
 </div>
 
 <script>
-// ===== مدیریت کاربران (فقط پنل سرپرست): افزودن/حذف، از طریق Supabase Edge Function =====
-// این کار مستقیم از مرورگر با کلید anon انجام نمی‌شه (نیاز به کلید سرویس داره)؛
-// یه Edge Function جدا (admin-users) این کار رو با کلید سرویس، سمت سرور انجام می‌ده.
-// قبل از استفاده باید اون فانکشن رو دیپلوی کنی؛ در غیر این‌صورت خطای اتصال می‌بینی.
-const ADMIN_USERS_FN_URL = "https://hbiygeecakpgjnfieyyt.functions.supabase.co/admin-users";
-const MANAGEABLE_ROLE_LABELS = { agent: 'کارشناس', center_agent: 'کارشناس مرکز', center: 'سنتر', leader: 'سرگروه' };
-let usersViewLoaded = false;
-
-async function callAdminUsersFn(payload) {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) throw new Error('نشست شما منقضی شده؛ دوباره وارد شوید.');
-  const res = await fetch(ADMIN_USERS_FN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-    body: JSON.stringify(payload)
-  });
-  let out;
-  try { out = await res.json(); } catch { out = null; }
-  if (!res.ok || !out || out.error) {
-    throw new Error((out && out.error) || `خطای سرور (${res.status})`);
-  }
-  return out;
-}
-
-async function loadUsersList() {
-  const listEl = document.getElementById('user-list');
-  listEl.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
-  const roles = Object.keys(MANAGEABLE_ROLE_LABELS);
-  const { data, error } = await fetchAllRows((from, to) =>
-    supabaseClient
-      .from(TABLE_PROFILES)
-      .select('id, full_name, backoffice_id, role')
-      .in('role', roles)
-      .order('full_name', { ascending: true })
-      .range(from, to)
-  );
-  if (error) {
-    listEl.innerHTML = `<div class="empty-state">خطا در دریافت لیست کاربران: ${error.message}</div>`;
-    return;
-  }
-  if (!data || !data.length) {
-    listEl.innerHTML = '<div class="empty-state">هنوز کاربری ثبت نشده</div>';
-    return;
-  }
-  listEl.innerHTML = data.map(u => `
-    <div class="user-row" data-uid="${u.id}">
-      <div class="user-row-info">
-        <span class="user-row-name">${u.full_name || '—'}</span>
-        <span class="user-row-meta">${u.backoffice_id || '—'} · ${MANAGEABLE_ROLE_LABELS[u.role] || u.role}</span>
-      </div>
-      <button type="button" class="user-row-del" data-del="${u.id}" data-name="${(u.full_name || '').replace(/"/g, '')}">حذف</button>
-    </div>
-  `).join('');
-}
-
-document.getElementById('user-list').addEventListener('click', async e => {
-  const btn = e.target.closest('[data-del]');
-  if (!btn) return;
-  const name = btn.dataset.name || 'این کاربر';
-  if (!confirm(`مطمئنی می‌خوای «${name}» رو حذف کنی؟ این کار برگشت‌ناپذیره.`)) return;
-  btn.disabled = true;
-  btn.textContent = 'در حال حذف...';
-  try {
-    await callAdminUsersFn({ action: 'delete', userId: btn.dataset.del });
-    loadUsersList();
-  } catch (err) {
-    alert('حذف ناموفق بود: ' + err.message);
-    btn.disabled = false;
-    btn.textContent = 'حذف';
-  }
-});
-
-document.getElementById('user-create-btn').addEventListener('click', async () => {
-  const msgEl = document.getElementById('user-create-msg');
-  const btn = document.getElementById('user-create-btn');
-  const payload = {
-    action: 'create',
-    full_name: document.getElementById('user-new-fullname').value.trim(),
-    backoffice_id: document.getElementById('user-new-backoffice').value.trim(),
-    email: document.getElementById('user-new-email').value.trim(),
-    password: document.getElementById('user-new-password').value,
-    role: document.getElementById('user-new-role').value
-  };
-  if (!payload.full_name || !payload.backoffice_id || !payload.email || !payload.password) {
-    msgEl.textContent = 'همه‌ی فیلدها لازم است.';
-    return;
-  }
-  msgEl.textContent = '';
-  btn.disabled = true;
-  btn.textContent = 'در حال افزودن...';
-  try {
-    await callAdminUsersFn(payload);
-    document.getElementById('user-new-fullname').value = '';
-    document.getElementById('user-new-backoffice').value = '';
-    document.getElementById('user-new-email').value = '';
-    document.getElementById('user-new-password').value = '';
-    loadUsersList();
-  } catch (err) {
-    msgEl.textContent = err.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'افزودن کاربر';
-  }
-});
-
 // --- محافظت ساده در برابر کپی (فقط بازدارنده، امنیت واقعی نیست) ---
 // برای نقش سرپرست (role = supervisor) این محافظت اصلاً فعال نمی‌شه: هم راست‌کلیک آزاده هم کپی/کات.
 // تشخیص نقش بعد از لاگین و خوندن پروفایل انجام می‌شه (currentUserRole)، برای همین این محافظت با
@@ -2492,7 +2318,6 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
       $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
       $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
-      $('sup-view-users').style.display = which === 'users' ? '' : 'none';
       $('azki-filter').style.display = which.startsWith('azki-') ? '' : 'none';
       document.querySelector('main').classList.toggle('sm-wide', which === 'map');
       if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
@@ -2500,7 +2325,6 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       if (which === 'azki-centers' && !azkiState.centers.loaded) loadAzkiCentersView();
       if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
       if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
-      if (which === 'users' && !usersViewLoaded) { usersViewLoaded = true; loadUsersList(); }
       if (window.refreshGlassReveals) window.refreshGlassReveals();
     });
   });
