@@ -467,6 +467,32 @@
     justify-content: flex-end;
     margin-bottom: 12px;
   }
+  .azki-rate-card {
+    background: var(--surface);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .azki-rate-title { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 10px; }
+  .azki-rate-rows { display: flex; flex-direction: column; gap: 6px; }
+  .azki-rate-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--surface-tint);
+    font-size: 13px;
+  }
+  .azki-rate-row .azki-rate-range { color: var(--ink-soft); font-weight: 500; }
+  .azki-rate-row .azki-rate-amount { color: var(--accent-strong); font-weight: 800; white-space: nowrap; }
+  .azki-payroll-row .row-main { display: flex; flex-direction: column; gap: 2px; }
+  .azki-payroll-row .row-sub { font-size: 12.5px; color: var(--ink-soft); font-weight: 500; }
   .summary-card {
     background: linear-gradient(135deg, rgba(22,86,245,.62) 0%, rgba(23,169,255,.62) 100%);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
@@ -1742,7 +1768,17 @@
             <div class="label">مجموع صدور کل سنترها</div>
             <div class="value" id="azki-payroll-total">—</div>
           </div>
+          <div class="summary-card">
+            <div class="label">مبلغ کل قابل پرداخت</div>
+            <div class="value" id="azki-payroll-amount">—</div>
+          </div>
         </div>
+
+        <div class="azki-rate-card">
+          <div class="azki-rate-title">نرخ‌ها بابت صدور بیمه‌نامه</div>
+          <div class="azki-rate-rows" id="azki-rate-rows"></div>
+        </div>
+
         <div class="azki-payroll-actions">
           <button type="button" class="sm-btn" id="azki-payroll-export">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
@@ -2755,10 +2791,57 @@ function renderAzkiCentersView() {
   bindExpandableToggles(container);
 }
 
+// Payroll rate tiers based on each center's average issuance time (minutes).
+// A center's average time below the first tier's minimum still uses the first
+// (best) rate, and an average above the last tier's maximum still uses the
+// last (lowest) rate — every center gets exactly one rate.
+const AZKI_PAYROLL_RATE_TIERS = [
+  { min: 20, max: 40,  rate: 400000 },
+  { min: 40, max: 90,  rate: 300000 },
+  { min: 90, max: 180, rate: 200000 },
+];
+function azkiPayrollRateForAvgMinutes(avgMin) {
+  if (avgMin == null) return AZKI_PAYROLL_RATE_TIERS[0].rate;
+  for (const t of AZKI_PAYROLL_RATE_TIERS) {
+    if (avgMin <= t.max) return t.rate;
+  }
+  return AZKI_PAYROLL_RATE_TIERS[AZKI_PAYROLL_RATE_TIERS.length - 1].rate;
+}
+function renderAzkiRateRows() {
+  const el = document.getElementById('azki-rate-rows');
+  if (!el) return;
+  el.innerHTML = AZKI_PAYROLL_RATE_TIERS.map(t => `
+    <div class="azki-rate-row">
+      <span class="azki-rate-range">صدور با میانگین زمانی از ${faDigits(t.min)} دقیقه تا حداکثر ${faDigits(t.max)} دقیقه</span>
+      <span class="azki-rate-amount">${formatNumber(t.rate)} ریال</span>
+    </div>`).join('');
+}
+
+function computeAzkiPayrollCenterData(rows) {
+  const byCenter = {};
+  rows.forEach(r => {
+    const name = r.center_name || 'نامشخص';
+    if (!byCenter[name]) byCenter[name] = { count: 0, octSum: 0, octN: 0 };
+    const c = byCenter[name];
+    c.count += r.orders_count || 0;
+    c.octSum += Number(r.oct_sum_hours) || 0;
+    c.octN += r.oct_n || 0;
+  });
+  return Object.keys(byCenter)
+    .map(name => {
+      const c = byCenter[name];
+      const avgMin = c.octN ? round2((c.octSum / c.octN) * 60) : null;
+      const rate = azkiPayrollRateForAvgMinutes(avgMin);
+      return { name, count: c.count, avgMin, rate, amount: rate * c.count };
+    })
+    .sort((a, b) => b.count - a.count);
+}
+
 async function loadAzkiPayrollView() {
   if (!azkiAllowed()) return;
   const bounds = getAzkiBounds();
   document.getElementById('azki-payroll-label').textContent = azkiRangeText(bounds);
+  renderAzkiRateRows();
 
   const { data, error } = await fetchAzkiBreakdownRows(azkiActiveScopes(), bounds);
   if (bounds !== azkiState.bounds) return;
@@ -2772,31 +2855,33 @@ async function loadAzkiPayrollView() {
 }
 
 function renderAzkiPayrollView() {
+  renderAzkiRateRows();
   const rows = azkiState.payroll.rows;
   const container = document.getElementById('azki-payroll-list');
   if (!rows.length) {
     container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
     document.getElementById('azki-payroll-center-count').textContent = '۰';
     document.getElementById('azki-payroll-total').textContent = '۰';
+    document.getElementById('azki-payroll-amount').textContent = '۰';
     return;
   }
 
-  const totalsByCenter = {};
-  rows.forEach(r => {
-    const name = r.center_name || 'نامشخص';
-    totalsByCenter[name] = (totalsByCenter[name] || 0) + (r.orders_count || 0);
-  });
-  const orderedCenters = Object.keys(totalsByCenter).sort((a, b) => totalsByCenter[b] - totalsByCenter[a]);
-  const grandTotal = orderedCenters.reduce((s, name) => s + totalsByCenter[name], 0);
+  const centerData = computeAzkiPayrollCenterData(rows);
+  const grandCount = centerData.reduce((s, c) => s + c.count, 0);
+  const grandAmount = centerData.reduce((s, c) => s + c.amount, 0);
 
-  document.getElementById('azki-payroll-center-count').textContent = formatNumber(orderedCenters.length);
-  document.getElementById('azki-payroll-total').textContent = formatNumber(grandTotal);
+  document.getElementById('azki-payroll-center-count').textContent = formatNumber(centerData.length);
+  document.getElementById('azki-payroll-total').textContent = formatNumber(grandCount);
+  document.getElementById('azki-payroll-amount').textContent = formatNumber(grandAmount) + ' ریال';
 
-  container.innerHTML = orderedCenters.map(centerName => `
-    <div class="row-item">
-      <div class="row-date">${centerName}</div>
-      <div class="row-main">تعداد صدور برای واریزی: ${formatNumber(totalsByCenter[centerName])}</div>
-      <div class="row-badge">${formatNumber(totalsByCenter[centerName])}</div>
+  container.innerHTML = centerData.map(c => `
+    <div class="row-item azki-payroll-row">
+      <div class="row-date">${c.name}</div>
+      <div class="row-main">
+        <span>تعداد صدور: ${formatNumber(c.count)}</span>
+        <span class="row-sub">میانگین زمان صدور: ${c.avgMin != null ? formatNumber(c.avgMin) + ' دقیقه' : '—'} — نرخ هر صدور: ${formatNumber(c.rate)} ریال</span>
+      </div>
+      <div class="row-badge">${formatNumber(c.amount)} ریال</div>
     </div>`).join('');
 }
 
@@ -2824,22 +2909,18 @@ async function exportAzkiPayrollExcel() {
   btn.textContent = 'در حال آماده‌سازی...';
   try {
     await ensureXlsxLib();
-    const totalsByCenter = {};
-    azkiState.payroll.rows.forEach(r => {
-      const name = r.center_name || 'نامشخص';
-      totalsByCenter[name] = (totalsByCenter[name] || 0) + (r.orders_count || 0);
-    });
-    const orderedCenters = Object.keys(totalsByCenter).sort((a, b) => totalsByCenter[b] - totalsByCenter[a]);
-    const grandTotal = orderedCenters.reduce((s, name) => s + totalsByCenter[name], 0);
+    const centerData = computeAzkiPayrollCenterData(azkiState.payroll.rows);
+    const grandCount = centerData.reduce((s, c) => s + c.count, 0);
+    const grandAmount = centerData.reduce((s, c) => s + c.amount, 0);
 
     const bounds = azkiState.bounds;
     const aoa = [
-      ['نام سنتر', 'تعداد صدور (واریزی)'],
-      ...orderedCenters.map(name => [name, totalsByCenter[name]]),
-      ['جمع کل', grandTotal],
+      ['نام سنتر', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور (ریال)', 'مبلغ قابل پرداخت (ریال)'],
+      ...centerData.map(c => [c.name, c.count, c.avgMin != null ? c.avgMin : '', c.rate, c.amount]),
+      ['جمع کل', grandCount, '', '', grandAmount],
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{ wch: 32 }, { wch: 20 }];
+    ws['!cols'] = [{ wch: 32 }, { wch: 14 }, { wch: 22 }, { wch: 18 }, { wch: 22 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'محاسبه حقوق');
     const fname = `محاسبه-حقوق_${bounds.startLabel.replace(/\//g, '-')}_تا_${bounds.endLabel.replace(/\//g, '-')}.xlsx`;
