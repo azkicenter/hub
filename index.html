@@ -2830,7 +2830,10 @@ function computeAzkiPayrollCenterData(rows) {
   return Object.keys(byCenter)
     .map(name => {
       const c = byCenter[name];
-      const avgMin = c.octN ? round2((c.octSum / c.octN) * 60) : null;
+      // Average is total issuance time over the same order count used for "تعداد صدور"
+      // in this tab (orders_count), not the separate oct_n field, so the average
+      // reflects exactly the orders being paid for.
+      const avgMin = c.count ? round2((c.octSum / c.count) * 60) : null;
       const rate = azkiPayrollRateForAvgMinutes(avgMin);
       return { name, count: c.count, avgMin, rate, amount: rate * c.count };
     })
