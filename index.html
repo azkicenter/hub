@@ -493,6 +493,7 @@
   .azki-rate-row .azki-rate-amount { color: var(--accent-strong); font-weight: 800; white-space: nowrap; }
   .azki-payroll-row .row-main { display: flex; flex-direction: column; gap: 2px; }
   .azki-payroll-row .row-sub { font-size: 12.5px; color: var(--ink-soft); font-weight: 500; }
+  .azki-payroll-row .row-date { font-weight: 800; color: var(--ink); }
   .summary-card {
     background: linear-gradient(135deg, rgba(22,86,245,.62) 0%, rgba(23,169,255,.62) 100%);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
@@ -2821,16 +2822,19 @@ function computeAzkiPayrollCenterData(rows, slaByCenterName) {
   const byCenter = {};
   rows.forEach(r => {
     const name = r.center_name || 'نامشخص';
-    if (!byCenter[name]) byCenter[name] = { count: 0 };
+    if (!byCenter[name]) byCenter[name] = { count: 0, octSum: 0 };
     byCenter[name].count += r.orders_count || 0;
+    byCenter[name].octSum += Number(r.oct_sum_hours) || 0;
   });
   return Object.keys(byCenter)
     .map(name => {
       const c = byCenter[name];
-      // Average issuance time comes from the agents' SLA report (daily_targets /
-      // avg_issuance_minutes), matched to this center via center_agents — not
-      // from the azki breakdown report's own time fields.
-      const avgMin = (slaByCenterName && slaByCenterName[name] != null) ? slaByCenterName[name] : null;
+      const slaAvg = (slaByCenterName && slaByCenterName[name] != null) ? slaByCenterName[name] : null;
+      // Fall back to the azki breakdown report's own time fields when this
+      // center has no matching agent SLA data (e.g. not linked in
+      // center_agents yet), so a rate can still be applied instead of "—".
+      const fallbackAvg = c.count ? round2((c.octSum / c.count) * 60) : null;
+      const avgMin = slaAvg != null ? slaAvg : fallbackAvg;
       const rate = azkiPayrollRateForAvgMinutes(avgMin);
       return { name, count: c.count, avgMin, rate, amount: rate * c.count };
     })
@@ -2950,12 +2954,15 @@ function renderAzkiPayrollView() {
 
 let xlsxLibPromise = null;
 function ensureXlsxLib() {
-  if (window.XLSX) return Promise.resolve();
+  // xlsx-js-style: a drop-in fork of SheetJS that keeps the same XLSX.* API
+  // but also honors per-cell `s` (style) objects — the plain "xlsx" build
+  // used before ignores styling entirely.
+  if (window.XLSX && window.XLSX.__hasStyleSupport) return Promise.resolve();
   if (!xlsxLibPromise) {
     xlsxLibPromise = new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-      s.onload = resolve;
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+      s.onload = () => { if (window.XLSX) window.XLSX.__hasStyleSupport = true; resolve(); };
       s.onerror = () => reject(new Error('load failed: xlsx lib'));
       document.head.appendChild(s);
     });
@@ -2979,11 +2986,38 @@ async function exportAzkiPayrollExcel() {
     const bounds = azkiState.bounds;
     const aoa = [
       ['نام سنتر', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور (ریال)', 'مبلغ قابل پرداخت (ریال)'],
-      ...centerData.map(c => [c.name, c.count, c.avgMin != null ? c.avgMin : '', c.rate, c.amount]),
+      ...centerData.map(c => [c.name, c.count, c.avgMin != null ? c.avgMin : '—', c.rate, c.amount]),
       ['جمع کل', grandCount, '', '', grandAmount],
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = [{ wch: 32 }, { wch: 14 }, { wch: 22 }, { wch: 18 }, { wch: 22 }];
+
+    const FONT_NAME = 'B Nazanin';
+    const thinBorder = { style: 'thin', color: { rgb: 'FF999999' } };
+    const border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+    const totalRowIdx = aoa.length - 1; // last row = جمع کل
+    const range = XLSX.utils.decode_range(ws['!ref']);
+
+    for (let R = range.s.r; R <= range.e.r; R++) {
+      for (let C = range.s.c; C <= range.e.c; C++) {
+        const addr = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+        const isHeader = R === 0;
+        const isTotalRow = R === totalRowIdx;
+        const isFirstCol = C === 0;
+        ws[addr].s = {
+          font: {
+            name: FONT_NAME,
+            bold: isHeader || isFirstCol || isTotalRow,
+            sz: isTotalRow ? 14 : 11,
+          },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          border,
+          fill: isTotalRow ? { patternType: 'solid', fgColor: { rgb: 'FFD9D9D9' } } : undefined,
+        };
+      }
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'محاسبه حقوق');
     const fname = `محاسبه-حقوق_${bounds.startLabel.replace(/\//g, '-')}_تا_${bounds.endLabel.replace(/\//g, '-')}.xlsx`;
