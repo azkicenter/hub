@@ -1305,6 +1305,39 @@
   .azki-stat .k { font-size: 12.5px; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
   .azki-stat .v { font-size: 23px; font-weight: 800; line-height: 1.2; color: var(--ink); font-variant-numeric: tabular-nums; }
   .azki-stat.pct .v { color: var(--accent-deep); }
+  .shift-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .shift-card {
+    background: var(--surface);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 18px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .shift-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .shift-card-title { font-size: 15px; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+  .shift-card-title svg { width: 18px; height: 18px; color: var(--accent-deep); }
+  .shift-card-hours { font-size: 12px; font-weight: 600; color: var(--ink-soft); background: var(--surface-tint); padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .shift-card-count { font-size: 32px; font-weight: 800; color: var(--ink); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .shift-card-count small { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin-inline-start: 6px; }
+  .shift-card-metrics { display: flex; flex-direction: column; gap: 8px; }
+  .shift-metric { display: flex; flex-direction: column; gap: 5px; }
+  .shift-metric-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--ink-soft); }
+  .shift-metric-row b { color: var(--accent-deep); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .shift-bar { height: 6px; border-radius: 999px; background: var(--surface-tint); overflow: hidden; }
+  .shift-bar > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent-deep), var(--accent)); }
+  .shift-note { font-size: 12.5px; color: var(--ink-soft); padding: 12px 20px; }
+  .shift-mode { margin-bottom: 12px; }
+  .shift-split { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--surface-tint); min-width: 90px; }
+  .shift-split .m { background: var(--accent-deep); }
+  .shift-split .e { background: var(--accent); }
+  .shift-split .o { background: var(--ink-soft); opacity: .45; }
+  .shift-center-row .row-main { display: flex; flex-direction: column; gap: 6px; }
+  .shift-center-row .row-sub { font-size: 12.5px; color: var(--ink-soft); font-weight: 500; }
+  .shift-center-row .row-date { font-weight: 800; color: var(--ink); min-width: 140px; }
+  @media (max-width: 640px) { .shift-card-count { font-size: 26px; } .shift-center-row { flex-wrap: wrap; } }
   @media (max-width: 640px) { .azki-stats { gap: 16px; } .azki-stat { gap: 7px; } .azki-stat .k { font-size: 11px; } .azki-stat .v { font-size: 19px; } }
   .azki-error { color: #c0392b; font-size: 12.5px; min-height: 16px; margin-top: 6px; }
   .sm-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; }
@@ -1630,6 +1663,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="4" height="9"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="3" width="4" height="17"/></svg>
           به تفکیک نام مرکز
         </button>
+        <button class="tab-btn" data-sup-tab="azki-shifts" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          تفکیک شیفت
+        </button>
         <button class="tab-btn" data-sup-tab="azki-compare" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
           مقایسه درصد صدور
@@ -1747,6 +1784,18 @@
       <div id="sup-view-azki-centers" style="display:none;">
         <div class="period-label" id="azki-centers-label"></div>
         <div class="list-card" id="azki-centers-list">
+          <div class="loading-state">در حال بارگذاری...</div>
+        </div>
+      </div>
+
+      <div id="sup-view-azki-shifts" style="display:none;">
+        <div class="period-label" id="azki-shifts-label"></div>
+        <div class="shift-cards" id="azki-shifts-cards"></div>
+        <div class="sm-stabs shift-mode" id="azki-shifts-mode">
+          <button type="button" class="sm-stab active" data-shift-mode="date">بر اساس تاریخ</button>
+          <button type="button" class="sm-stab" data-shift-mode="center">بر اساس مرکز</button>
+        </div>
+        <div class="list-card" id="azki-shifts-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
       </div>
@@ -1903,6 +1952,7 @@ const TABLE_TEAM_ASSIGNMENTS = "team_assignments";
 const TABLE_META = "app_meta";
 const TABLE_AZKI_PERIOD = "azki_center_period_report";
 const TABLE_AZKI_BREAKDOWN = "azki_center_breakdown_report";
+const TABLE_AZKI_SHIFT = "azki_center_shift_report";
 const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "پارسیان", "پردیس", "تجارت نو", "تعاون", "حکمت", "دی", "رازی", "سامان", "سینا", "کوثر", "ما", "معلم", "نوین", "هوشمند فردا"];
 const TABLE_CENTER_AGENT_REPORT = "center_agent_report";
 const TABLE_LEADER_CENTERS = "leader_centers";
@@ -2329,6 +2379,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       $('sup-view-map').style.display = which === 'map' ? '' : 'none';
       $('sup-view-azki-period').style.display = which === 'azki-period' ? '' : 'none';
       $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
+      $('sup-view-azki-shifts').style.display = which === 'azki-shifts' ? '' : 'none';
       $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
       $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
       $('azki-filter').style.display = which.startsWith('azki-') ? '' : 'none';
@@ -2336,6 +2387,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
       if (which === 'azki-period' && !azkiState.period.loaded) loadAzkiPeriodView();
       if (which === 'azki-centers' && !azkiState.centers.loaded) loadAzkiCentersView();
+      if (which === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
       if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
       if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
       if (window.refreshGlassReveals) window.refreshGlassReveals();
@@ -2509,6 +2561,7 @@ const azkiState = {
   companies: { all: true, selected: new Set() },
   period:  { loaded: false, rows: [] },
   centers: { loaded: false, rows: [] },
+  shifts:  { loaded: false, rows: [], mode: 'date' },
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
   payroll: { loaded: false, rows: [], slaByCenterName: {} },
 };
@@ -2791,6 +2844,202 @@ function renderAzkiCentersView() {
 
   bindExpandableToggles(container);
 }
+
+// ============================================================
+// تب «تفکیک شیفت»: صدور ازکی سنترها به تفکیک شیفت صبح (۸ تا ۱۶) و عصر (۱۶ تا ۲۴)
+// بر اساس ساعتِ «تاریخ بستن» سفارش. داده از جدول azki_center_shift_report:
+//   center_name = '__ALL__' → total_orders (کل صدور شیفت) + center_orders (صدور همه‌ی سنترها)
+//   center_name = نام مرکز   → center_orders همون مرکز
+// ============================================================
+const AZKI_SHIFT_ALL = '__ALL__';
+const AZKI_SHIFTS = [
+  { key: 'morning', title: 'شیفت صبح', hours: 'ساعت ۸ تا ۱۶',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>' },
+  { key: 'evening', title: 'شیفت عصر', hours: 'ساعت ۱۶ تا ۲۴',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>' },
+];
+
+function azkiShiftEsc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function azkiPct(part, whole) { return whole ? round2(part / whole * 100) : 0; }
+function emptyShiftBucket() {
+  return { morning: { total: 0, center: 0 }, evening: { total: 0, center: 0 }, other: { total: 0, center: 0 } };
+}
+
+async function fetchAzkiShiftRows(scopes, bounds) {
+  return fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_AZKI_SHIFT)
+      .select('*')
+      .in('company_scope', scopes)
+      .gte('report_date', bounds.startDate)
+      .lte('report_date', bounds.endDate)
+      .order('report_date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+}
+
+// همه‌ی ردیف‌ها رو یک‌جا تجمیع می‌کنه: جمع کل بازه، به تفکیک دوره (روز/هفته/ماه) و به تفکیک مرکز
+function aggregateAzkiShiftRows(rows, granularity) {
+  const grand = emptyShiftBucket();
+  const periods = {};   // periodKey -> { label, sortKey, all: bucket, centers: { name: bucket } }
+  const centers = {};   // centerName -> bucket
+  for (const r of rows) {
+    const shift = r.shift;
+    if (!grand[shift]) continue;
+    const { jy, jm, jd } = parseJalaliParts(r.report_date_jalali);
+    const { key, label } = azkiPeriodGroupKey(jy, jm, jd, granularity);
+    if (!periods[key]) periods[key] = { key, label, sortKey: jy * 10000 + jm * 100 + jd, all: emptyShiftBucket(), centers: {} };
+    const p = periods[key];
+    p.sortKey = Math.min(p.sortKey, jy * 10000 + jm * 100 + jd);
+    const center = Number(r.center_orders) || 0;
+    if (r.center_name === AZKI_SHIFT_ALL) {
+      const total = Number(r.total_orders) || 0;
+      grand[shift].total += total; grand[shift].center += center;
+      p.all[shift].total += total; p.all[shift].center += center;
+    } else {
+      if (!p.centers[r.center_name]) p.centers[r.center_name] = emptyShiftBucket();
+      p.centers[r.center_name][shift].center += center;
+      if (!centers[r.center_name]) centers[r.center_name] = emptyShiftBucket();
+      centers[r.center_name][shift].center += center;
+    }
+  }
+  return { grand, periods: Object.values(periods).sort((a, b) => a.sortKey - b.sortKey), centers };
+}
+
+function shiftCenterSum(b) { return b.morning.center + b.evening.center + b.other.center; }
+
+function azkiShiftSplitBar(b) {
+  const sum = shiftCenterSum(b);
+  if (!sum) return '<div class="shift-split"></div>';
+  const w = k => (b[k].center / sum * 100).toFixed(2);
+  return `<div class="shift-split" title="صبح ${faDigits(azkiPct(b.morning.center, sum))}٪ — عصر ${faDigits(azkiPct(b.evening.center, sum))}٪">
+    <span class="m" style="width:${w('morning')}%"></span><span class="e" style="width:${w('evening')}%"></span><span class="o" style="width:${w('other')}%"></span>
+  </div>`;
+}
+
+async function loadAzkiShiftsView() {
+  if (!azkiAllowed()) return;
+  const bounds = getAzkiBounds();
+  document.getElementById('azki-shifts-label').textContent = azkiRangeText(bounds);
+
+  const { data, error } = await fetchAzkiShiftRows(azkiActiveScopes(), bounds);
+  if (bounds !== azkiState.bounds) return;
+  if (error) {
+    document.getElementById('azki-shifts-cards').innerHTML = '';
+    document.getElementById('azki-shifts-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${azkiShiftEsc(error.message)}</div>`;
+    return;
+  }
+  azkiState.shifts.rows = data || [];
+  azkiState.shifts.loaded = true;
+  renderAzkiShiftsView();
+}
+
+function renderAzkiShiftsView() {
+  const rows = azkiState.shifts.rows;
+  const cardsEl = document.getElementById('azki-shifts-cards');
+  const container = document.getElementById('azki-shifts-list');
+  const agg = aggregateAzkiShiftRows(rows, azkiState.granularity);
+  const g = agg.grand;
+  const centerAll = shiftCenterSum(g);
+
+  // ---------- کارت‌های بالای صفحه ----------
+  cardsEl.innerHTML = AZKI_SHIFTS.map(sh => {
+    const b = g[sh.key];
+    const pctOfShift = azkiPct(b.center, b.total);   // سهم سنترها از کل صدور همین شیفت
+    const pctOfCenters = azkiPct(b.center, centerAll); // سهم این شیفت از کل صدور سنترها
+    return `
+      <div class="shift-card">
+        <div class="shift-card-head">
+          <span class="shift-card-title">${sh.icon}${sh.title}</span>
+          <span class="shift-card-hours">${sh.hours}</span>
+        </div>
+        <div class="shift-card-count">${formatNumber(b.center)}<small>صدور ازکی سنتر</small></div>
+        <div class="shift-card-metrics">
+          <div class="shift-metric">
+            <div class="shift-metric-row"><span>درصد از کل صدور شیفت (${formatNumber(b.total)})</span><b>${formatNumber(pctOfShift)}٪</b></div>
+            <div class="shift-bar"><i style="width:${Math.min(100, pctOfShift)}%"></i></div>
+          </div>
+          <div class="shift-metric">
+            <div class="shift-metric-row"><span>سهم از کل صدور سنترها (${formatNumber(centerAll)})</span><b>${formatNumber(pctOfCenters)}٪</b></div>
+            <div class="shift-bar"><i style="width:${Math.min(100, pctOfCenters)}%"></i></div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
+    return;
+  }
+
+  const otherNote = g.other.center
+    ? `<div class="shift-note">${formatNumber(g.other.center)} صدور ازکی سنتر بین ساعت ۰ تا ۸ بسته شده که جزو هیچ‌کدوم از دو شیفت نیست.</div>`
+    : '';
+
+  if (azkiState.shifts.mode === 'center') {
+    const names = Object.keys(agg.centers).sort((a, b) => shiftCenterSum(agg.centers[b]) - shiftCenterSum(agg.centers[a]));
+    if (!names.length) { container.innerHTML = '<div class="empty-state">صدوری از مراکز در این بازه ثبت نشده</div>'; return; }
+    container.innerHTML = names.map(name => {
+      const b = agg.centers[name];
+      const sum = shiftCenterSum(b);
+      return `
+        <div class="row-item shift-center-row">
+          <div class="row-date">${azkiShiftEsc(name)}</div>
+          <div class="row-main">
+            <span>صبح: ${formatNumber(b.morning.center)} (${formatNumber(azkiPct(b.morning.center, sum))}٪) — عصر: ${formatNumber(b.evening.center)} (${formatNumber(azkiPct(b.evening.center, sum))}٪)</span>
+            ${azkiShiftSplitBar(b)}
+          </div>
+          <div class="row-badge">${formatNumber(sum)}</div>
+        </div>`;
+    }).join('') + otherNote;
+    return;
+  }
+
+  // ---------- حالت «بر اساس تاریخ»: هر دوره قابل باز شدن به تفکیک مرکز ----------
+  const periodsHtml = agg.periods.slice().reverse().map(p => {
+    const m = p.all.morning, e = p.all.evening;
+    const cNames = Object.keys(p.centers).sort((a, b) => shiftCenterSum(p.centers[b]) - shiftCenterSum(p.centers[a]));
+    const inner = cNames.length ? cNames.map(name => {
+      const b = p.centers[name];
+      return `
+        <div class="row-item">
+          <div class="row-date">${azkiShiftEsc(name)}</div>
+          <div class="row-main">صبح: ${formatNumber(b.morning.center)} — عصر: ${formatNumber(b.evening.center)}</div>
+          <div class="row-badge">${formatNumber(shiftCenterSum(b))}</div>
+        </div>`;
+    }).join('') : '<div class="empty-state">صدوری از مراکز ثبت نشده</div>';
+    return `
+      <div class="leader-item">
+        <button class="leader-header azki-head" type="button">
+          <div class="leader-name-wrap">
+            <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="leader-name">${azkiShiftEsc(p.label)}</span>
+          </div>
+          <div class="azki-stats">
+            <div class="azki-stat"><span class="k">صبح (سنتر / کل)</span><span class="v">${formatNumber(m.center)} / ${formatNumber(m.total)}</span></div>
+            <div class="azki-stat pct"><span class="k">درصد صبح</span><span class="v">${formatNumber(azkiPct(m.center, m.total))}٪</span></div>
+            <div class="azki-stat"><span class="k">عصر (سنتر / کل)</span><span class="v">${formatNumber(e.center)} / ${formatNumber(e.total)}</span></div>
+            <div class="azki-stat pct"><span class="k">درصد عصر</span><span class="v">${formatNumber(azkiPct(e.center, e.total))}٪</span></div>
+          </div>
+        </button>
+        <div class="leader-details"><div class="leader-details-inner">${inner}</div></div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = periodsHtml + otherNote;
+  bindExpandableToggles(container);
+}
+
+document.querySelectorAll('#azki-shifts-mode .sm-stab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#azki-shifts-mode .sm-stab').forEach(b => b.classList.toggle('active', b === btn));
+    azkiState.shifts.mode = btn.dataset.shiftMode;
+    if (azkiState.shifts.loaded) renderAzkiShiftsView();
+  });
+});
 
 // Payroll rate tiers based on each center's average issuance time (minutes).
 // A center's average time below the first tier's minimum still uses the first
@@ -3156,6 +3405,7 @@ function azkiActiveTab() {
 function azkiRenderLoadedViews() {
   if (azkiState.period.loaded) renderAzkiPeriodView();
   if (azkiState.centers.loaded) renderAzkiCentersView();
+  if (azkiState.shifts.loaded) renderAzkiShiftsView();
   if (azkiState.compare.loaded) renderAzkiCompareView();
   if (azkiState.payroll.loaded) renderAzkiPayrollView();
 }
@@ -3182,15 +3432,17 @@ function azkiApplyRange() {
   azkiState.bounds = b;
   azkiState.period.loaded = false;
   azkiState.centers.loaded = false;
+  azkiState.shifts.loaded = false;
   azkiState.compare.loaded = false;
   azkiState.payroll.loaded = false;
-  ['azki-period-list', 'azki-centers-list', 'azki-compare-list', 'azki-payroll-list'].forEach(id => {
+  ['azki-period-list', 'azki-centers-list', 'azki-shifts-list', 'azki-compare-list', 'azki-payroll-list'].forEach(id => {
     document.getElementById(id).innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
   });
 
   const tab = azkiActiveTab();
   if (tab === 'azki-period') loadAzkiPeriodView();
   else if (tab === 'azki-centers') loadAzkiCentersView();
+  else if (tab === 'azki-shifts') loadAzkiShiftsView();
   else if (tab === 'azki-compare') loadAzkiCompareView();
   else if (tab === 'azki-payroll') loadAzkiPayrollView();
 }
