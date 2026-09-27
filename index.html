@@ -1465,6 +1465,8 @@
   .summary-card .label { font-size: 14px; line-height: 1.6; }
   .summary-card .value { font-size: 30px; line-height: 1.2; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .summary-card .value .unit { font-size: 13px; font-weight: 600; opacity: .85; margin-inline-start: 5px; }
+  .summary-card .sub { font-size: 11.5px; color: rgba(255,255,255,.85); position: relative; min-height: 1em; }
+  .summary-card .sub:empty { display: none; }
 
   .row-date { flex-shrink: 0; font-variant-numeric: tabular-nums; }
   .row-main { min-width: 0; }
@@ -1647,6 +1649,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
         خطای تیم
       </button>
+      <button class="tab-btn" data-team-tab="azki-shifts" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        تفکیک شیفت
+      </button>
       <button class="tab-btn" data-team-tab="azki-compare" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
         مقایسه درصد صدور
@@ -1679,6 +1685,7 @@
       </div>
     </div>
 
+    <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
 
     <div class="tabs" id="center-tabs" style="display:none;">
@@ -1722,6 +1729,11 @@
         <div class="summary-card">
           <div class="label">مجموع کارشناس‌ها</div>
           <div class="value" id="center-agent-count">—</div>
+        </div>
+        <div class="summary-card" title="منبع: گزارش SLA اپراتورها — میانگین کل دوره‌ی ۲۱ تا ۲۰">
+          <div class="label">میانگین زمان صدور سنتر (SLA)</div>
+          <div class="value" id="center-sla-avg">—</div>
+          <div class="sub" id="center-sla-note"></div>
         </div>
       </div>
       <div class="list-card" id="center-list">
@@ -2162,13 +2174,21 @@ document.querySelectorAll('#team-tabs .tab-btn').forEach(btn => {
     document.querySelectorAll('#team-tabs .tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('panel-team').classList.remove('active');
     document.getElementById('panel-team-bugs').classList.remove('active');
-    const azkiCompanyPanel = document.getElementById('panel-azki-compare');
-    if (azkiCompanyPanel) azkiCompanyPanel.classList.remove('active');
+    ['panel-azki-compare', 'panel-azki-shifts'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
     btn.classList.add('active');
-    document.getElementById('panel-' + btn.dataset.teamTab).classList.add('active');
+    const tab = btn.dataset.teamTab;
+    const panelEl = document.getElementById('panel-' + tab);
+    panelEl.classList.add('active');
     const azkiFilterEl = document.getElementById('azki-filter');
-    if (azkiFilterEl) azkiFilterEl.style.display = btn.dataset.teamTab === 'azki-compare' ? '' : 'none';
-    if (btn.dataset.teamTab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
+    const isAzki = tab.startsWith('azki-');
+    // فیلتر تاریخ/شرکت یکی بیشتر نیست؛ هر بار بالای پنل azki فعال جابه‌جا می‌شه
+    if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
+    if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
+    if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
+    if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   });
 });
@@ -3548,6 +3568,10 @@ function azkiReadBounds() {
 }
 
 function azkiActiveTab() {
+  if (currentUserRole === 'leader') {
+    const tb = document.querySelector('#team-tabs .tab-btn.active');
+    return tb ? tb.dataset.teamTab : null;
+  }
   const btn = document.querySelector('#supervisor-tabs .tab-btn.active');
   return btn ? btn.dataset.supTab : null;
 }
@@ -4029,15 +4053,18 @@ async function enterApp(user) {
     document.getElementById('center-agent-tabs').style.display = 'none';
     document.getElementById('panel-center-agent').classList.remove('active');
     document.getElementById('panel-supervisor').classList.remove('active');
-    (function relocateAzkiCompareForLeader() {
-      const host = document.getElementById('panel-azki-compare');
+    (function relocateAzkiViewsForLeader() {
       const filterEl = document.getElementById('azki-filter');
-      const compareViewEl = document.getElementById('sup-view-azki-compare');
-      if (host && filterEl && compareViewEl && !host.contains(filterEl)) {
-        host.appendChild(filterEl);
-        host.appendChild(compareViewEl);
-        compareViewEl.style.display = '';
-      }
+      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-shifts', 'sup-view-azki-shifts']].forEach(([hostId, viewId]) => {
+        const host = document.getElementById(hostId);
+        const viewEl = document.getElementById(viewId);
+        if (host && viewEl && !host.contains(viewEl)) {
+          host.appendChild(viewEl);
+          viewEl.style.display = '';
+        }
+      });
+      const compareHost = document.getElementById('panel-azki-compare');
+      if (filterEl && compareHost && !compareHost.contains(filterEl)) compareHost.insertBefore(filterEl, compareHost.firstChild);
     })();
     loadTeamView(user.id);
   } else if (isSupervisor) {
@@ -5204,6 +5231,7 @@ async function loadCenterData() {
   const slaStart = periodStartSortOfJalali(f[0], f[1], f[2]);
   const slaSamePeriod = slaStart === periodStartSortOfJalali(to[0], to[1], to[2]);
   agentSlaMap = (!targetsRes.error && slaSamePeriod) ? buildSlaMapFromRows(targetsRes.data || [], slaStart) : null;
+  loadCenterSla(slaStart, slaSamePeriod, seq);
 
   if (targetsRes.error) {
     listEl.innerHTML = `<div class="empty-state">خطا در دریافت تارگت‌ها: ${targetsRes.error.message}</div>`;
@@ -5221,6 +5249,40 @@ async function loadCenterData() {
   }
 
   if (!targetsRes.error) renderCenterTargets();
+}
+
+// میانگین زمان صدور کل سنتر برای دوره‌ی ۲۱ تا ۲۰ ای که فیلتر داخلشه.
+// اول از center_sla_report (SLA مستقیم مرکز از گزارش SLA اپراتورها)، وگرنه میانگین SLA کارشناس‌های همین سنتر.
+async function loadCenterSla(periodStartSort, samePeriod, seq) {
+  const valEl = document.getElementById('center-sla-avg');
+  const noteEl = document.getElementById('center-sla-note');
+  if (!valEl) return;
+  const show = (v, note) => {
+    valEl.innerHTML = v != null ? `${formatNumber(v)}<span class="unit">دقیقه</span>` : '—';
+    noteEl.textContent = note || '';
+  };
+  if (!samePeriod) { show(null, 'بازه باید داخل یک دوره‌ی ۲۱ تا ۲۰ باشد'); return; }
+  valEl.textContent = '…';
+
+  let value = null;
+  const key = normCenterKey(centerViewName);
+  if (key) {
+    const { data, error } = await supabaseClient
+      .from(TABLE_CENTER_SLA)
+      .select('center_key, avg_issuance_minutes')
+      .eq('period_start_sort', periodStartSort)
+      .eq('center_key', key);
+    if (seq !== centerLoadSeq) return;
+    if (error) console.warn('خطا در دریافت SLA سنتر:', error.message);
+    const row = (data || []).find(r => r.avg_issuance_minutes != null);
+    if (row && isFinite(Number(row.avg_issuance_minutes))) value = round2(Number(row.avg_issuance_minutes));
+  }
+  if (value == null && agentSlaMap) {
+    const vals = centerNormalAgentsAll.map(a => agentSlaMap[a.id]).filter(v => v != null && isFinite(v));
+    if (vals.length) value = round2(vals.reduce((a, b) => a + b, 0) / vals.length);
+  }
+  const pY = Math.floor(periodStartSort / 10000), pM = Math.floor(periodStartSort / 100) % 100;
+  show(value, value != null ? `دوره‌ی ۲۱ ${JALALI_MONTHS_FA[pM - 1]} ${faDigits(pY)}` : 'هنوز SLA ثبت نشده');
 }
 
 async function loadCenterView(centerId) {
