@@ -3211,60 +3211,79 @@ function computeAzkiPayrollCenterData(rows, slaByCenterKey) {
     .sort((a, b) => b.count - a.count);
 }
 
-// { normCenterKey(نام سنتر): میانگین زمان صدور به دقیقه } از همون منبع SLA که برای «میانگین زمان صدور»
-// هر کارشناس استفاده می‌شه (daily_targets.avg_issuance_minutes ← گزارش SLA اپراتورها) و از طریق
-// center_agents به سنترها وصل می‌شه. میانگین سنتر = میانگین SLA کارشناس‌هایی از اون سنتر که SLA دارن.
+// { normCenterKey(نام مرکز): میانگین زمان صدور به دقیقه } برای دوره‌ی ۲۱ تا ۲۰ که تاریخ شروعِ فیلتر داخلشه.
+// منبع اصلی: جدول center_sla_report که n8n مستقیم از گزارش SLA اپراتورها (کارت ۲۰۵۱۶) پر می‌کنه
+// (ردیف‌های «مرکز صدور X | کارشناس» → میانگین وزنی مرکز X). برای مرکزی که اونجا نبود، از SLA
+// کارشناس‌های اساین‌شده به اون سنتر (daily_targets.avg_issuance_minutes از طریق center_agents) استفاده می‌شه.
+// SLA برای کل دوره حساب می‌شه، پس فیلتر «فقط امروز» هم همون عدد دوره رو نشون می‌ده.
+const TABLE_CENTER_SLA = 'center_sla_report';
+
 async function fetchAzkiPayrollCenterSla(bounds) {
+  const s = parseJalaliParts(bounds.startLabel);
+  const pStart = periodStartSortOfJalali(s.jy, s.jm, s.jd);
+  const pStartY = Math.floor(pStart / 10000), pStartM = Math.floor(pStart / 100) % 100;
+  const pEnd = pStartM < 12 ? pStartY * 10000 + (pStartM + 1) * 100 + 20 : (pStartY + 1) * 10000 + 100 + 20;
+
+  const byCenterKey = {};
+  let firstError = null;
+
+  // ۱) SLA مستقیم مراکز
+  const { data: centerSlaRows, error: centerSlaErr } = await supabaseClient
+    .from(TABLE_CENTER_SLA)
+    .select('center_key, center_name, avg_issuance_minutes')
+    .eq('period_start_sort', pStart);
+  if (centerSlaErr) {
+    console.warn('جدول center_sla_report در دسترس نیست (SQL مهاجرت اجرا شده؟):', centerSlaErr.message);
+  } else {
+    (centerSlaRows || []).forEach(r => {
+      const key = normCenterKey(r.center_key || r.center_name);
+      const v = Number(r.avg_issuance_minutes);
+      if (key && r.avg_issuance_minutes != null && isFinite(v)) byCenterKey[key] = round2(v);
+    });
+  }
+
+  // ۲) جایگزین: میانگین SLA کارشناس‌های اساین‌شده به هر سنتر
   const { data: centerProfiles, error: centersErr } = await fetchAllRows((from, to) =>
     supabaseClient.from(TABLE_PROFILES).select('id, full_name').eq('role', 'center').range(from, to)
   );
-  if (centersErr) return { byCenterKey: {}, error: centersErr };
+  if (centersErr) return { byCenterKey, error: centersErr };
   const centerKeyById = {};
   (centerProfiles || []).forEach(c => { centerKeyById[c.id] = normCenterKey(c.full_name); });
 
   const { data: links, error: linksErr } = await fetchAllRows((from, to) =>
     supabaseClient.from(TABLE_CENTER_AGENTS).select('center_id, agent_id').range(from, to)
   );
-  if (linksErr) return { byCenterKey: {}, error: linksErr };
+  if (linksErr) return { byCenterKey, error: linksErr };
 
-  const validLinks = (links || []).filter(l => centerKeyById[l.center_id]);
+  const validLinks = (links || []).filter(l => centerKeyById[l.center_id] && byCenterKey[centerKeyById[l.center_id]] == null);
   const agentIds = [...new Set(validLinks.map(l => l.agent_id).filter(Boolean))];
-  if (!agentIds.length) return { byCenterKey: {}, error: null };
-
-  const s = parseJalaliParts(bounds.startLabel);
-  const e = parseJalaliParts(bounds.endLabel);
-  const startSort = s.jy * 10000 + s.jm * 100 + s.jd;
-  const endSort = e.jy * 10000 + e.jm * 100 + e.jd;
-
-  const { data: slaRows, error: slaErr } = await fetchAllRows((from, to) =>
-    supabaseClient
-      .from(TABLE_TARGETS)
-      .select('agent_id, report_date_sort, avg_issuance_minutes')
-      .in('agent_id', agentIds)
-      .gte('report_date_sort', startSort)
-      .lte('report_date_sort', endSort)
-      .order('report_date_sort', { ascending: true })
-      .range(from, to)
-  );
-  if (slaErr) return { byCenterKey: {}, error: slaErr };
-
-  const agentSla = buildSlaMapFromRows(slaRows || [], startSort) || {};
-
-  const sumByCenter = {};
-  validLinks.forEach(l => {
-    const v = agentSla[l.agent_id];
-    if (v == null) return;
-    const key = centerKeyById[l.center_id];
-    if (!sumByCenter[key]) sumByCenter[key] = { sum: 0, n: 0 };
-    sumByCenter[key].sum += v;
-    sumByCenter[key].n += 1;
-  });
-
-  const byCenterKey = {};
-  Object.keys(sumByCenter).forEach(key => {
-    byCenterKey[key] = round2(sumByCenter[key].sum / sumByCenter[key].n);
-  });
-  return { byCenterKey, error: null };
+  if (agentIds.length) {
+    const { data: slaRows, error: slaErr } = await fetchAllRows((from, to) =>
+      supabaseClient
+        .from(TABLE_TARGETS)
+        .select('agent_id, report_date_sort, avg_issuance_minutes')
+        .in('agent_id', agentIds)
+        .gte('report_date_sort', pStart)
+        .lte('report_date_sort', pEnd)
+        .order('report_date_sort', { ascending: true })
+        .range(from, to)
+    );
+    if (slaErr) firstError = slaErr;
+    const agentSla = buildSlaMapFromRows(slaRows || [], pStart) || {};
+    const sumByCenter = {};
+    validLinks.forEach(l => {
+      const v = agentSla[l.agent_id];
+      if (v == null) return;
+      const key = centerKeyById[l.center_id];
+      if (!sumByCenter[key]) sumByCenter[key] = { sum: 0, n: 0 };
+      sumByCenter[key].sum += v;
+      sumByCenter[key].n += 1;
+    });
+    Object.keys(sumByCenter).forEach(key => {
+      byCenterKey[key] = round2(sumByCenter[key].sum / sumByCenter[key].n);
+    });
+  }
+  return { byCenterKey, error: firstError };
 }
 
 async function loadAzkiPayrollView() {
