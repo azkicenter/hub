@@ -3027,7 +3027,13 @@ async function loadAzkiActiveStatusView() {
     document.getElementById('azki-active-list').innerHTML = `<div class="empty-state">خطا در دریافت وضعیت: ${error.message}</div>`;
     return;
   }
-  azkiState.activeStatus.rows = data || [];
+  // فقط کارشناسان مرکز صدور (نام‌هایی با فرمت «مرکز صدور X | Y») نشون داده بشن؛ بقیه‌ی کاربران حذف می‌شن
+  const isIssuanceCenterUser = (r) => /مرکز\s*صدور/.test(
+    [r.full_name, r.center_name].map(v => String(v == null ? '' : v)
+      .replace(/[\u200c\u200b\u200e\u200f]/g, ' ')
+      .replace(/ي/g, 'ی').replace(/ك/g, 'ک')).join(' | ')
+  );
+  azkiState.activeStatus.rows = (data || []).filter(isIssuanceCenterUser);
   azkiState.activeStatus.loaded = true;
   renderAzkiActiveStatusView();
 }
