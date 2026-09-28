@@ -1352,6 +1352,29 @@
   .sm-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1a6dff; margin-inline-start: 8px; }
   .sm-dot.approx { background: #e8891f; }
   .sm-dot.green { background: #1fa855; }
+  /* سرپرست و سرگروه: کادر عریض‌تر تا همه‌ی تب‌ها بدون اسکرول جا بشن */
+  main.wide-nav { max-width: 1120px; }
+  main.wide-nav .tab-btn { margin-left: 20px; }
+  /* زیرمنوی تب «گزارش» */
+  .subtabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+  .subtab-btn {
+    font-family: var(--font); font-size: 13.5px; padding: 8px 16px; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-soft);
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    transition: color .15s, background .15s, border-color .15s;
+  }
+  .subtab-btn svg { width: 15px; height: 15px; opacity: .75; }
+  .subtab-btn:hover { background: var(--accent-soft); }
+  .subtab-btn.active { color: var(--accent-deep); border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+  .subtab-btn.active svg { opacity: 1; }
+  /* فیلتر گزارش‌ها: وسط‌چین + حالت نمایش (روزانه/هفتگی/ماهانه) کنار تاریخ‌ها */
+  #azki-filter .azki-bar { justify-content: center; }
+  #azki-filter .azki-error { text-align: center; }
+  .azki-seg { display: flex; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
+  .azki-seg-btn { font-family: var(--font); font-size: 13.5px; padding: 9px 16px; border: 0; background: none; color: var(--ink-soft); cursor: pointer; white-space: nowrap; }
+  .azki-seg-btn + .azki-seg-btn { border-inline-start: 1px solid var(--line); }
+  .azki-seg-btn:hover { background: var(--accent-soft); }
+  .azki-seg-btn.active { background: var(--accent-soft); color: var(--accent-deep); font-weight: 700; }
   main.sm-wide { max-width: 1500px; }
   .sm-wrap { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 12px; height: min(82vh, 880px); min-height: 540px; }
   .sm-wrap:fullscreen { height: 100vh; padding: 12px; box-sizing: border-box; background: #eaf0f8; }
@@ -1649,17 +1672,23 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
         خطای تیم
       </button>
-      <button class="tab-btn" data-team-tab="azki-shifts" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        تفکیک شیفت
-      </button>
-      <button class="tab-btn" data-team-tab="azki-compare" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
-        مقایسه درصد صدور
+      <button class="tab-btn" data-team-group="report" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+        گزارش
       </button>
       <button class="tab-btn" data-team-tab="azki-active" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
         وضعیت فعال کاربران
+      </button>
+    </div>
+    <div class="subtabs" id="team-subtabs" style="display:none;">
+      <button class="subtab-btn" data-team-tab="azki-shifts" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        تفکیک شیفت
+      </button>
+      <button class="subtab-btn" data-team-tab="azki-compare" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
+        مقایسه درصد صدور
       </button>
     </div>
 
@@ -1783,29 +1812,35 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
           نقشه سنتر
         </button>
-        <button class="tab-btn" data-sup-tab="azki-period" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 3 5-8"/></svg>
-          گزارش دوره‌ای
-        </button>
-        <button class="tab-btn" data-sup-tab="azki-centers" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="4" height="9"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="3" width="4" height="17"/></svg>
-          به تفکیک نام مرکز
+        <button class="tab-btn" data-sup-group="report" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+          گزارش
         </button>
         <button class="tab-btn" data-sup-tab="azki-active" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
           وضعیت فعال کاربران
         </button>
-        <button class="tab-btn" data-sup-tab="azki-shifts" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          تفکیک شیفت
-        </button>
-        <button class="tab-btn" data-sup-tab="azki-compare" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
-          مقایسه درصد صدور
-        </button>
         <button class="tab-btn" data-sup-tab="azki-payroll" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
           محاسبه حقوق
+        </button>
+      </div>
+      <div class="subtabs" id="supervisor-subtabs" style="display:none;">
+          <button class="subtab-btn" data-sup-tab="azki-period" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 3 5-8"/></svg>
+          گزارش دوره‌ای
+        </button>
+          <button class="subtab-btn" data-sup-tab="azki-centers" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="4" height="9"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="3" width="4" height="17"/></svg>
+          به تفکیک نام مرکز
+        </button>
+          <button class="subtab-btn" data-sup-tab="azki-shifts" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          تفکیک شیفت
+        </button>
+          <button class="subtab-btn" data-sup-tab="azki-compare" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
+          مقایسه درصد صدور
         </button>
       </div>
 
@@ -1860,12 +1895,15 @@
       </div>
 
       <div id="azki-filter" class="azki-filter" style="display:none;">
-        <div class="sm-stabs" id="azki-gran">
-          <button type="button" class="sm-stab active" data-gran="daily">روزانه</button>
-          <button type="button" class="sm-stab" data-gran="weekly">هفتگی</button>
-          <button type="button" class="sm-stab" data-gran="monthly">ماهانه</button>
-        </div>
         <div class="azki-bar">
+          <div class="azki-fld">
+            <span class="azki-fld-label">حالت نمایش</span>
+            <div class="azki-seg" id="azki-gran">
+              <button type="button" class="azki-seg-btn active" data-gran="daily">روزانه</button>
+              <button type="button" class="azki-seg-btn" data-gran="weekly">هفتگی</button>
+              <button type="button" class="azki-seg-btn" data-gran="monthly">ماهانه</button>
+            </div>
+          </div>
           <div class="azki-fld">
             <span class="azki-fld-label">شرکت بیمه</span>
             <button type="button" class="azki-ctl" id="azki-comp-btn"><span id="azki-comp-summary">همه شرکت‌ها</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
@@ -2199,30 +2237,48 @@ document.querySelectorAll('#center-agent-tabs .tab-btn').forEach(btn => {
   });
 });
 
+window.teamCurrentTab = 'team';
+const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare'];
+let teamLastReportTab = 'azki-shifts';
+function teamShowTab(tab) {
+  window.teamCurrentTab = tab;
+  const isReport = TEAM_REPORT_TABS.includes(tab);
+  if (isReport) teamLastReportTab = tab;
+  document.querySelectorAll('#team-tabs .tab-btn').forEach(b => {
+    const key = b.dataset.teamGroup || b.dataset.teamTab;
+    b.classList.toggle('active', isReport ? key === 'report' : key === tab);
+  });
+  const subBar = document.getElementById('team-subtabs');
+  if (subBar) {
+    subBar.style.display = isReport ? '' : 'none';
+    subBar.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.teamTab === tab));
+  }
+  document.getElementById('panel-team').classList.remove('active');
+  document.getElementById('panel-team-bugs').classList.remove('active');
+  ['panel-azki-compare', 'panel-azki-shifts', 'panel-azki-active'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  const panelEl = document.getElementById('panel-' + tab);
+  panelEl.classList.add('active');
+  const azkiFilterEl = document.getElementById('azki-filter');
+  // وضعیت فعال کاربران بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
+  const isAzki = tab.startsWith('azki-') && tab !== 'azki-active';
+  // فیلتر تاریخ/شرکت یکی بیشتر نیست؛ هر بار بالای پنل azki فعال جابه‌جا می‌شه
+  if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
+  if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
+  if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
+  if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
+  if (tab === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
+  if (window.refreshGlassReveals) window.refreshGlassReveals();
+}
 document.querySelectorAll('#team-tabs .tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('#team-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('panel-team').classList.remove('active');
-    document.getElementById('panel-team-bugs').classList.remove('active');
-    ['panel-azki-compare', 'panel-azki-shifts', 'panel-azki-active'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('active');
-    });
-    btn.classList.add('active');
-    const tab = btn.dataset.teamTab;
-    const panelEl = document.getElementById('panel-' + tab);
-    panelEl.classList.add('active');
-    const azkiFilterEl = document.getElementById('azki-filter');
-    // وضعیت فعال کاربران بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
-    const isAzki = tab.startsWith('azki-') && tab !== 'azki-active';
-    // فیلتر تاریخ/شرکت یکی بیشتر نیست؛ هر بار بالای پنل azki فعال جابه‌جا می‌شه
-    if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
-    if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
-    if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
-    if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
-    if (tab === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
-    if (window.refreshGlassReveals) window.refreshGlassReveals();
+    teamShowTab(btn.dataset.teamGroup === 'report' ? teamLastReportTab : btn.dataset.teamTab);
   });
+});
+document.querySelectorAll('#team-subtabs .subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => teamShowTab(btn.dataset.teamTab));
 });
 
 document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
@@ -2533,31 +2589,46 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     S.busy = false;
   }
 
+  window.supCurrentTab = 'targets';
+  const SUP_REPORT_TABS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare'];
+  let supLastReportTab = 'azki-period';
+  function supShowTab(which) {
+    window.supCurrentTab = which;
+    const isReport = SUP_REPORT_TABS.includes(which);
+    if (isReport) supLastReportTab = which;
+    document.querySelectorAll('#supervisor-tabs .tab-btn').forEach(b => {
+      const key = b.dataset.supGroup || b.dataset.supTab;
+      b.classList.toggle('active', isReport ? key === 'report' : key === which);
+    });
+    $('supervisor-subtabs').style.display = isReport ? '' : 'none';
+    document.querySelectorAll('#supervisor-subtabs .subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.supTab === which));
+    $('sup-view-targets').style.display = which === 'targets' ? '' : 'none';
+    $('sup-view-map').style.display = which === 'map' ? '' : 'none';
+    $('sup-view-azki-period').style.display = which === 'azki-period' ? '' : 'none';
+    $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
+    $('sup-view-azki-shifts').style.display = which === 'azki-shifts' ? '' : 'none';
+    $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
+    $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
+    $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
+    // وضعیت فعال کاربران بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
+    $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
+    document.querySelector('main').classList.toggle('sm-wide', which === 'map');
+    if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
+    if (which === 'azki-period' && !azkiState.period.loaded) loadAzkiPeriodView();
+    if (which === 'azki-centers' && !azkiState.centers.loaded) loadAzkiCentersView();
+    if (which === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
+    if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
+    if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
+    if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
+    if (window.refreshGlassReveals) window.refreshGlassReveals();
+  }
   document.querySelectorAll('#supervisor-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#supervisor-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const which = btn.dataset.supTab;
-      $('sup-view-targets').style.display = which === 'targets' ? '' : 'none';
-      $('sup-view-map').style.display = which === 'map' ? '' : 'none';
-      $('sup-view-azki-period').style.display = which === 'azki-period' ? '' : 'none';
-      $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
-      $('sup-view-azki-shifts').style.display = which === 'azki-shifts' ? '' : 'none';
-      $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
-      $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
-      $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
-      // وضعیت فعال کاربران بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
-      $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
-      document.querySelector('main').classList.toggle('sm-wide', which === 'map');
-      if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
-      if (which === 'azki-period' && !azkiState.period.loaded) loadAzkiPeriodView();
-      if (which === 'azki-centers' && !azkiState.centers.loaded) loadAzkiCentersView();
-      if (which === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
-      if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
-      if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
-      if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
-      if (window.refreshGlassReveals) window.refreshGlassReveals();
+      supShowTab(btn.dataset.supGroup === 'report' ? supLastReportTab : btn.dataset.supTab);
     });
+  });
+  document.querySelectorAll('#supervisor-subtabs .subtab-btn').forEach(btn => {
+    btn.addEventListener('click', () => supShowTab(btn.dataset.supTab));
   });
 
   document.querySelectorAll('.sm-stab[data-side]').forEach(b => b.addEventListener('click', () => {
@@ -3703,11 +3774,9 @@ function azkiReadBounds() {
 
 function azkiActiveTab() {
   if (currentUserRole === 'leader') {
-    const tb = document.querySelector('#team-tabs .tab-btn.active');
-    return tb ? tb.dataset.teamTab : null;
+    return window.teamCurrentTab || null;
   }
-  const btn = document.querySelector('#supervisor-tabs .tab-btn.active');
-  return btn ? btn.dataset.supTab : null;
+  return window.supCurrentTab || null;
 }
 
 function azkiRenderLoadedViews() {
@@ -3931,9 +4000,9 @@ function initAzkiFilter() {
   azkiRenderCompanyFilter();
   azkiBindCompanyFilter();
 
-  document.querySelectorAll('#azki-gran .sm-stab').forEach(btn => {
+  document.querySelectorAll('#azki-gran .azki-seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#azki-gran .sm-stab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#azki-gran .azki-seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       azkiState.granularity = btn.dataset.gran;
       azkiRenderLoadedViews();
@@ -4179,6 +4248,7 @@ async function enterApp(user) {
     document.getElementById('panel-targets').classList.remove('active');
     document.getElementById('panel-bugs').classList.remove('active');
     document.getElementById('team-tabs').style.display = 'flex';
+    document.querySelector('main').classList.add('wide-nav');
     document.getElementById('panel-team').classList.add('active');
     document.getElementById('panel-team-bugs').classList.remove('active');
     document.getElementById('center-tabs').style.display = 'none';
@@ -4215,6 +4285,7 @@ async function enterApp(user) {
     document.getElementById('panel-center-agent').classList.remove('active');
     document.getElementById('panel-admin').classList.remove('active');
     document.getElementById('panel-supervisor').classList.add('active');
+    document.querySelector('main').classList.add('wide-nav');
     loadSupervisorView();
   } else {
     loadTargets(user.id);
