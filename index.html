@@ -1657,6 +1657,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
         مقایسه درصد صدور
       </button>
+      <button class="tab-btn" data-team-tab="azki-active" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+        وضعیت فعال کاربران
+      </button>
     </div>
 
     <div class="panel" id="panel-team">
@@ -1687,6 +1691,7 @@
 
     <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
+    <div class="panel" id="panel-azki-active"></div>
 
     <div class="tabs" id="center-tabs" style="display:none;">
       <button class="tab-btn active" data-center-tab="center">
@@ -1785,6 +1790,10 @@
         <button class="tab-btn" data-sup-tab="azki-centers" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="4" height="9"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="3" width="4" height="17"/></svg>
           به تفکیک نام مرکز
+        </button>
+        <button class="tab-btn" data-sup-tab="azki-active" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+          وضعیت فعال کاربران
         </button>
         <button class="tab-btn" data-sup-tab="azki-shifts" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -1907,6 +1916,27 @@
       <div id="sup-view-azki-centers" style="display:none;">
         <div class="period-label" id="azki-centers-label"></div>
         <div class="list-card" id="azki-centers-list">
+          <div class="loading-state">در حال بارگذاری...</div>
+        </div>
+      </div>
+
+      <div id="sup-view-azki-active" style="display:none;">
+        <div class="period-label">وضعیت لحظه‌ای فعال/غیرفعال کاربران مراکز صدور</div>
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="label">کل کاربران فعال</div>
+            <div class="value" id="azki-active-total-active">—</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">کل کاربران ثبت‌شده</div>
+            <div class="value" id="azki-active-total-all">—</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">درصد فعال</div>
+            <div class="value" id="azki-active-pct">—</div>
+          </div>
+        </div>
+        <div class="list-card" id="azki-active-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
       </div>
@@ -2174,7 +2204,7 @@ document.querySelectorAll('#team-tabs .tab-btn').forEach(btn => {
     document.querySelectorAll('#team-tabs .tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('panel-team').classList.remove('active');
     document.getElementById('panel-team-bugs').classList.remove('active');
-    ['panel-azki-compare', 'panel-azki-shifts'].forEach(id => {
+    ['panel-azki-compare', 'panel-azki-shifts', 'panel-azki-active'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.remove('active');
     });
@@ -2183,12 +2213,14 @@ document.querySelectorAll('#team-tabs .tab-btn').forEach(btn => {
     const panelEl = document.getElementById('panel-' + tab);
     panelEl.classList.add('active');
     const azkiFilterEl = document.getElementById('azki-filter');
-    const isAzki = tab.startsWith('azki-');
+    // وضعیت فعال کاربران بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
+    const isAzki = tab.startsWith('azki-') && tab !== 'azki-active';
     // فیلتر تاریخ/شرکت یکی بیشتر نیست؛ هر بار بالای پنل azki فعال جابه‌جا می‌شه
     if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
     if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
     if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
     if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
+    if (tab === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   });
 });
@@ -2513,7 +2545,9 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       $('sup-view-azki-shifts').style.display = which === 'azki-shifts' ? '' : 'none';
       $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
       $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
-      $('azki-filter').style.display = which.startsWith('azki-') ? '' : 'none';
+      $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
+      // وضعیت فعال کاربران بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
+      $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
       document.querySelector('main').classList.toggle('sm-wide', which === 'map');
       if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
       if (which === 'azki-period' && !azkiState.period.loaded) loadAzkiPeriodView();
@@ -2521,6 +2555,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       if (which === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
       if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
       if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
+      if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
       if (window.refreshGlassReveals) window.refreshGlassReveals();
     });
   });
@@ -2695,6 +2730,7 @@ const azkiState = {
   shifts:  { loaded: false, rows: [], mode: 'date' },
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
+  activeStatus: { loaded: false, rows: [] },
 };
 
 function faDigits(v) { return String(v).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
@@ -2966,6 +3002,98 @@ function renderAzkiCentersView() {
           </div>
           <div class="leader-right">
             <span class="leader-total">${formatNumber(totalsByCenter[centerName])}</span>
+          </div>
+        </button>
+        <div class="leader-details"><div class="leader-details-inner">${rowsHtml}</div></div>
+      </div>`;
+  }).join('');
+
+  bindExpandableToggles(container);
+}
+
+// ============================================================
+// تب «وضعیت فعال کاربران»: وضعیت لحظه‌ای فعال/غیرفعال کاربرانی که با فرمت
+// «مرکز صدور X | Y» ثبت شدن (از جدول center_operators_status که ورک‌فلوی n8n پر می‌کنه).
+// این تب بازه‌ی تاریخی نداره — همیشه آخرین وضعیت ثبت‌شده رو نشون می‌ده.
+// ============================================================
+async function loadAzkiActiveStatusView() {
+  if (!azkiAllowed()) return;
+  const { data, error } = await supabaseClient
+    .from('center_operators_status')
+    .select('center_name, full_name, is_active, is_active_to_issue, updated_at')
+    .order('center_name', { ascending: true });
+
+  if (error) {
+    document.getElementById('azki-active-list').innerHTML = `<div class="empty-state">خطا در دریافت وضعیت: ${error.message}</div>`;
+    return;
+  }
+  azkiState.activeStatus.rows = data || [];
+  azkiState.activeStatus.loaded = true;
+  renderAzkiActiveStatusView();
+}
+
+function renderAzkiActiveStatusView() {
+  const rows = azkiState.activeStatus.rows;
+  const container = document.getElementById('azki-active-list');
+
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-state">هنوز داده‌ای برای وضعیت فعال ثبت نشده</div>';
+    document.getElementById('azki-active-total-active').textContent = '۰';
+    document.getElementById('azki-active-total-all').textContent = '۰';
+    document.getElementById('azki-active-pct').textContent = '۰٪';
+    return;
+  }
+
+  const groupsMap = new Map();
+  rows.forEach(r => {
+    const key = r.center_name || 'بدون سنتر';
+    if (!groupsMap.has(key)) groupsMap.set(key, []);
+    groupsMap.get(key).push(r);
+  });
+
+  let totalActive = 0;
+  const centerSummaries = Array.from(groupsMap.entries()).map(([centerName, members]) => {
+    const sorted = members.slice().sort((a, b) => {
+      const aOn = a.is_active && a.is_active_to_issue;
+      const bOn = b.is_active && b.is_active_to_issue;
+      if (aOn !== bOn) return aOn ? -1 : 1;
+      return (a.full_name || '').localeCompare(b.full_name || '', 'fa');
+    });
+    const activeCount = sorted.filter(m => m.is_active && m.is_active_to_issue).length;
+    totalActive += activeCount;
+    return { centerName, members: sorted, activeCount, total: sorted.length };
+  }).sort((a, b) => b.activeCount - a.activeCount);
+
+  document.getElementById('azki-active-total-active').textContent = formatNumber(totalActive);
+  document.getElementById('azki-active-total-all').textContent = formatNumber(rows.length);
+  document.getElementById('azki-active-pct').textContent =
+    faDigits(rows.length ? round2(totalActive / rows.length * 100) : 0) + '٪';
+
+  container.innerHTML = centerSummaries.map(g => {
+    const rowsHtml = g.members.map(m => {
+      const on = m.is_active && m.is_active_to_issue;
+      return `
+        <div class="row-item">
+          <div class="admin-row-name-wrap">
+            <span class="admin-status-dot ${on ? 'online' : ''}"></span>
+            <div class="admin-row-info">
+              <span class="admin-row-name">${m.full_name || '—'}</span>
+            </div>
+          </div>
+          <div style="text-align:left;">
+            <span class="admin-status-badge ${on ? 'online' : ''}">${on ? 'فعال' : 'غیرفعال'}</span>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="leader-item">
+        <button class="leader-header" type="button">
+          <div class="leader-name-wrap">
+            <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="leader-name">${g.centerName}</span>
+          </div>
+          <div class="leader-right">
+            <span class="leader-total">${formatNumber(g.activeCount)} از ${formatNumber(g.total)} فعال</span>
           </div>
         </button>
         <div class="leader-details"><div class="leader-details-inner">${rowsHtml}</div></div>
@@ -4055,7 +4183,7 @@ async function enterApp(user) {
     document.getElementById('panel-supervisor').classList.remove('active');
     (function relocateAzkiViewsForLeader() {
       const filterEl = document.getElementById('azki-filter');
-      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-shifts', 'sup-view-azki-shifts']].forEach(([hostId, viewId]) => {
+      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active']].forEach(([hostId, viewId]) => {
         const host = document.getElementById(hostId);
         const viewEl = document.getElementById(viewId);
         if (host && viewEl && !host.contains(viewEl)) {
