@@ -1359,6 +1359,11 @@
   #azki-filter .azki-fld { align-items: center; }
   #azki-filter .azki-fld-label { text-align: center; width: 100%; }
   #azki-filter .azki-ctl { justify-content: center; }
+  #sup-filter .azki-bar, #team-filter .azki-bar { justify-content: center; }
+  #sup-filter .azki-error, #team-filter .azki-error { text-align: center; }
+  #sup-filter .azki-fld, #team-filter .azki-fld { align-items: center; }
+  #sup-filter .azki-fld-label, #team-filter .azki-fld-label { text-align: center; width: 100%; }
+  #sup-filter .azki-ctl, #team-filter .azki-ctl { justify-content: center; }
   .azki-export-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; white-space: nowrap; }
   .azki-export-btn[disabled] { opacity: .6; cursor: default; }
   /* زیرمنوی تب «گزارش» */
@@ -1701,6 +1706,32 @@
     </div>
 
     <div class="panel" id="panel-team">
+      <div id="team-filter" class="azki-filter">
+        <div class="azki-bar">
+          <div class="azki-fld">
+            <span class="azki-fld-label">از تاریخ</span>
+            <button type="button" class="azki-ctl" id="team-from-btn"><span id="team-from-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
+            <div class="azki-pop azki-cal" id="team-from-cal" hidden></div>
+          </div>
+          <div class="azki-fld">
+            <span class="azki-fld-label">تا تاریخ</span>
+            <button type="button" class="azki-ctl" id="team-to-btn"><span id="team-to-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
+            <div class="azki-pop azki-cal" id="team-to-cal" hidden></div>
+          </div>
+          <div class="azki-fld">
+            <span class="azki-fld-label">&nbsp;</span>
+            <button type="button" class="sm-btn" id="team-filter-reset">بازه‌ی جاری (۲۱ تا ۲۰)</button>
+          </div>
+          <div class="azki-fld">
+            <span class="azki-fld-label">&nbsp;</span>
+            <button type="button" class="sm-btn azki-export-btn" id="team-export-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+              خروجی اکسل
+            </button>
+          </div>
+        </div>
+        <div class="azki-error" id="team-filter-error"></div>
+      </div>
       <div class="period-label" id="team-period-label"></div>
       <div class="summary-row">
         <div class="summary-card">
@@ -1853,6 +1884,32 @@
       </div>
 
       <div id="sup-view-targets">
+      <div id="sup-filter" class="azki-filter">
+        <div class="azki-bar">
+          <div class="azki-fld">
+            <span class="azki-fld-label">از تاریخ</span>
+            <button type="button" class="azki-ctl" id="sup-from-btn"><span id="sup-from-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
+            <div class="azki-pop azki-cal" id="sup-from-cal" hidden></div>
+          </div>
+          <div class="azki-fld">
+            <span class="azki-fld-label">تا تاریخ</span>
+            <button type="button" class="azki-ctl" id="sup-to-btn"><span id="sup-to-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
+            <div class="azki-pop azki-cal" id="sup-to-cal" hidden></div>
+          </div>
+          <div class="azki-fld">
+            <span class="azki-fld-label">&nbsp;</span>
+            <button type="button" class="sm-btn" id="sup-filter-reset">بازه‌ی جاری (۲۱ تا ۲۰)</button>
+          </div>
+          <div class="azki-fld">
+            <span class="azki-fld-label">&nbsp;</span>
+            <button type="button" class="sm-btn azki-export-btn" id="sup-export-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+              خروجی اکسل
+            </button>
+          </div>
+        </div>
+        <div class="azki-error" id="sup-filter-error"></div>
+      </div>
       <div class="period-label" id="supervisor-period-label"></div>
       <div class="summary-row">
         <div class="summary-card">
@@ -3695,11 +3752,11 @@ const AZKI_GRAN_FA = { daily: 'روزانه', weekly: 'هفتگی', monthly: 'م
 
 // یک شیت مرتب می‌سازه: عنوان + توضیح بازه، هدر رنگی، ردیف‌ها، ردیف جمع کل
 // fmts: برای هر ستون 'text' | 'int' | 'pct'
-function azkiXlsxSheet({ title, headers, rows, total, widths, fmts }) {
-  const b = azkiState.bounds;
+function azkiXlsxSheet({ title, headers, rows, total, widths, fmts, bounds, metaLine2 }) {
+  const b = bounds || azkiState.bounds;
   const cols = headers.length;
   const meta1 = `بازه‌ی گزارش: ${b.startLabel} تا ${b.endLabel}`;
-  const meta2 = `حالت نمایش: ${AZKI_GRAN_FA[azkiState.granularity] || ''}   |   شرکت: ${azkiState.companies.all ? 'همه شرکت‌ها' : azkiActiveScopes().join('، ')}`;
+  const meta2 = metaLine2 !== undefined ? metaLine2 : `حالت نمایش: ${AZKI_GRAN_FA[azkiState.granularity] || ''}   |   شرکت: ${azkiState.companies.all ? 'همه شرکت‌ها' : azkiActiveScopes().join('، ')}`;
   const HEAD_ROW = 4;
   const aoa = [[title], [meta1], [meta2], [], headers, ...rows];
   if (total) aoa.push(total);
@@ -3744,11 +3801,11 @@ function azkiXlsxSheet({ title, headers, rows, total, widths, fmts }) {
   return ws;
 }
 
-function azkiXlsxSave(sheets, fileLabel) {
+function azkiXlsxSave(sheets, fileLabel, bounds) {
   const wb = XLSX.utils.book_new();
   wb.Workbook = { Views: [{ RTL: true }] };
   sheets.forEach(([name, ws]) => XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31)));
-  const b = azkiState.bounds;
+  const b = bounds || azkiState.bounds;
   const fname = `${fileLabel}_${b.startLabel.replace(/\//g, '-')}_تا_${b.endLabel.replace(/\//g, '-')}.xlsx`;
   XLSX.writeFile(wb, fname);
 }
@@ -4867,10 +4924,154 @@ function bindExpandableToggles(container) {
   });
 }
 
+// ============================================================
+// فیلتر تاریخ تب «تعداد صدور تیم» سرگروه (پیش‌فرض: ۲۱ تا ۲۰ ماه بعد؛ قابل تغییر دستی) + خروجی اکسل
+// ============================================================
+const teamTargetsFilter = { from: null, to: null, custom: false };   // [jy, jm, jd]
+const teamCalView = { from: [0, 0], to: [0, 0] };
+let teamLoadToken = 0;
+
+const teamSortKey = t => t[0] * 10000 + t[1] * 100 + t[2];
+const teamLabel = t => `${t[0]}/${pad2(t[1])}/${pad2(t[2])}`;
+
+function teamTargetsPeriod() {
+  if (!teamTargetsFilter.from || !teamTargetsFilter.to) return currentPeriodBounds();
+  const f = teamTargetsFilter.from, t = teamTargetsFilter.to;
+  return { startSort: teamSortKey(f), endSort: teamSortKey(t), startLabel: teamLabel(f), endLabel: teamLabel(t) };
+}
+
+function teamSetDate(key, t) {
+  teamTargetsFilter[key] = t;
+  document.getElementById(`team-${key}-text`).textContent = faDigits(teamLabel(t));
+}
+
+function teamSetDefaultRange() {
+  const d = currentPeriodBounds();
+  const s0 = parseJalaliParts(d.startLabel), e0 = parseJalaliParts(d.endLabel);
+  teamSetDate('from', [s0.jy, s0.jm, s0.jd]);
+  teamSetDate('to', [e0.jy, e0.jm, e0.jd]);
+  teamTargetsFilter.custom = false;
+}
+
+function teamCalRender(key) {
+  const pop = document.getElementById(`team-${key}-cal`);
+  let [vy, vm] = teamCalView[key];
+  const sel = teamTargetsFilter[key];
+  const today = tehranTodayJalali();
+  const len = azkiJalaliMonthLength(vy, vm);
+  const offset = azkiWeekdayIndex(vy, vm, 1);
+  const yMin = Math.min(today[0] - 4, vy), yMax = Math.max(today[0] + 1, vy);
+  let yearOpts = '';
+  for (let y = yMin; y <= yMax; y++) yearOpts += `<option value="${y}"${y === vy ? ' selected' : ''}>${faDigits(y)}</option>`;
+  const monthOpts = JALALI_MONTHS_FA.map((n, i) => `<option value="${i + 1}"${i + 1 === vm ? ' selected' : ''}>${n}</option>`).join('');
+  let cells = '';
+  for (let i = 0; i < offset; i++) cells += '<span></span>';
+  for (let d = 1; d <= len; d++) {
+    const isSel = sel && sel[0] === vy && sel[1] === vm && sel[2] === d;
+    const isToday = today[0] === vy && today[1] === vm && today[2] === d;
+    cells += `<button type="button" class="azki-cal-day${isSel ? ' sel' : ''}${isToday ? ' today' : ''}" data-day="${d}">${faDigits(d)}</button>`;
+  }
+  const chev = pts => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="${pts}"/></svg>`;
+  pop.innerHTML = `
+    <div class="azki-cal-head">
+      <button type="button" class="azki-cal-nav" data-nav="-1" aria-label="ماه قبل">${chev('9 6 15 12 9 18')}</button>
+      <select data-role="m" aria-label="ماه">${monthOpts}</select>
+      <select data-role="y" aria-label="سال">${yearOpts}</select>
+      <button type="button" class="azki-cal-nav" data-nav="1" aria-label="ماه بعد">${chev('15 6 9 12 15 18')}</button>
+    </div>
+    <div class="azki-cal-grid">
+      ${AZKI_WEEKDAYS.map(w => `<span class="azki-cal-wd">${w}</span>`).join('')}
+      ${cells}
+    </div>
+    <div class="azki-pop-foot">
+      <button type="button" class="sm-btn" data-today="1">امروز</button>
+      <button type="button" class="sm-btn" data-close="1">بستن</button>
+    </div>`;
+}
+
+function teamOpenCal(key) {
+  const pop = document.getElementById(`team-${key}-cal`);
+  const willOpen = pop.hidden;
+  azkiClosePops(pop.id);
+  if (!willOpen) { pop.hidden = true; return; }
+  const cur = teamTargetsFilter[key] || tehranTodayJalali();
+  teamCalView[key] = [cur[0], cur[1]];
+  teamCalRender(key);
+  pop.hidden = false;
+  azkiPlacePop(pop);
+}
+
+function teamBindCal(key) {
+  const pop = document.getElementById(`team-${key}-cal`);
+  document.getElementById(`team-${key}-btn`).addEventListener('click', () => teamOpenCal(key));
+  pop.addEventListener('click', e => {
+    const nav = e.target.closest('[data-nav]');
+    const day = e.target.closest('[data-day]');
+    if (nav) {
+      let [vy, vm] = teamCalView[key];
+      vm += parseInt(nav.dataset.nav, 10);
+      if (vm < 1) { vm = 12; vy--; } else if (vm > 12) { vm = 1; vy++; }
+      teamCalView[key] = [vy, vm];
+      teamCalRender(key);
+    } else if (day) {
+      const [vy, vm] = teamCalView[key];
+      teamSetDate(key, [vy, vm, parseInt(day.dataset.day, 10)]);
+      pop.hidden = true;
+      teamApplyRange();
+    } else if (e.target.closest('[data-today]')) {
+      teamSetDate(key, tehranTodayJalali());
+      pop.hidden = true;
+      teamApplyRange();
+    } else if (e.target.closest('[data-close]')) {
+      pop.hidden = true;
+    }
+  });
+  pop.addEventListener('change', e => {
+    const role = e.target.dataset.role;
+    if (!role) return;
+    const v = parseInt(e.target.value, 10);
+    if (role === 'm') teamCalView[key][1] = v; else teamCalView[key][0] = v;
+    teamCalRender(key);
+  });
+}
+
+function teamReload() {
+  if (!window.teamLeaderId) return;
+  document.getElementById('team-list').innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+  loadTeamView(window.teamLeaderId);
+}
+
+function teamApplyRange() {
+  const errEl = document.getElementById('team-filter-error');
+  const f = teamTargetsFilter.from, t = teamTargetsFilter.to;
+  if (!f || !t) return;
+  if (teamSortKey(f) > teamSortKey(t)) { errEl.textContent = 'تاریخ شروع نباید بعد از تاریخ پایان باشد.'; return; }
+  const days = (Date.parse(jalaliToGregorian(t[0], t[1], t[2])) - Date.parse(jalaliToGregorian(f[0], f[1], f[2]))) / 86400000 + 1;
+  if (days > 366) { errEl.textContent = 'حداکثر بازه‌ی قابل نمایش یک سال است.'; return; }
+  errEl.textContent = '';
+  teamTargetsFilter.custom = true;
+  teamReload();
+}
+
+function initTeamTargetsFilter() {
+  teamSetDefaultRange();
+  teamBindCal('from');
+  teamBindCal('to');
+  document.getElementById('team-filter-reset').addEventListener('click', () => {
+    teamSetDefaultRange();
+    document.getElementById('team-filter-error').textContent = '';
+    teamReload();
+  });
+  document.getElementById('team-export-btn').addEventListener('click', exportTeamTargetsExcel);
+}
+initTeamTargetsFilter();
+
 async function loadTeamView(leaderId) {
   const container = document.getElementById('team-list');
-  const period = currentPeriodBounds();
-  document.getElementById('team-period-label').textContent = faDigits(`بازه‌ی جاری: ${period.startLabel} تا ${period.endLabel}`);
+  window.teamLeaderId = leaderId;
+  const token = ++teamLoadToken;
+  const period = teamTargetsPeriod();
+  document.getElementById('team-period-label').textContent = faDigits(`${teamTargetsFilter.custom ? 'بازه‌ی نمایش' : 'بازه‌ی جاری'}: ${period.startLabel} تا ${period.endLabel}`);
 
   const { data: myCenterLinks, error: myCenterLinksError } = await fetchAllRows((from, to) =>
     supabaseClient
@@ -4979,6 +5180,7 @@ async function loadTeamView(leaderId) {
       .range(from, to)
   );
 
+  if (token !== teamLoadToken) return;
   if (rowsError) {
     container.innerHTML = `<div class="empty-state">خطا در دریافت تارگت‌ها: ${rowsError.message}</div>`;
     document.getElementById('team-period-total').textContent = '—';
@@ -5022,6 +5224,8 @@ async function loadTeamView(leaderId) {
   membersWithTotals.sort((a, b) => b.myTotal - a.myTotal);
 
   agentSlaMap = buildSlaMapFromRows(rows, period.startSort);
+  if (agentSlaMap && teamTargetsFilter.custom) agentSlaPeriodLabel = faDigits(`${period.startLabel} تا ${period.endLabel}`);
+  window.teamTargetsData = { items: membersWithTotals, period, slaMap: agentSlaMap };
   const memberBlocks = buildGroupedMemberItemsHtml(membersWithTotals);
 
   container.innerHTML = memberBlocks;
@@ -5066,10 +5270,225 @@ function publishSupTargetCenters(list) {
   document.dispatchEvent(new CustomEvent('sup-target-centers'));
 }
 
+// ============================================================
+// فیلتر تاریخ تب «صدور» سرپرست (پیش‌فرض: بازه‌ی ۲۱ تا ۲۰ ماه بعد؛ قابل تغییر دستی) + خروجی اکسل
+// ============================================================
+const supTargetsFilter = { from: null, to: null, custom: false };   // [jy, jm, jd]
+const supCalView = { from: [0, 0], to: [0, 0] };
+let supLoadToken = 0;
+
+const supSortKey = t => t[0] * 10000 + t[1] * 100 + t[2];
+const supLabel = t => `${t[0]}/${pad2(t[1])}/${pad2(t[2])}`;
+
+function supTargetsPeriod() {
+  if (!supTargetsFilter.from || !supTargetsFilter.to) return currentPeriodBounds();
+  const f = supTargetsFilter.from, t = supTargetsFilter.to;
+  return { startSort: supSortKey(f), endSort: supSortKey(t), startLabel: supLabel(f), endLabel: supLabel(t) };
+}
+
+function supSetDate(key, t) {
+  supTargetsFilter[key] = t;
+  document.getElementById(`sup-${key}-text`).textContent = faDigits(supLabel(t));
+}
+
+function supSetDefaultRange() {
+  const d = currentPeriodBounds();
+  const s0 = parseJalaliParts(d.startLabel), e0 = parseJalaliParts(d.endLabel);
+  supSetDate('from', [s0.jy, s0.jm, s0.jd]);
+  supSetDate('to', [e0.jy, e0.jm, e0.jd]);
+  supTargetsFilter.custom = false;
+}
+
+function supCalRender(key) {
+  const pop = document.getElementById(`sup-${key}-cal`);
+  let [vy, vm] = supCalView[key];
+  const sel = supTargetsFilter[key];
+  const today = tehranTodayJalali();
+  const len = azkiJalaliMonthLength(vy, vm);
+  const offset = azkiWeekdayIndex(vy, vm, 1);
+  const yMin = Math.min(today[0] - 4, vy), yMax = Math.max(today[0] + 1, vy);
+  let yearOpts = '';
+  for (let y = yMin; y <= yMax; y++) yearOpts += `<option value="${y}"${y === vy ? ' selected' : ''}>${faDigits(y)}</option>`;
+  const monthOpts = JALALI_MONTHS_FA.map((n, i) => `<option value="${i + 1}"${i + 1 === vm ? ' selected' : ''}>${n}</option>`).join('');
+  let cells = '';
+  for (let i = 0; i < offset; i++) cells += '<span></span>';
+  for (let d = 1; d <= len; d++) {
+    const isSel = sel && sel[0] === vy && sel[1] === vm && sel[2] === d;
+    const isToday = today[0] === vy && today[1] === vm && today[2] === d;
+    cells += `<button type="button" class="azki-cal-day${isSel ? ' sel' : ''}${isToday ? ' today' : ''}" data-day="${d}">${faDigits(d)}</button>`;
+  }
+  const chev = pts => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="${pts}"/></svg>`;
+  pop.innerHTML = `
+    <div class="azki-cal-head">
+      <button type="button" class="azki-cal-nav" data-nav="-1" aria-label="ماه قبل">${chev('9 6 15 12 9 18')}</button>
+      <select data-role="m" aria-label="ماه">${monthOpts}</select>
+      <select data-role="y" aria-label="سال">${yearOpts}</select>
+      <button type="button" class="azki-cal-nav" data-nav="1" aria-label="ماه بعد">${chev('15 6 9 12 15 18')}</button>
+    </div>
+    <div class="azki-cal-grid">
+      ${AZKI_WEEKDAYS.map(w => `<span class="azki-cal-wd">${w}</span>`).join('')}
+      ${cells}
+    </div>
+    <div class="azki-pop-foot">
+      <button type="button" class="sm-btn" data-today="1">امروز</button>
+      <button type="button" class="sm-btn" data-close="1">بستن</button>
+    </div>`;
+}
+
+function supOpenCal(key) {
+  const pop = document.getElementById(`sup-${key}-cal`);
+  const willOpen = pop.hidden;
+  azkiClosePops(pop.id);
+  if (!willOpen) { pop.hidden = true; return; }
+  const cur = supTargetsFilter[key] || tehranTodayJalali();
+  supCalView[key] = [cur[0], cur[1]];
+  supCalRender(key);
+  pop.hidden = false;
+  azkiPlacePop(pop);
+}
+
+function supBindCal(key) {
+  const pop = document.getElementById(`sup-${key}-cal`);
+  document.getElementById(`sup-${key}-btn`).addEventListener('click', () => supOpenCal(key));
+  pop.addEventListener('click', e => {
+    const nav = e.target.closest('[data-nav]');
+    const day = e.target.closest('[data-day]');
+    if (nav) {
+      let [vy, vm] = supCalView[key];
+      vm += parseInt(nav.dataset.nav, 10);
+      if (vm < 1) { vm = 12; vy--; } else if (vm > 12) { vm = 1; vy++; }
+      supCalView[key] = [vy, vm];
+      supCalRender(key);
+    } else if (day) {
+      const [vy, vm] = supCalView[key];
+      supSetDate(key, [vy, vm, parseInt(day.dataset.day, 10)]);
+      pop.hidden = true;
+      supApplyRange();
+    } else if (e.target.closest('[data-today]')) {
+      supSetDate(key, tehranTodayJalali());
+      pop.hidden = true;
+      supApplyRange();
+    } else if (e.target.closest('[data-close]')) {
+      pop.hidden = true;
+    }
+  });
+  pop.addEventListener('change', e => {
+    const role = e.target.dataset.role;
+    if (!role) return;
+    const v = parseInt(e.target.value, 10);
+    if (role === 'm') supCalView[key][1] = v; else supCalView[key][0] = v;
+    supCalRender(key);
+  });
+}
+
+function supApplyRange() {
+  const errEl = document.getElementById('sup-filter-error');
+  const f = supTargetsFilter.from, t = supTargetsFilter.to;
+  if (!f || !t) return;
+  if (supSortKey(f) > supSortKey(t)) { errEl.textContent = 'تاریخ شروع نباید بعد از تاریخ پایان باشد.'; return; }
+  const days = (Date.parse(jalaliToGregorian(t[0], t[1], t[2])) - Date.parse(jalaliToGregorian(f[0], f[1], f[2]))) / 86400000 + 1;
+  if (days > 366) { errEl.textContent = 'حداکثر بازه‌ی قابل نمایش یک سال است.'; return; }
+  errEl.textContent = '';
+  supTargetsFilter.custom = true;
+  document.getElementById('supervisor-list').innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+  loadSupervisorView();
+}
+
+function initSupTargetsFilter() {
+  supSetDefaultRange();
+  supBindCal('from');
+  supBindCal('to');
+  document.getElementById('sup-filter-reset').addEventListener('click', () => {
+    supSetDefaultRange();
+    document.getElementById('sup-filter-error').textContent = '';
+    document.getElementById('supervisor-list').innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+    loadSupervisorView();
+  });
+  document.getElementById('sup-export-btn').addEventListener('click', exportSupTargetsExcel);
+}
+initSupTargetsFilter();
+
+function exportSupTargetsExcel() { return exportTargetsExcelFrom(window.supTargetsData, 'sup-export-btn'); }
+function exportTeamTargetsExcel() { return exportTargetsExcelFrom(window.teamTargetsData, 'team-export-btn'); }
+
+async function exportTargetsExcelFrom(d, btnId) {
+  if (!d || !d.items || !d.items.length) { alert('داده‌ای برای خروجی گرفتن وجود نداره؛ صبر کنید تا بارگذاری تموم بشه.'); return; }
+  const btn = document.getElementById(btnId);
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'در حال آماده‌سازی...';
+  try {
+    await ensureXlsxLib();
+    const bounds = { startLabel: d.period.startLabel, endLabel: d.period.endLabel };
+    const meta2 = 'تعداد صدور روزانه کارشناس‌ها به تفکیک سنتر';
+    const hasSla = !!d.slaMap;
+
+    const byCenter = new Map();
+    d.items.forEach(it => {
+      const c = it.m.centerName || 'بدون سنتر';
+      if (!byCenter.has(c)) byCenter.set(c, []);
+      byCenter.get(c).push(it);
+    });
+    const centers = [...byCenter.entries()].map(([name, items]) => ({
+      name, items: items.slice().sort((a, b) => b.myTotal - a.myTotal),
+      total: items.reduce((s0, it) => s0 + it.myTotal, 0),
+      withTarget: items.filter(it => it.myRows.length > 0).length,
+    })).sort((a, b) => b.total - a.total);
+
+    const grandTotal = centers.reduce((s0, c) => s0 + c.total, 0);
+    const grandAgents = d.items.length;
+    const grandWith = centers.reduce((s0, c) => s0 + c.withTarget, 0);
+
+    const summary = azkiXlsxSheet({
+      title: 'صدور — خلاصه به تفکیک سنتر', bounds, metaLine2: meta2,
+      headers: ['نام سنتر', 'تعداد کارشناس', 'کارشناس‌های دارای صدور', 'جمع صدور', 'میانگین صدور هر کارشناس'],
+      rows: centers.map(c => [c.name, c.items.length, c.withTarget, c.total, c.items.length ? round2(c.total / c.items.length) : 0]),
+      total: ['جمع کل', grandAgents, grandWith, grandTotal, grandAgents ? round2(grandTotal / grandAgents) : 0],
+      widths: [36, 16, 24, 16, 24], fmts: ['text', 'int', 'int', 'int', 'pct'],
+    });
+
+    const agentHeads = ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'تعداد روز ثبت‌شده', 'جمع صدور'];
+    if (hasSla) agentHeads.push('میانگین زمان صدور (دقیقه)');
+    const agentRows = [];
+    centers.forEach(c => c.items.forEach(it => {
+      const row = [c.name, it.m.full_name || '—', it.m.backoffice_id || '', it.myRows.length, it.myTotal];
+      if (hasSla) { const v = d.slaMap[it.m.id]; row.push(v != null ? round2(Number(v)) : ''); }
+      agentRows.push(row);
+    }));
+    const agentTotal = ['جمع کل', '', '', '', grandTotal];
+    if (hasSla) agentTotal.push('');
+    const agents = azkiXlsxSheet({
+      title: 'صدور — به تفکیک کارشناس', bounds, metaLine2: meta2,
+      headers: agentHeads, rows: agentRows, total: agentTotal,
+      widths: [34, 28, 20, 18, 14, ...(hasSla ? [24] : [])],
+      fmts: ['text', 'text', 'text', 'int', 'int', ...(hasSla ? ['pct'] : [])],
+    });
+
+    const dayRows = [];
+    centers.forEach(c => c.items.forEach(it => sortRowsByDateAsc(it.myRows).forEach(r => {
+      dayRows.push([c.name, it.m.full_name || '—', toJalaliDisplay(r.report_date_jalali), r.target_count != null ? Number(r.target_count) : '']);
+    })));
+    const daily = azkiXlsxSheet({
+      title: 'صدور — جزئیات روزانه', bounds, metaLine2: meta2,
+      headers: ['نام سنتر', 'نام کارشناس', 'تاریخ', 'تعداد صدور'],
+      rows: dayRows, total: ['جمع کل', '', '', grandTotal],
+      widths: [34, 28, 18, 14], fmts: ['text', 'text', 'text', 'int'],
+    });
+
+    azkiXlsxSave([['خلاصه سنترها', summary], ['کارشناس‌ها', agents], ['جزئیات روزانه', daily]], 'گزارش-صدور', bounds);
+  } catch (e) {
+    alert('خروجی اکسل با خطا مواجه شد: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
 async function loadSupervisorView() {
   const container = document.getElementById('supervisor-list');
-  const period = currentPeriodBounds();
-  document.getElementById('supervisor-period-label').textContent = faDigits(`بازه‌ی جاری: ${period.startLabel} تا ${period.endLabel}`);
+  const token = ++supLoadToken;
+  const period = supTargetsPeriod();
+  document.getElementById('supervisor-period-label').textContent = faDigits(`${supTargetsFilter.custom ? 'بازه‌ی نمایش' : 'بازه‌ی جاری'}: ${period.startLabel} تا ${period.endLabel}`);
 
   const setTotals = (totalText, countText, withTargetText) => {
     document.getElementById('supervisor-total').textContent = totalText;
@@ -5152,6 +5571,7 @@ async function loadSupervisorView() {
       .range(from, to)
   );
 
+  if (token !== supLoadToken) return;
   if (rowsError) {
     container.innerHTML = `<div class="empty-state">خطا در دریافت تارگت‌ها: ${rowsError.message}</div>`;
     setTotals('—', '—', '—');
@@ -5172,6 +5592,7 @@ async function loadSupervisorView() {
       .range(from, to)
   );
 
+  if (token !== supLoadToken) return;
   if (bugRowsError) console.error('خطا در دریافت خطاهای نیروها:', bugRowsError.message);
 
   const bugsByAgent = {};
@@ -5199,6 +5620,8 @@ async function loadSupervisorView() {
   const grandAgentWithTargetCount = items.filter(it => it.myRows.length > 0).length;
 
   agentSlaMap = buildSlaMapFromRows(rows, period.startSort);
+  if (agentSlaMap && supTargetsFilter.custom) agentSlaPeriodLabel = faDigits(`${period.startLabel} تا ${period.endLabel}`);
+  window.supTargetsData = { items, period, slaMap: agentSlaMap };
   container.innerHTML = items.length
     ? buildGroupedMemberItemsHtml(items)
     : '<div class="empty-state">هنوز نیرویی به هیچ سنتری اساین نشده است</div>';
