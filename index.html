@@ -1974,11 +1974,15 @@
       </div>
 
       <div id="sup-view-azki-active" style="display:none;">
-        <div class="period-label">وضعیت لحظه‌ای فعال/غیرفعال کاربران مراکز صدور</div>
+        <div class="period-label">وضعیت لحظه‌ای کاربران مراکز صدور — «فعال/غیرفعال»: وضعیت پنل کارشناس | «آنلاین/آفلاین»: در حال صدور بودن</div>
         <div class="summary-row">
           <div class="summary-card">
-            <div class="label">کل کاربران فعال</div>
+            <div class="label">پنل فعال</div>
             <div class="value" id="azki-active-total-active">—</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">آنلاین (در حال صدور)</div>
+            <div class="value" id="azki-active-total-online">—</div>
           </div>
           <div class="summary-card">
             <div class="label">کل کاربران ثبت‌شده</div>
@@ -3144,6 +3148,7 @@ function renderAzkiActiveStatusView() {
         (azkiState.activeStatus.sample || []).map(r => `«${r.full_name || '—'}» / «${r.center_name || '—'}»`).join(' ، ');
     container.innerHTML = '<div class="empty-state">هنوز داده‌ای برای وضعیت فعال ثبت نشده<div style="margin-top:8px;font-size:12px;opacity:.75;">' + why + '</div></div>';
     document.getElementById('azki-active-total-active').textContent = '۰';
+    document.getElementById('azki-active-total-online').textContent = '۰';
     document.getElementById('azki-active-total-all').textContent = '۰';
     document.getElementById('azki-active-pct').textContent = '۰٪';
     return;
@@ -3156,37 +3161,44 @@ function renderAzkiActiveStatusView() {
     groupsMap.get(key).push(r);
   });
 
-  let totalActive = 0;
+  // is_active = پنل کارشناس فعاله | is_active_to_issue = کارشناس در حال صدوره (آنلاین)
+  let totalActive = 0, totalOnline = 0;
   const centerSummaries = Array.from(groupsMap.entries()).map(([centerName, members]) => {
     const sorted = members.slice().sort((a, b) => {
-      const aOn = a.is_active && a.is_active_to_issue;
-      const bOn = b.is_active && b.is_active_to_issue;
+      const aOn = !!a.is_active_to_issue, bOn = !!b.is_active_to_issue;
       if (aOn !== bOn) return aOn ? -1 : 1;
+      const aAct = !!a.is_active, bAct = !!b.is_active;
+      if (aAct !== bAct) return aAct ? -1 : 1;
       return (a.full_name || '').localeCompare(b.full_name || '', 'fa');
     });
-    const activeCount = sorted.filter(m => m.is_active && m.is_active_to_issue).length;
+    const activeCount = sorted.filter(m => m.is_active).length;
+    const onlineCount = sorted.filter(m => m.is_active_to_issue).length;
     totalActive += activeCount;
-    return { centerName, members: sorted, activeCount, total: sorted.length };
-  }).sort((a, b) => b.activeCount - a.activeCount);
+    totalOnline += onlineCount;
+    return { centerName, members: sorted, activeCount, onlineCount, total: sorted.length };
+  }).sort((a, b) => (b.onlineCount - a.onlineCount) || (b.activeCount - a.activeCount));
 
   document.getElementById('azki-active-total-active').textContent = formatNumber(totalActive);
+  document.getElementById('azki-active-total-online').textContent = formatNumber(totalOnline);
   document.getElementById('azki-active-total-all').textContent = formatNumber(rows.length);
   document.getElementById('azki-active-pct').textContent =
     faDigits(rows.length ? round2(totalActive / rows.length * 100) : 0) + '٪';
 
   container.innerHTML = centerSummaries.map(g => {
     const rowsHtml = g.members.map(m => {
-      const on = m.is_active && m.is_active_to_issue;
+      const panelOn = !!m.is_active;
+      const online = !!m.is_active_to_issue;
       return `
         <div class="row-item">
           <div class="admin-row-name-wrap">
-            <span class="admin-status-dot ${on ? 'online' : ''}"></span>
+            <span class="admin-status-dot ${online ? 'online' : ''}"></span>
             <div class="admin-row-info">
               <span class="admin-row-name">${m.full_name || '—'}</span>
             </div>
           </div>
-          <div style="text-align:left;">
-            <span class="admin-status-badge ${on ? 'online' : ''}">${on ? 'فعال' : 'غیرفعال'}</span>
+          <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+            <span class="admin-status-badge ${panelOn ? 'online' : ''}" title="وضعیت پنل کارشناس">${panelOn ? 'فعال' : 'غیرفعال'}</span>
+            <span class="admin-status-badge ${online ? 'online' : ''}" title="در حال صدور">${online ? 'آنلاین' : 'آفلاین'}</span>
           </div>
         </div>`;
     }).join('');
@@ -3198,7 +3210,7 @@ function renderAzkiActiveStatusView() {
             <span class="leader-name">${g.centerName}</span>
           </div>
           <div class="leader-right">
-            <span class="leader-total">${formatNumber(g.activeCount)} از ${formatNumber(g.total)} فعال</span>
+            <span class="leader-total">${formatNumber(g.activeCount)} فعال · ${formatNumber(g.onlineCount)} آنلاین از ${formatNumber(g.total)}</span>
           </div>
         </button>
         <div class="leader-details"><div class="leader-details-inner">${rowsHtml}</div></div>
@@ -3782,12 +3794,49 @@ function azkiBuildCentersExport() {
   return { sheets: [['خلاصه مراکز', summary], ['جزئیات دوره', detail]], label: 'گزارش-به-تفکیک-مرکز' };
 }
 
+// بازه‌ی واقعی تاریخ (از/تا) هر دوره (روز/هفته/ماه) از روی خود ردیف‌ها
+function azkiPeriodDateRanges(rows, granularity) {
+  const map = {};
+  for (const r of rows) {
+    const { jy, jm, jd } = parseJalaliParts(r.report_date_jalali);
+    const { key } = azkiPeriodGroupKey(jy, jm, jd, granularity);
+    const n = jy * 10000 + jm * 100 + jd;
+    const txt = faDigits(`${jy}/${pad2(jm)}/${pad2(jd)}`);
+    if (!map[key]) map[key] = { minN: n, maxN: n, from: txt, to: txt };
+    if (n < map[key].minN) { map[key].minN = n; map[key].from = txt; }
+    if (n > map[key].maxN) { map[key].maxN = n; map[key].to = txt; }
+  }
+  return map;
+}
+
 function azkiBuildShiftsExport() {
-  const agg = aggregateAzkiShiftRows(azkiState.shifts.rows, azkiState.granularity);
+  const gran = azkiState.granularity;
+  const agg = aggregateAzkiShiftRows(azkiState.shifts.rows, gran);
   const g = agg.grand;
   const centerAll = shiftCenterSum(g);
+  const ranges = azkiPeriodDateRanges(azkiState.shifts.rows, gran);
+  const isDaily = gran === 'daily';
+  const periodColName = isDaily ? 'تاریخ' : (gran === 'weekly' ? 'هفته' : 'ماه');
+  const rangeCells = p => isDaily ? [] : [(ranges[p.key] || {}).from || '', (ranges[p.key] || {}).to || ''];
+  const rangeHeads = isDaily ? [] : ['از تاریخ', 'تا تاریخ'];
+  const rangeWidths = isDaily ? [] : [16, 16];
+  const rangeFmts = isDaily ? [] : ['text', 'text'];
+  const rangeBlank = isDaily ? [] : ['', ''];
+
+  // ۱) به تفکیک تاریخ (روزانه: تاریخ | هفتگی: هفته + از/تا | ماهانه: ماه + از/تا)
+  const byDate = azkiXlsxSheet({
+    title: 'تفکیک شیفت — به تفکیک ' + periodColName,
+    headers: [periodColName, ...rangeHeads, 'صبح: سنتر', 'صبح: کل', 'درصد صبح (٪)', 'عصر: سنتر', 'عصر: کل', 'درصد عصر (٪)'],
+    rows: agg.periods.map(p => [p.label, ...rangeCells(p), p.all.morning.center, p.all.morning.total, azkiPctNum(p.all.morning.center, p.all.morning.total),
+      p.all.evening.center, p.all.evening.total, azkiPctNum(p.all.evening.center, p.all.evening.total)]),
+    total: ['جمع کل', ...rangeBlank, g.morning.center, g.morning.total, azkiPctNum(g.morning.center, g.morning.total),
+      g.evening.center, g.evening.total, azkiPctNum(g.evening.center, g.evening.total)],
+    widths: [26, ...rangeWidths, 14, 14, 16, 14, 14, 16], fmts: ['text', ...rangeFmts, 'int', 'int', 'pct', 'int', 'int', 'pct'],
+  });
+
+  // ۲) خلاصه‌ی کل بازه
   const summary = azkiXlsxSheet({
-    title: 'تفکیک شیفت — خلاصه',
+    title: 'تفکیک شیفت — خلاصه کل بازه',
     headers: ['شیفت', 'ساعت', 'صدور ازکی سنتر', 'کل صدور شیفت', 'درصد از کل صدور شیفت (٪)', 'سهم از کل صدور سنترها (٪)'],
     rows: AZKI_SHIFTS.map(sh => [sh.title, sh.hours, g[sh.key].center, g[sh.key].total,
       azkiPctNum(g[sh.key].center, g[sh.key].total), azkiPctNum(g[sh.key].center, centerAll)]),
@@ -3795,18 +3844,11 @@ function azkiBuildShiftsExport() {
       azkiPctNum(g.morning.center + g.evening.center, g.morning.total + g.evening.total), ''],
     widths: [16, 18, 18, 18, 26, 26], fmts: ['text', 'text', 'int', 'int', 'pct', 'pct'],
   });
-  const byDate = azkiXlsxSheet({
-    title: 'تفکیک شیفت — به تفکیک تاریخ',
-    headers: ['دوره', 'صبح: سنتر', 'صبح: کل', 'درصد صبح (٪)', 'عصر: سنتر', 'عصر: کل', 'درصد عصر (٪)'],
-    rows: agg.periods.map(p => [p.label, p.all.morning.center, p.all.morning.total, azkiPctNum(p.all.morning.center, p.all.morning.total),
-      p.all.evening.center, p.all.evening.total, azkiPctNum(p.all.evening.center, p.all.evening.total)]),
-    total: ['جمع کل', g.morning.center, g.morning.total, azkiPctNum(g.morning.center, g.morning.total),
-      g.evening.center, g.evening.total, azkiPctNum(g.evening.center, g.evening.total)],
-    widths: [26, 14, 14, 16, 14, 14, 16], fmts: ['text', 'int', 'int', 'pct', 'int', 'int', 'pct'],
-  });
+
+  // ۳) هر مرکز در کل بازه
   const names = Object.keys(agg.centers).sort((a, b) => shiftCenterSum(agg.centers[b]) - shiftCenterSum(agg.centers[a]));
   const byCenter = azkiXlsxSheet({
-    title: 'تفکیک شیفت — به تفکیک مرکز',
+    title: 'تفکیک شیفت — به تفکیک مرکز (کل بازه)',
     headers: ['نام مرکز', 'صبح', 'عصر', 'خارج از شیفت (۰ تا ۸)', 'جمع', 'درصد صبح (٪)', 'درصد عصر (٪)'],
     rows: names.map(n => { const b = agg.centers[n], sum = shiftCenterSum(b);
       return [n, b.morning.center, b.evening.center, b.other.center, sum, azkiPctNum(b.morning.center, sum), azkiPctNum(b.evening.center, sum)]; }),
@@ -3814,7 +3856,29 @@ function azkiBuildShiftsExport() {
       azkiPctNum(g.morning.center, centerAll), azkiPctNum(g.evening.center, centerAll)],
     widths: [36, 12, 12, 22, 12, 16, 16], fmts: ['text', 'int', 'int', 'int', 'int', 'pct', 'pct'],
   });
-  return { sheets: [['خلاصه شیفت', summary], ['به تفکیک تاریخ', byDate], ['به تفکیک مرکز', byCenter]], label: 'گزارش-تفکیک-شیفت' };
+
+  // ۴) هر مرکز به تفکیک تاریخ/هفته/ماه
+  const detailRows = [];
+  names.forEach(n => agg.periods.forEach(p => {
+    const b = p.centers[n];
+    if (!b) return;
+    const sum = shiftCenterSum(b);
+    detailRows.push([n, p.label, ...rangeCells(p), b.morning.center, b.evening.center, b.other.center, sum,
+      azkiPctNum(b.morning.center, sum), azkiPctNum(b.evening.center, sum)]);
+  }));
+  const centerByDate = azkiXlsxSheet({
+    title: 'تفکیک شیفت — مرکز به تفکیک ' + periodColName,
+    headers: ['نام مرکز', periodColName, ...rangeHeads, 'صبح', 'عصر', 'خارج از شیفت (۰ تا ۸)', 'جمع', 'درصد صبح (٪)', 'درصد عصر (٪)'],
+    rows: detailRows,
+    total: ['جمع کل', '', ...rangeBlank, g.morning.center, g.evening.center, g.other.center, centerAll,
+      azkiPctNum(g.morning.center, centerAll), azkiPctNum(g.evening.center, centerAll)],
+    widths: [36, 26, ...rangeWidths, 12, 12, 22, 12, 16, 16], fmts: ['text', 'text', ...rangeFmts, 'int', 'int', 'int', 'int', 'pct', 'pct'],
+  });
+
+  return {
+    sheets: [['به تفکیک ' + periodColName, byDate], ['خلاصه کل بازه', summary], ['مرکز (کل بازه)', byCenter], ['مرکز به تفکیک ' + periodColName, centerByDate]],
+    label: 'گزارش-تفکیک-شیفت',
+  };
 }
 
 function azkiBuildCompareExport() {
