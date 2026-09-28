@@ -1355,17 +1355,23 @@
   /* سرپرست و سرگروه: کادر عریض‌تر تا همه‌ی تب‌ها بدون اسکرول جا بشن */
   main.wide-nav { max-width: 1120px; }
   main.wide-nav .tab-btn { margin-left: 20px; }
+  #supervisor-tabs, #team-tabs { justify-content: center; justify-content: safe center; }
+  #azki-filter .azki-fld { align-items: center; }
+  #azki-filter .azki-fld-label { text-align: center; width: 100%; }
+  #azki-filter .azki-ctl { justify-content: center; }
   /* زیرمنوی تب «گزارش» */
   .subtabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
   .subtab-btn {
     font-family: var(--font); font-size: 13.5px; padding: 8px 16px; cursor: pointer;
     border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-soft);
     display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-    transition: color .15s, background .15s, border-color .15s;
+    transition: color .25s ease, background .25s ease, border-color .25s ease, transform .35s cubic-bezier(.34,1.3,.5,1), box-shadow .35s ease;
+    transform: scale(1);
   }
   .subtab-btn svg { width: 15px; height: 15px; opacity: .75; }
   .subtab-btn:hover { background: var(--accent-soft); }
-  .subtab-btn.active { color: var(--accent-deep); border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+  .subtab-btn.active { color: var(--accent-deep); border-color: var(--accent); background: var(--accent-soft); font-weight: 700; transform: scale(1.08); box-shadow: 0 4px 14px rgba(26,109,255,.18); }
+  @media (prefers-reduced-motion: reduce) { .subtab-btn { transition: none; } }
   .subtab-btn.active svg { opacity: 1; }
   /* فیلتر گزارش‌ها: وسط‌چین + حالت نمایش (روزانه/هفتگی/ماهانه) کنار تاریخ‌ها */
   #azki-filter .azki-bar { justify-content: center; }
@@ -3104,8 +3110,11 @@ async function loadAzkiActiveStatusView() {
       .replace(/[\u200c\u200b\u200e\u200f]/g, ' ')
       .replace(/ي/g, 'ی').replace(/ك/g, 'ک')).join(' | ')
   );
+  azkiState.activeStatus.rawCount = (data || []).length;
+  azkiState.activeStatus.sample = (data || []).slice(0, 3);
   azkiState.activeStatus.rows = (data || []).filter(isIssuanceCenterUser);
   azkiState.activeStatus.loaded = true;
+  console.log('[وضعیت فعال] ردیف دریافتی از سوپابیس:', azkiState.activeStatus.rawCount, '| بعد از فیلتر «مرکز صدور»:', azkiState.activeStatus.rows.length, '| نمونه:', azkiState.activeStatus.sample);
   renderAzkiActiveStatusView();
 }
 
@@ -3114,7 +3123,11 @@ function renderAzkiActiveStatusView() {
   const container = document.getElementById('azki-active-list');
 
   if (!rows.length) {
-    container.innerHTML = '<div class="empty-state">هنوز داده‌ای برای وضعیت فعال ثبت نشده</div>';
+    const raw = azkiState.activeStatus.rawCount || 0;
+    const why = raw === 0
+      ? 'سوپابیس هیچ ردیفی برنگردوند (اگه جدول داده داره، احتمالاً سیاست RLS اجازه‌ی خوندن به این کاربر نمیده)'
+      : `${faDigits(raw)} ردیف از سوپابیس اومد ولی هیچ‌کدوم نام «مرکز صدور …» نداشت و فیلتر همه رو حذف کرد`;
+    container.innerHTML = '<div class="empty-state">هنوز داده‌ای برای وضعیت فعال ثبت نشده<div style="margin-top:8px;font-size:12px;opacity:.75;">' + why + '</div></div>';
     document.getElementById('azki-active-total-active').textContent = '۰';
     document.getElementById('azki-active-total-all').textContent = '۰';
     document.getElementById('azki-active-pct').textContent = '۰٪';
