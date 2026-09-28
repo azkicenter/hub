@@ -1359,6 +1359,8 @@
   #azki-filter .azki-fld { align-items: center; }
   #azki-filter .azki-fld-label { text-align: center; width: 100%; }
   #azki-filter .azki-ctl { justify-content: center; }
+  .azki-export-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; white-space: nowrap; }
+  .azki-export-btn[disabled] { opacity: .6; cursor: default; }
   /* زیرمنوی تب «گزارش» */
   .subtabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
   .subtab-btn {
@@ -1931,6 +1933,13 @@
             <span class="azki-fld-label">تا تاریخ</span>
             <button type="button" class="azki-ctl" id="azki-to-btn"><span id="azki-to-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
             <div class="azki-pop azki-cal" id="azki-to-cal" hidden></div>
+          </div>
+          <div class="azki-fld">
+            <span class="azki-fld-label">&nbsp;</span>
+            <button type="button" class="sm-btn azki-export-btn" id="azki-export-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+              خروجی اکسل
+            </button>
           </div>
         </div>
         <div class="azki-error" id="azki-filter-error"></div>
@@ -3097,18 +3106,23 @@ async function loadAzkiActiveStatusView() {
   if (!azkiAllowed()) return;
   const { data, error } = await supabaseClient
     .from('center_operators_status')
-    .select('center_name, full_name, is_active, is_active_to_issue, updated_at')
+    .select('*')
     .order('center_name', { ascending: true });
 
   if (error) {
     document.getElementById('azki-active-list').innerHTML = `<div class="empty-state">خطا در دریافت وضعیت: ${error.message}</div>`;
     return;
   }
-  // فقط کارشناسان مرکز صدور (نام‌هایی با فرمت «مرکز صدور X | Y») نشون داده بشن؛ بقیه‌ی کاربران حذف می‌شن
-  const isIssuanceCenterUser = (r) => /مرکز\s*صدور/.test(
-    [r.full_name, r.center_name].map(v => String(v == null ? '' : v)
-      .replace(/[\u200c\u200b\u200e\u200f]/g, ' ')
-      .replace(/ي/g, 'ی').replace(/ك/g, 'ک')).join(' | ')
+  // فقط کارشناسان مرکز صدور (هر ردیفی که «مرکز صدور» تو هرکدوم از فیلدهای متنی‌ش باشه) نشون داده بشن.
+  // نرمال‌سازی: حروف عربی/فارسی، نیم‌فاصله، کشیده، اعراب و فاصله‌های نامرئی یکی می‌شن.
+  const normFa = (v) => String(v == null ? '' : v)
+    .normalize('NFKC')
+    .replace(/[\u200c\u200b\u200d\u200e\u200f\u202a-\u202e\u2060\ufeff\u00a0_\-]/g, ' ')
+    .replace(/[\u064b-\u065f\u0670\u0640]/g, '')
+    .replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[ۀە]/g, 'ه')
+    .replace(/\s+/g, ' ');
+  const isIssuanceCenterUser = (r) => Object.values(r).some(v =>
+    typeof v === 'string' && /مرکز ?صدور/.test(normFa(v))
   );
   azkiState.activeStatus.rawCount = (data || []).length;
   azkiState.activeStatus.sample = (data || []).slice(0, 3);
@@ -3126,7 +3140,8 @@ function renderAzkiActiveStatusView() {
     const raw = azkiState.activeStatus.rawCount || 0;
     const why = raw === 0
       ? 'سوپابیس هیچ ردیفی برنگردوند (اگه جدول داده داره، احتمالاً سیاست RLS اجازه‌ی خوندن به این کاربر نمیده)'
-      : `${faDigits(raw)} ردیف از سوپابیس اومد ولی هیچ‌کدوم نام «مرکز صدور …» نداشت و فیلتر همه رو حذف کرد`;
+      : `${faDigits(raw)} ردیف از سوپابیس اومد ولی هیچ‌کدوم «مرکز صدور» تو متن‌شون نداشت. نمونه‌ی نام‌ها: ` +
+        (azkiState.activeStatus.sample || []).map(r => `«${r.full_name || '—'}» / «${r.center_name || '—'}»`).join(' ، ');
     container.innerHTML = '<div class="empty-state">هنوز داده‌ای برای وضعیت فعال ثبت نشده<div style="margin-top:8px;font-size:12px;opacity:.75;">' + why + '</div></div>';
     document.getElementById('azki-active-total-active').textContent = '۰';
     document.getElementById('azki-active-total-all').textContent = '۰';
@@ -3659,6 +3674,203 @@ async function exportAzkiPayrollExcel() {
   }
 }
 document.getElementById('azki-payroll-export').addEventListener('click', exportAzkiPayrollExcel);
+
+// ============================================================
+// خروجی اکسل تب‌های «گزارش» (گزارش دوره‌ای، به تفکیک مرکز، تفکیک شیفت، مقایسه درصد صدور)
+// خروجی همیشه با همون بازه، شرکت‌ها و حالت نمایش (روزانه/هفتگی/ماهانه) فیلتر فعلی ساخته می‌شه.
+// ============================================================
+const AZKI_GRAN_FA = { daily: 'روزانه', weekly: 'هفتگی', monthly: 'ماهانه' };
+
+// یک شیت مرتب می‌سازه: عنوان + توضیح بازه، هدر رنگی، ردیف‌ها، ردیف جمع کل
+// fmts: برای هر ستون 'text' | 'int' | 'pct'
+function azkiXlsxSheet({ title, headers, rows, total, widths, fmts }) {
+  const b = azkiState.bounds;
+  const cols = headers.length;
+  const meta1 = `بازه‌ی گزارش: ${b.startLabel} تا ${b.endLabel}`;
+  const meta2 = `حالت نمایش: ${AZKI_GRAN_FA[azkiState.granularity] || ''}   |   شرکت: ${azkiState.companies.all ? 'همه شرکت‌ها' : azkiActiveScopes().join('، ')}`;
+  const HEAD_ROW = 4;
+  const aoa = [[title], [meta1], [meta2], [], headers, ...rows];
+  if (total) aoa.push(total);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = widths.map(w => ({ wch: w }));
+  ws['!merges'] = [0, 1, 2].map(r => ({ s: { r, c: 0 }, e: { r, c: cols - 1 } }));
+  ws['!rows'] = [{ hpt: 28 }, { hpt: 20 }, { hpt: 20 }, { hpt: 8 }, { hpt: 26 }];
+  const lastRow = aoa.length - 1;
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: HEAD_ROW, c: 0 }, e: { r: total ? lastRow - 1 : lastRow, c: cols - 1 } }) };
+
+  const FONT = 'B Nazanin';
+  const thin = { style: 'thin', color: { rgb: 'FFB7C3D6' } };
+  const border = { top: thin, bottom: thin, left: thin, right: thin };
+  for (let R = 0; R <= lastRow; R++) {
+    for (let C = 0; C < cols; C++) {
+      const addr = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+      const cell = ws[addr];
+      const center = { horizontal: 'center', vertical: 'center', wrapText: true };
+      if (R === 0) {
+        cell.s = { font: { name: FONT, bold: true, sz: 16, color: { rgb: 'FF0F3D91' } }, alignment: center };
+      } else if (R === 1 || R === 2) {
+        cell.s = { font: { name: FONT, sz: 11, color: { rgb: 'FF4A5B78' } }, alignment: center };
+      } else if (R === 3) {
+        cell.s = {};
+      } else if (R === HEAD_ROW) {
+        cell.s = { font: { name: FONT, bold: true, sz: 12, color: { rgb: 'FFFFFFFF' } }, alignment: center, border,
+          fill: { patternType: 'solid', fgColor: { rgb: 'FF1F5FBF' } } };
+      } else {
+        const isTotal = total && R === lastRow;
+        const zebra = !isTotal && (R - HEAD_ROW) % 2 === 0;
+        cell.s = {
+          font: { name: FONT, sz: isTotal ? 13 : 11, bold: isTotal || C === 0 },
+          alignment: center, border,
+          fill: isTotal ? { patternType: 'solid', fgColor: { rgb: 'FFD9E4F5' } }
+              : zebra ? { patternType: 'solid', fgColor: { rgb: 'FFF4F7FC' } } : undefined,
+        };
+        if (typeof cell.v === 'number') cell.z = fmts[C] === 'pct' ? '0.00' : '#,##0';
+      }
+    }
+  }
+  return ws;
+}
+
+function azkiXlsxSave(sheets, fileLabel) {
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = { Views: [{ RTL: true }] };
+  sheets.forEach(([name, ws]) => XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31)));
+  const b = azkiState.bounds;
+  const fname = `${fileLabel}_${b.startLabel.replace(/\//g, '-')}_تا_${b.endLabel.replace(/\//g, '-')}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+const azkiPctNum = (part, whole) => whole ? round2(part / whole * 100) : 0;
+
+function azkiBuildPeriodExport() {
+  const groups = groupAzkiPeriodRows(azkiState.period.rows, azkiState.granularity);
+  const tot = groups.reduce((s, g) => s + g.total, 0), cen = groups.reduce((s, g) => s + g.center, 0);
+  const ws = azkiXlsxSheet({
+    title: 'گزارش دوره‌ای صدور ازکی سنتر',
+    headers: ['دوره', 'کل صدور', 'صدور ازکی سنترها', 'درصد ازکی سنتر (٪)'],
+    rows: groups.map(g => [g.label, g.total, g.center, azkiPctNum(g.center, g.total)]),
+    total: ['جمع کل', tot, cen, azkiPctNum(cen, tot)],
+    widths: [26, 16, 20, 22], fmts: ['text', 'int', 'int', 'pct'],
+  });
+  return { sheets: [['گزارش دوره‌ای', ws]], label: 'گزارش-دوره‌ای' };
+}
+
+function azkiBuildCentersExport() {
+  const groups = groupAzkiBreakdownRows(azkiState.centers.rows, azkiState.granularity);
+  const totals = {};
+  groups.forEach(g => { totals[g.centerName] = (totals[g.centerName] || 0) + g.count; });
+  const names = Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
+  const grand = names.reduce((s, n) => s + totals[n], 0);
+  const summary = azkiXlsxSheet({
+    title: 'صدور به تفکیک نام مرکز — خلاصه',
+    headers: ['ردیف', 'نام مرکز', 'جمع صدور', 'سهم از کل (٪)'],
+    rows: names.map((n, i) => [i + 1, n, totals[n], azkiPctNum(totals[n], grand)]),
+    total: ['', 'جمع کل', grand, names.length ? 100 : 0],
+    widths: [8, 36, 16, 18], fmts: ['int', 'text', 'int', 'pct'],
+  });
+  const detailRows = [];
+  names.forEach(n => groups.filter(g => g.centerName === n).sort((a, b) => a.sortKey - b.sortKey)
+    .forEach(g => detailRows.push([n, g.label, g.count])));
+  const detail = azkiXlsxSheet({
+    title: 'صدور به تفکیک نام مرکز — جزئیات دوره',
+    headers: ['نام مرکز', 'دوره', 'تعداد صدور'],
+    rows: detailRows,
+    total: ['جمع کل', '', grand],
+    widths: [36, 26, 16], fmts: ['text', 'text', 'int'],
+  });
+  return { sheets: [['خلاصه مراکز', summary], ['جزئیات دوره', detail]], label: 'گزارش-به-تفکیک-مرکز' };
+}
+
+function azkiBuildShiftsExport() {
+  const agg = aggregateAzkiShiftRows(azkiState.shifts.rows, azkiState.granularity);
+  const g = agg.grand;
+  const centerAll = shiftCenterSum(g);
+  const summary = azkiXlsxSheet({
+    title: 'تفکیک شیفت — خلاصه',
+    headers: ['شیفت', 'ساعت', 'صدور ازکی سنتر', 'کل صدور شیفت', 'درصد از کل صدور شیفت (٪)', 'سهم از کل صدور سنترها (٪)'],
+    rows: AZKI_SHIFTS.map(sh => [sh.title, sh.hours, g[sh.key].center, g[sh.key].total,
+      azkiPctNum(g[sh.key].center, g[sh.key].total), azkiPctNum(g[sh.key].center, centerAll)]),
+    total: ['جمع', '', g.morning.center + g.evening.center, g.morning.total + g.evening.total,
+      azkiPctNum(g.morning.center + g.evening.center, g.morning.total + g.evening.total), ''],
+    widths: [16, 18, 18, 18, 26, 26], fmts: ['text', 'text', 'int', 'int', 'pct', 'pct'],
+  });
+  const byDate = azkiXlsxSheet({
+    title: 'تفکیک شیفت — به تفکیک تاریخ',
+    headers: ['دوره', 'صبح: سنتر', 'صبح: کل', 'درصد صبح (٪)', 'عصر: سنتر', 'عصر: کل', 'درصد عصر (٪)'],
+    rows: agg.periods.map(p => [p.label, p.all.morning.center, p.all.morning.total, azkiPctNum(p.all.morning.center, p.all.morning.total),
+      p.all.evening.center, p.all.evening.total, azkiPctNum(p.all.evening.center, p.all.evening.total)]),
+    total: ['جمع کل', g.morning.center, g.morning.total, azkiPctNum(g.morning.center, g.morning.total),
+      g.evening.center, g.evening.total, azkiPctNum(g.evening.center, g.evening.total)],
+    widths: [26, 14, 14, 16, 14, 14, 16], fmts: ['text', 'int', 'int', 'pct', 'int', 'int', 'pct'],
+  });
+  const names = Object.keys(agg.centers).sort((a, b) => shiftCenterSum(agg.centers[b]) - shiftCenterSum(agg.centers[a]));
+  const byCenter = azkiXlsxSheet({
+    title: 'تفکیک شیفت — به تفکیک مرکز',
+    headers: ['نام مرکز', 'صبح', 'عصر', 'خارج از شیفت (۰ تا ۸)', 'جمع', 'درصد صبح (٪)', 'درصد عصر (٪)'],
+    rows: names.map(n => { const b = agg.centers[n], sum = shiftCenterSum(b);
+      return [n, b.morning.center, b.evening.center, b.other.center, sum, azkiPctNum(b.morning.center, sum), azkiPctNum(b.evening.center, sum)]; }),
+    total: ['جمع کل', g.morning.center, g.evening.center, g.other.center, centerAll,
+      azkiPctNum(g.morning.center, centerAll), azkiPctNum(g.evening.center, centerAll)],
+    widths: [36, 12, 12, 22, 12, 16, 16], fmts: ['text', 'int', 'int', 'int', 'int', 'pct', 'pct'],
+  });
+  return { sheets: [['خلاصه شیفت', summary], ['به تفکیک تاریخ', byDate], ['به تفکیک مرکز', byCenter]], label: 'گزارش-تفکیک-شیفت' };
+}
+
+function azkiBuildCompareExport() {
+  const list = azkiState.compare.list;
+  const summaries = list.map(company => {
+    const groups = groupAzkiPeriodRows(azkiState.compare.byScope[company] || [], azkiState.granularity);
+    return { company, groups, total: groups.reduce((s, x) => s + x.total, 0), center: groups.reduce((s, x) => s + x.center, 0) };
+  }).filter(x => !azkiState.compare.hideEmpty || x.total > 0).sort((a, b) => b.total - a.total);
+  const gt = summaries.reduce((s, x) => s + x.total, 0), gc = summaries.reduce((s, x) => s + x.center, 0);
+  const summary = azkiXlsxSheet({
+    title: 'مقایسه درصد صدور — خلاصه شرکت‌ها',
+    headers: ['شرکت بیمه', 'کل صدور', 'تعداد صدور ازکی سنتر', 'درصد صدور ازکی سنتر (٪)'],
+    rows: summaries.map(x => [x.company, x.total, x.center, azkiPctNum(x.center, x.total)]),
+    total: ['جمع کل', gt, gc, azkiPctNum(gc, gt)],
+    widths: [28, 16, 24, 26], fmts: ['text', 'int', 'int', 'pct'],
+  });
+  const detailRows = [];
+  summaries.forEach(x => x.groups.forEach(g => detailRows.push([x.company, g.label, g.total, g.center, azkiPctNum(g.center, g.total)])));
+  const detail = azkiXlsxSheet({
+    title: 'مقایسه درصد صدور — جزئیات دوره',
+    headers: ['شرکت بیمه', 'دوره', 'کل صدور', 'صدور ازکی سنتر', 'درصد (٪)'],
+    rows: detailRows,
+    total: ['جمع کل', '', gt, gc, azkiPctNum(gc, gt)],
+    widths: [28, 26, 14, 18, 14], fmts: ['text', 'text', 'int', 'int', 'pct'],
+  });
+  return { sheets: [['خلاصه شرکت‌ها', summary], ['جزئیات دوره', detail]], label: 'گزارش-مقایسه-درصد-صدور' };
+}
+
+async function exportAzkiReportExcel() {
+  const tab = azkiActiveTab();
+  if (tab === 'azki-payroll') return exportAzkiPayrollExcel();
+  const btn = document.getElementById('azki-export-btn');
+  const cfg = {
+    'azki-period':  { st: azkiState.period,  has: () => azkiState.period.rows.length,  build: azkiBuildPeriodExport },
+    'azki-centers': { st: azkiState.centers, has: () => azkiState.centers.rows.length, build: azkiBuildCentersExport },
+    'azki-shifts':  { st: azkiState.shifts,  has: () => azkiState.shifts.rows.length,  build: azkiBuildShiftsExport },
+    'azki-compare': { st: azkiState.compare, has: () => azkiState.compare.list.some(c => (azkiState.compare.byScope[c] || []).length), build: azkiBuildCompareExport },
+  }[tab];
+  if (!cfg) return;
+  if (!cfg.st.loaded) { alert('گزارش هنوز بارگذاری نشده؛ چند لحظه صبر کنید و دوباره تلاش کنید.'); return; }
+  if (!cfg.has()) { alert('برای این بازه داده‌ای وجود نداره که خروجی گرفته بشه.'); return; }
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'در حال آماده‌سازی...';
+  try {
+    await ensureXlsxLib();
+    const out = cfg.build();
+    azkiXlsxSave(out.sheets, out.label);
+  } catch (e) {
+    alert('خروجی اکسل با خطا مواجه شد: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+document.getElementById('azki-export-btn').addEventListener('click', exportAzkiReportExcel);
 
 async function loadAzkiCompareView() {
   if (!azkiAllowed()) return;
