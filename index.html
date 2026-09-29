@@ -3672,6 +3672,71 @@ function ensureXlsxLib() {
   return xlsxLibPromise;
 }
 
+// ریز صدور تک‌تک کارشناس‌ها در بازه‌ی محاسبه حقوق (از daily_targets).
+// کارشناسی که از سنتر حذف شده هم اگه ردیف صدور داشته باشه میاد و با وضعیت «از سنتر حذف شده» مشخص می‌شه.
+async function fetchAzkiPayrollAgentDetail(bounds, centerData) {
+  const s0 = parseJalaliParts(bounds.startLabel), e0 = parseJalaliParts(bounds.endLabel);
+  const startSort = s0.jy * 10000 + s0.jm * 100 + s0.jd;
+  const endSort = e0.jy * 10000 + e0.jm * 100 + e0.jd;
+
+  const { data: rows, error: rowsErr } = await fetchAllRows((from, to) =>
+    supabaseClient.from(TABLE_TARGETS).select('*')
+      .gte('report_date_sort', startSort).lte('report_date_sort', endSort)
+      .order('report_date_sort', { ascending: true }).order('agent_id', { ascending: true })
+      .range(from, to));
+  if (rowsErr) throw new Error('دریافت ریز صدور کارشناس‌ها: ' + rowsErr.message);
+
+  const agentIds = [...new Set((rows || []).map(r => r.agent_id).filter(Boolean))];
+  if (!agentIds.length) return { agents: [], days: [] };
+
+  const [{ data: profs }, { data: links }, { data: centers }] = await Promise.all([
+    fetchAllRows((from, to) => supabaseClient.from(TABLE_PROFILES).select('id, full_name, backoffice_id, role').in('id', agentIds).range(from, to)),
+    fetchAllRows((from, to) => supabaseClient.from(TABLE_CENTER_AGENTS).select('center_id, agent_id').in('agent_id', agentIds).range(from, to)),
+    fetchAllRows((from, to) => supabaseClient.from(TABLE_PROFILES).select('id, full_name').eq('role', 'center').range(from, to)),
+  ]);
+  const profById = {}; (profs || []).forEach(p0 => { profById[p0.id] = p0; });
+  const centerNameById = {}; (centers || []).forEach(c => { centerNameById[c.id] = c.full_name || ''; });
+  const centerByAgent = {};
+  (links || []).forEach(l => { if (centerNameById[l.center_id] != null) centerByAgent[l.agent_id] = centerNameById[l.center_id]; });
+
+  const rateByCenterKey = {};
+  centerData.forEach(c => { rateByCenterKey[normCenterKey(c.name)] = { rate: c.rate, avgMin: c.avgMin }; });
+
+  const slaMap = buildSlaMapFromRows(rows, startSort) || {};
+  const byAgent = {};
+  const days = [];
+  (rows || []).forEach(r => {
+    const id = r.agent_id;
+    if (!byAgent[id]) byAgent[id] = { id, count: 0, daysCount: 0 };
+    const c = Number(r.target_count) || 0;
+    byAgent[id].count += c;
+    byAgent[id].daysCount += 1;
+    days.push({ id, date: toJalaliDisplay(r.report_date_jalali), sort: Number(r.report_date_sort) || 0, count: c });
+  });
+
+  const agents = Object.values(byAgent).map(a => {
+    const pr = profById[a.id];
+    const centerName = centerByAgent[a.id] || '';
+    const info = centerName ? rateByCenterKey[normCenterKey(centerName)] : null;
+    const rate = info ? info.rate : 0;
+    return {
+      id: a.id,
+      name: pr ? (pr.full_name || pr.backoffice_id || '—') : 'کاربر حذف‌شده / نامشخص',
+      backoffice: pr ? (pr.backoffice_id || '') : '',
+      centerName: centerName || 'بدون سنتر',
+      status: centerName ? 'در سنتر' : 'از سنتر حذف شده',
+      count: a.count, daysCount: a.daysCount,
+      sla: slaMap[a.id] != null ? round2(Number(slaMap[a.id])) : null,
+      rate, amount: rate * a.count,
+    };
+  }).sort((a, b) => a.centerName.localeCompare(b.centerName, 'fa') || b.count - a.count);
+
+  const nameById = {}; agents.forEach(a => { nameById[a.id] = a; });
+  const dayRows = days.map(d => ({ ...d, agent: nameById[d.id] })).sort((a, b) =>
+    a.agent.centerName.localeCompare(b.agent.centerName, 'fa') || a.agent.name.localeCompare(b.agent.name, 'fa') || a.sort - b.sort);
+  return { agents, days: dayRows };
+}
+
 async function exportAzkiPayrollExcel() {
   const btn = document.getElementById('azki-payroll-export');
   if (!azkiState.payroll.loaded || !azkiState.payroll.rows.length) return;
@@ -3720,7 +3785,38 @@ async function exportAzkiPayrollExcel() {
     }
 
     const wb = XLSX.utils.book_new();
+    wb.Workbook = { Views: [{ RTL: true }] };
     XLSX.utils.book_append_sheet(wb, ws, 'محاسبه حقوق');
+
+    // شیت‌های ریز کارشناس‌ها (اگه دریافتش با خطا مواجه بشه، اکسل اصلی همچنان ساخته می‌شه)
+    try {
+      const detail = await fetchAzkiPayrollAgentDetail(bounds, centerData);
+      const meta2 = 'مبلغ هر کارشناس = تعداد صدور او × نرخ هر صدور سنتر (برآورد)';
+      if (detail.agents.length) {
+        const totCount = detail.agents.reduce((s0, a) => s0 + a.count, 0);
+        const totAmount = detail.agents.reduce((s0, a) => s0 + a.amount, 0);
+        const agentsWs = azkiXlsxSheet({
+          title: 'محاسبه حقوق — ریز صدور کارشناس‌ها', bounds, metaLine2: meta2,
+          headers: ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'وضعیت', 'تعداد روز', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور سنتر (ریال)', 'مبلغ برآوردی (ریال)'],
+          rows: detail.agents.map(a => [a.centerName, a.name, a.backoffice, a.status, a.daysCount, a.count, a.sla != null ? a.sla : '', a.rate, a.amount]),
+          total: ['جمع کل', '', '', '', '', totCount, '', '', totAmount],
+          widths: [32, 28, 18, 18, 12, 14, 22, 22, 22], fmts: ['text', 'text', 'text', 'text', 'int', 'int', 'pct', 'int', 'int'],
+        });
+        XLSX.utils.book_append_sheet(wb, agentsWs, 'ریز کارشناس‌ها');
+        const daysWs = azkiXlsxSheet({
+          title: 'محاسبه حقوق — جزئیات روزانه کارشناس‌ها', bounds, metaLine2: meta2,
+          headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
+          rows: detail.days.map(d => [d.agent.centerName, d.agent.name, d.agent.status, d.date, d.count]),
+          total: ['جمع کل', '', '', '', totCount],
+          widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
+        });
+        XLSX.utils.book_append_sheet(wb, daysWs, 'جزئیات روزانه');
+      }
+    } catch (detailErr) {
+      console.error('ریز کارشناس‌ها به اکسل اضافه نشد:', detailErr);
+      alert('اکسل اصلی ساخته شد ولی ریز کارشناس‌ها دریافت نشد: ' + detailErr.message);
+    }
+
     const fname = `محاسبه-حقوق_${bounds.startLabel.replace(/\//g, '-')}_تا_${bounds.endLabel.replace(/\//g, '-')}.xlsx`;
     XLSX.writeFile(wb, fname);
   } catch (e) {
