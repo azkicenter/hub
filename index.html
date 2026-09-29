@@ -1359,11 +1359,11 @@
   #azki-filter .azki-fld { align-items: center; }
   #azki-filter .azki-fld-label { text-align: center; width: 100%; }
   #azki-filter .azki-ctl { justify-content: center; }
-  #sup-filter .azki-bar, #team-filter .azki-bar { justify-content: center; }
-  #sup-filter .azki-error, #team-filter .azki-error { text-align: center; }
-  #sup-filter .azki-fld, #team-filter .azki-fld { align-items: center; }
-  #sup-filter .azki-fld-label, #team-filter .azki-fld-label { text-align: center; width: 100%; }
-  #sup-filter .azki-ctl, #team-filter .azki-ctl { justify-content: center; }
+  #sup-filter .azki-bar, #team-filter .azki-bar, #center-filter .azki-bar { justify-content: center; }
+  #sup-filter .azki-error, #team-filter .azki-error, #center-filter .azki-error { text-align: center; }
+  #sup-filter .azki-fld, #team-filter .azki-fld, #center-filter .azki-fld { align-items: center; }
+  #sup-filter .azki-fld-label, #team-filter .azki-fld, #center-filter .azki-fld-label { text-align: center; width: 100%; }
+  #sup-filter .azki-ctl, #team-filter .azki-ctl, #center-filter .azki-ctl { justify-content: center; }
   .azki-export-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; white-space: nowrap; }
   .azki-export-btn[disabled] { opacity: .6; cursor: default; }
   /* زیرمنوی تب «گزارش» */
@@ -1691,7 +1691,7 @@
       </button>
       <button class="tab-btn" data-team-tab="azki-active" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
-        وضعیت پنل کارشناسان
+        وضعیت فعال کاربران
       </button>
     </div>
     <div class="subtabs" id="team-subtabs" style="display:none;">
@@ -1718,11 +1718,7 @@
             <button type="button" class="azki-ctl" id="team-to-btn"><span id="team-to-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
             <div class="azki-pop azki-cal" id="team-to-cal" hidden></div>
           </div>
-          <div class="azki-fld">
-            <span class="azki-fld-label">&nbsp;</span>
-            <button type="button" class="sm-btn" id="team-filter-reset">بازه‌ی جاری (۲۱ تا ۲۰)</button>
-          </div>
-          <div class="azki-fld">
+            <div class="azki-fld">
             <span class="azki-fld-label">&nbsp;</span>
             <button type="button" class="sm-btn azki-export-btn" id="team-export-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
@@ -1783,10 +1779,6 @@
           <span class="azki-fld-label">تا تاریخ</span>
           <button type="button" class="azki-ctl" id="center-to-btn"><span id="center-to-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
           <div class="azki-pop azki-cal" id="center-to-cal" hidden></div>
-        </div>
-        <div class="azki-fld">
-          <span class="azki-fld-label">&nbsp;</span>
-          <button type="button" class="sm-btn" id="center-filter-reset">بازه‌ی جاری</button>
         </div>
       </div>
       <div class="azki-error" id="center-filter-error"></div>
@@ -1857,7 +1849,7 @@
         </button>
         <button class="tab-btn" data-sup-tab="azki-active" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
-          وضعیت پنل کارشناسان
+          وضعیت فعال کاربران
         </button>
         <button class="tab-btn" data-sup-tab="azki-payroll" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
@@ -1896,11 +1888,7 @@
             <button type="button" class="azki-ctl" id="sup-to-btn"><span id="sup-to-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
             <div class="azki-pop azki-cal" id="sup-to-cal" hidden></div>
           </div>
-          <div class="azki-fld">
-            <span class="azki-fld-label">&nbsp;</span>
-            <button type="button" class="sm-btn" id="sup-filter-reset">بازه‌ی جاری (۲۱ تا ۲۰)</button>
-          </div>
-          <div class="azki-fld">
+            <div class="azki-fld">
             <span class="azki-fld-label">&nbsp;</span>
             <button type="button" class="sm-btn azki-export-btn" id="sup-export-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
@@ -5057,11 +5045,6 @@ function initTeamTargetsFilter() {
   teamSetDefaultRange();
   teamBindCal('from');
   teamBindCal('to');
-  document.getElementById('team-filter-reset').addEventListener('click', () => {
-    teamSetDefaultRange();
-    document.getElementById('team-filter-error').textContent = '';
-    teamReload();
-  });
   document.getElementById('team-export-btn').addEventListener('click', exportTeamTargetsExcel);
 }
 initTeamTargetsFilter();
@@ -5398,12 +5381,6 @@ function initSupTargetsFilter() {
   supSetDefaultRange();
   supBindCal('from');
   supBindCal('to');
-  document.getElementById('sup-filter-reset').addEventListener('click', () => {
-    supSetDefaultRange();
-    document.getElementById('sup-filter-error').textContent = '';
-    document.getElementById('supervisor-list').innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
-    loadSupervisorView();
-  });
   document.getElementById('sup-export-btn').addEventListener('click', exportSupTargetsExcel);
 }
 initSupTargetsFilter();
@@ -6026,13 +6003,6 @@ function initCenterFilter() {
   centerSetDate('to', [en.jy, en.jm, en.jd]);
   centerBindCal('from');
   centerBindCal('to');
-  document.getElementById('center-filter-reset').addEventListener('click', () => {
-    const d = currentPeriodBounds();
-    const s = parseJalaliParts(d.startLabel), e = parseJalaliParts(d.endLabel);
-    centerSetDate('from', [s.jy, s.jm, s.jd]);
-    centerSetDate('to', [e.jy, e.jm, e.jd]);
-    centerApplyRange();
-  });
 }
 
 initCenterFilter();
