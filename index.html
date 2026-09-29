@@ -1693,7 +1693,7 @@
       </button>
       <button class="tab-btn" data-team-tab="azki-active" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
-        وضعیت فعال کاربران
+        وضعیت پنل کارشناسان
       </button>
       <button class="tab-btn" data-team-tab="azki-payroll" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
@@ -1856,7 +1856,7 @@
         </button>
         <button class="tab-btn" data-sup-tab="azki-active" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
-          وضعیت فعال کاربران
+          وضعیت پنل کارشناسان
         </button>
         <button class="tab-btn" data-sup-tab="azki-payroll" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
@@ -2333,7 +2333,7 @@ function teamShowTab(tab) {
   const panelEl = document.getElementById('panel-' + tab);
   panelEl.classList.add('active');
   const azkiFilterEl = document.getElementById('azki-filter');
-  // وضعیت فعال کاربران بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
+  // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
   const isAzki = tab.startsWith('azki-') && tab !== 'azki-active';
   // فیلتر تاریخ/شرکت یکی بیشتر نیست؛ هر بار بالای پنل azki فعال جابه‌جا می‌شه
   if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
@@ -2682,7 +2682,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
     $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
     $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
-    // وضعیت فعال کاربران بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
+    // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
     $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
     document.querySelector('main').classList.toggle('sm-wide', which === 'map');
     if (which === 'map') { openMap(); setTimeout(() => S.map && S.map.invalidateSize(), 60); }
@@ -3141,7 +3141,7 @@ function renderAzkiCentersView() {
         <button class="leader-header" type="button">
           <div class="leader-name-wrap">
             <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            <span class="leader-name">${centerName}</span>
+            <span class="leader-name">${fmtCenterName(centerName)}</span>
           </div>
           <div class="leader-right">
             <span class="leader-total">${formatNumber(totalsByCenter[centerName])}</span>
@@ -3155,7 +3155,7 @@ function renderAzkiCentersView() {
 }
 
 // ============================================================
-// تب «وضعیت فعال کاربران»: وضعیت لحظه‌ای فعال/غیرفعال کاربرانی که با فرمت
+// تب «وضعیت پنل کارشناسان»: وضعیت لحظه‌ای فعال/غیرفعال کاربرانی که با فرمت
 // «مرکز صدور X | Y» ثبت شدن (از جدول center_operators_status که ورک‌فلوی n8n پر می‌کنه).
 // این تب بازه‌ی تاریخی نداره — همیشه آخرین وضعیت ثبت‌شده رو نشون می‌ده.
 // ============================================================
@@ -3260,7 +3260,7 @@ function renderAzkiActiveStatusView() {
         <button class="leader-header" type="button">
           <div class="leader-name-wrap">
             <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            <span class="leader-name">${g.centerName}</span>
+            <span class="leader-name">${fmtCenterName(g.centerName)}</span>
           </div>
           <div class="leader-right">
             <span class="leader-total">${formatNumber(g.activeCount)} فعال · ${formatNumber(g.onlineCount)} آنلاین از ${formatNumber(g.total)}</span>
@@ -3415,7 +3415,7 @@ function renderAzkiShiftsView() {
       const sum = shiftCenterSum(b);
       return `
         <div class="row-item shift-center-row">
-          <div class="row-date">${azkiShiftEsc(name)}</div>
+          <div class="row-date">${azkiShiftEsc(fmtCenterName(name))}</div>
           <div class="row-main">
             <span>صبح: ${formatNumber(b.morning.center)} (${formatNumber(azkiPct(b.morning.center, sum))}٪) — عصر: ${formatNumber(b.evening.center)} (${formatNumber(azkiPct(b.evening.center, sum))}٪)</span>
             ${azkiShiftSplitBar(b)}
@@ -3434,7 +3434,7 @@ function renderAzkiShiftsView() {
       const b = p.centers[name];
       return `
         <div class="row-item">
-          <div class="row-date">${azkiShiftEsc(name)}</div>
+          <div class="row-date">${azkiShiftEsc(fmtCenterName(name))}</div>
           <div class="row-main">صبح: ${formatNumber(b.morning.center)} — عصر: ${formatNumber(b.evening.center)}</div>
           <div class="row-badge">${formatNumber(shiftCenterSum(b))}</div>
         </div>`;
@@ -3604,6 +3604,13 @@ async function fetchAzkiPayrollCenterSla(bounds) {
   return { byCenterKey, error: firstError };
 }
 
+// نمایش نام سنتر: پیش‌فرض با پیشوند «مرکز صدور» (اگه خودش با این عبارت شروع شده باشه دوباره اضافه نمی‌شه)
+function fmtCenterName(name) {
+  const n = String(name == null ? '' : name).trim();
+  if (!n || n === 'بدون سنتر' || n === 'نامشخص' || n === '—' || n === '__ALL__') return n;
+  return /^مرکز\s*صدور/.test(n.replace(/[\u200c]/g, ' ')) ? n : 'مرکز صدور ' + n;
+}
+
 // سنترهای اساین‌شده به سرگروه (کلید نرمال‌شده‌ی نام) برای محدود کردن محاسبه‌ی «فقط تعداد»
 async function fetchLeaderCenterKeys() {
   const leaderId = window.teamLeaderId;
@@ -3672,7 +3679,7 @@ function renderAzkiPayrollView() {
     document.getElementById('azki-payroll-total').textContent = formatNumber(grandCount);
     container.innerHTML = centerData.map(c => `
       <div class="row-item">
-        <div class="pay-name">${c.name}</div>
+        <div class="pay-name">${fmtCenterName(c.name)}</div>
         <div class="row-badge">${formatNumber(c.count)}</div>
       </div>`).join('');
     return;
@@ -3684,7 +3691,7 @@ function renderAzkiPayrollView() {
 
   container.innerHTML = centerData.map(c => `
     <div class="row-item azki-payroll-row">
-      <div class="pay-name">${c.name}</div>
+      <div class="pay-name">${fmtCenterName(c.name)}</div>
       <div class="pay-metrics">
         <div class="pay-metric"><span class="k">تعداد صدور</span><span class="v">${formatNumber(c.count)}</span></div>
         <div class="pay-metric${c.hasSla ? '' : ' is-missing'}" title="منبع: گزارش SLA اپراتورها">
@@ -3800,7 +3807,7 @@ async function exportAzkiPayrollExcel() {
       const centersWs = azkiXlsxSheet({
         title: 'صدور سنترها', bounds: lb, metaLine2: meta2,
         headers: ['ردیف', 'نام سنتر', 'تعداد صدور'],
-        rows: centerData.map((c, i) => [i + 1, c.name, c.count]),
+        rows: centerData.map((c, i) => [i + 1, fmtCenterName(c.name), c.count]),
         total: ['', 'جمع کل', grandCount],
         widths: [8, 36, 16], fmts: ['int', 'text', 'int'],
       });
@@ -3819,14 +3826,14 @@ async function exportAzkiPayrollExcel() {
           XLSX.utils.book_append_sheet(lwb, azkiXlsxSheet({
             title: 'ریز صدور کارشناس‌ها', bounds: lb, metaLine2: meta2,
             headers: ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'وضعیت', 'تعداد روز', 'تعداد صدور'],
-            rows: agents.map(a => [a.centerName, a.name, a.backoffice, a.status, a.daysCount, a.count]),
+            rows: agents.map(a => [fmtCenterName(a.centerName), a.name, a.backoffice, a.status, a.daysCount, a.count]),
             total: ['جمع کل', '', '', '', '', tot],
             widths: [32, 28, 18, 18, 12, 14], fmts: ['text', 'text', 'text', 'text', 'int', 'int'],
           }), 'ریز کارشناس‌ها');
           XLSX.utils.book_append_sheet(lwb, azkiXlsxSheet({
             title: 'جزئیات روزانه کارشناس‌ها', bounds: lb, metaLine2: meta2,
             headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
-            rows: days.map(d => [d.agent.centerName, d.agent.name, d.agent.status, d.date, d.count]),
+            rows: days.map(d => [fmtCenterName(d.agent.centerName), d.agent.name, d.agent.status, d.date, d.count]),
             total: ['جمع کل', '', '', '', tot],
             widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
           }), 'جزئیات روزانه');
@@ -3842,7 +3849,7 @@ async function exportAzkiPayrollExcel() {
     const bounds = azkiState.bounds;
     const aoa = [
       ['نام سنتر', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور (ریال)', 'مبلغ قابل پرداخت (ریال)'],
-      ...centerData.map(c => [c.name, c.count, c.avgMin != null ? c.avgMin : '—', c.rate, c.amount]),
+      ...centerData.map(c => [fmtCenterName(c.name), c.count, c.avgMin != null ? c.avgMin : '—', c.rate, c.amount]),
       ['جمع کل', grandCount, '', '', grandAmount],
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -3888,7 +3895,7 @@ async function exportAzkiPayrollExcel() {
         const agentsWs = azkiXlsxSheet({
           title: 'محاسبه حقوق — ریز صدور کارشناس‌ها', bounds, metaLine2: meta2,
           headers: ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'وضعیت', 'تعداد روز', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور سنتر (ریال)', 'مبلغ برآوردی (ریال)'],
-          rows: detail.agents.map(a => [a.centerName, a.name, a.backoffice, a.status, a.daysCount, a.count, a.sla != null ? a.sla : '', a.rate, a.amount]),
+          rows: detail.agents.map(a => [fmtCenterName(a.centerName), a.name, a.backoffice, a.status, a.daysCount, a.count, a.sla != null ? a.sla : '', a.rate, a.amount]),
           total: ['جمع کل', '', '', '', '', totCount, '', '', totAmount],
           widths: [32, 28, 18, 18, 12, 14, 22, 22, 22], fmts: ['text', 'text', 'text', 'text', 'int', 'int', 'pct', 'int', 'int'],
         });
@@ -3896,7 +3903,7 @@ async function exportAzkiPayrollExcel() {
         const daysWs = azkiXlsxSheet({
           title: 'محاسبه حقوق — جزئیات روزانه کارشناس‌ها', bounds, metaLine2: meta2,
           headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
-          rows: detail.days.map(d => [d.agent.centerName, d.agent.name, d.agent.status, d.date, d.count]),
+          rows: detail.days.map(d => [fmtCenterName(d.agent.centerName), d.agent.name, d.agent.status, d.date, d.count]),
           total: ['جمع کل', '', '', '', totCount],
           widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
         });
@@ -4008,13 +4015,13 @@ function azkiBuildCentersExport() {
   const summary = azkiXlsxSheet({
     title: 'صدور به تفکیک نام مرکز — خلاصه',
     headers: ['ردیف', 'نام مرکز', 'جمع صدور', 'سهم از کل (٪)'],
-    rows: names.map((n, i) => [i + 1, n, totals[n], azkiPctNum(totals[n], grand)]),
+    rows: names.map((n, i) => [i + 1, fmtCenterName(n), totals[n], azkiPctNum(totals[n], grand)]),
     total: ['', 'جمع کل', grand, names.length ? 100 : 0],
     widths: [8, 36, 16, 18], fmts: ['int', 'text', 'int', 'pct'],
   });
   const detailRows = [];
   names.forEach(n => groups.filter(g => g.centerName === n).sort((a, b) => a.sortKey - b.sortKey)
-    .forEach(g => detailRows.push([n, g.label, g.count])));
+    .forEach(g => detailRows.push([fmtCenterName(n), g.label, g.count])));
   const detail = azkiXlsxSheet({
     title: 'صدور به تفکیک نام مرکز — جزئیات دوره',
     headers: ['نام مرکز', 'دوره', 'تعداد صدور'],
@@ -4082,7 +4089,7 @@ function azkiBuildShiftsExport() {
     title: 'تفکیک شیفت — به تفکیک مرکز (کل بازه)',
     headers: ['نام مرکز', 'صبح', 'عصر', 'خارج از شیفت (۰ تا ۸)', 'جمع', 'درصد صبح (٪)', 'درصد عصر (٪)'],
     rows: names.map(n => { const b = agg.centers[n], sum = shiftCenterSum(b);
-      return [n, b.morning.center, b.evening.center, b.other.center, sum, azkiPctNum(b.morning.center, sum), azkiPctNum(b.evening.center, sum)]; }),
+      return [fmtCenterName(n), b.morning.center, b.evening.center, b.other.center, sum, azkiPctNum(b.morning.center, sum), azkiPctNum(b.evening.center, sum)]; }),
     total: ['جمع کل', g.morning.center, g.evening.center, g.other.center, centerAll,
       azkiPctNum(g.morning.center, centerAll), azkiPctNum(g.evening.center, centerAll)],
     widths: [36, 12, 12, 22, 12, 16, 16], fmts: ['text', 'int', 'int', 'int', 'int', 'pct', 'pct'],
@@ -4094,7 +4101,7 @@ function azkiBuildShiftsExport() {
     const b = p.centers[n];
     if (!b) return;
     const sum = shiftCenterSum(b);
-    detailRows.push([n, p.label, ...rangeCells(p), b.morning.center, b.evening.center, b.other.center, sum,
+    detailRows.push([fmtCenterName(n), p.label, ...rangeCells(p), b.morning.center, b.evening.center, b.other.center, sum,
       azkiPctNum(b.morning.center, sum), azkiPctNum(b.evening.center, sum)]);
   }));
   const centerByDate = azkiXlsxSheet({
@@ -5063,7 +5070,7 @@ function buildGroupedMemberItemsHtml(membersWithTotals) {
       <button class="leader-header" type="button">
         <div class="leader-name-wrap">
           <svg class="leader-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          <span class="leader-name">${g.centerName}</span>
+          <span class="leader-name">${fmtCenterName(g.centerName)}</span>
         </div>
         <div class="leader-right">
           <span class="leader-count">${formatNumber(g.items.length)} نفر</span>
@@ -5588,7 +5595,7 @@ async function exportTargetsExcelFrom(d, btnId) {
 
     const byCenter = new Map();
     d.items.forEach(it => {
-      const c = it.m.centerName || 'بدون سنتر';
+      const c = fmtCenterName(it.m.centerName || 'بدون سنتر');
       if (!byCenter.has(c)) byCenter.set(c, []);
       byCenter.get(c).push(it);
     });
