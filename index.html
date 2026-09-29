@@ -1364,6 +1364,8 @@
   #sup-filter .azki-fld, #team-filter .azki-fld, #center-filter .azki-fld { align-items: center; }
   #sup-filter .azki-fld-label, #team-filter .azki-fld-label, #center-filter .azki-fld-label { text-align: center; width: 100%; }
   #sup-filter .azki-ctl, #team-filter .azki-ctl, #center-filter .azki-ctl { justify-content: center; }
+  /* پنل سرگروه: فقط تعداد، بدون مبلغ و نرخ */
+  #panel-azki-payroll .azki-rate-card, #panel-azki-payroll #azki-payroll-amount-card { display: none; }
   .azki-export-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; white-space: nowrap; }
   .azki-export-btn[disabled] { opacity: .6; cursor: default; }
   /* زیرمنوی تب «گزارش» */
@@ -1693,6 +1695,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
         وضعیت فعال کاربران
       </button>
+      <button class="tab-btn" data-team-tab="azki-payroll" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+        محاسبه حقوق
+      </button>
     </div>
     <div class="subtabs" id="team-subtabs" style="display:none;">
       <button class="subtab-btn" data-team-tab="azki-shifts" type="button">
@@ -1756,6 +1762,7 @@
     <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
     <div class="panel" id="panel-azki-active"></div>
+    <div class="panel" id="panel-azki-payroll"></div>
 
     <div class="tabs" id="center-tabs" style="display:none;">
       <button class="tab-btn active" data-center-tab="center">
@@ -2073,7 +2080,7 @@
             <div class="label">مجموع صدور کل سنترها</div>
             <div class="value" id="azki-payroll-total">—</div>
           </div>
-          <div class="summary-card is-wide">
+          <div class="summary-card is-wide" id="azki-payroll-amount-card">
             <div class="label">مبلغ کل قابل پرداخت</div>
             <div class="value" id="azki-payroll-amount">—</div>
           </div>
@@ -2319,7 +2326,7 @@ function teamShowTab(tab) {
   }
   document.getElementById('panel-team').classList.remove('active');
   document.getElementById('panel-team-bugs').classList.remove('active');
-  ['panel-azki-compare', 'panel-azki-shifts', 'panel-azki-active'].forEach(id => {
+  ['panel-azki-compare', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2334,6 +2341,7 @@ function teamShowTab(tab) {
   if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
   if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
   if (tab === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
+  if (tab === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
   if (window.refreshGlassReveals) window.refreshGlassReveals();
 }
 document.querySelectorAll('#team-tabs .tab-btn').forEach(btn => {
@@ -3596,15 +3604,39 @@ async function fetchAzkiPayrollCenterSla(bounds) {
   return { byCenterKey, error: firstError };
 }
 
+// سنترهای اساین‌شده به سرگروه (کلید نرمال‌شده‌ی نام) برای محدود کردن محاسبه‌ی «فقط تعداد»
+async function fetchLeaderCenterKeys() {
+  const leaderId = window.teamLeaderId;
+  if (!leaderId) return new Set();
+  const { data: links, error: e1 } = await fetchAllRows((from, to) =>
+    supabaseClient.from(TABLE_LEADER_CENTERS).select('center_id').eq('leader_id', leaderId).range(from, to));
+  if (e1) throw new Error(e1.message);
+  const ids = (links || []).map(l => l.center_id).filter(Boolean);
+  if (!ids.length) return new Set();
+  const { data: profs, error: e2 } = await fetchAllRows((from, to) =>
+    supabaseClient.from(TABLE_PROFILES).select('id, full_name').in('id', ids).range(from, to));
+  if (e2) throw new Error(e2.message);
+  return new Set((profs || []).map(c => normCenterKey(c.full_name)).filter(Boolean));
+}
+
 async function loadAzkiPayrollView() {
   if (!azkiAllowed()) return;
   const bounds = getAzkiBounds();
   document.getElementById('azki-payroll-label').textContent = azkiRangeText(bounds);
   renderAzkiRateRows();
 
+  const isLeader = currentUserRole === 'leader';
+  let leaderKeys = null;
+  if (isLeader) {
+    try { leaderKeys = await fetchLeaderCenterKeys(); }
+    catch (e) {
+      document.getElementById('azki-payroll-list').innerHTML = `<div class="empty-state">خطا در دریافت سنترهای شما: ${e.message}</div>`;
+      return;
+    }
+  }
   const [breakdownRes, slaRes] = await Promise.all([
     fetchAzkiBreakdownRows(azkiActiveScopes(), bounds),
-    fetchAzkiPayrollCenterSla(bounds),
+    isLeader ? Promise.resolve({ byCenterKey: {}, error: null }) : fetchAzkiPayrollCenterSla(bounds),
   ]);
   if (bounds !== azkiState.bounds) return;
   if (breakdownRes.error) {
@@ -3612,7 +3644,8 @@ async function loadAzkiPayrollView() {
     return;
   }
   if (slaRes.error) console.error('خطا در دریافت گزارش SLA اپراتورها:', slaRes.error.message);
-  azkiState.payroll.rows = breakdownRes.data || [];
+  azkiState.payroll.leaderKeys = leaderKeys;
+  azkiState.payroll.rows = (breakdownRes.data || []).filter(r => !leaderKeys || leaderKeys.has(normCenterKey(r.center_name)));
   azkiState.payroll.slaByCenterKey = slaRes.byCenterKey || {};
   azkiState.payroll.loaded = true;
   renderAzkiPayrollView();
@@ -3633,6 +3666,17 @@ function renderAzkiPayrollView() {
   const centerData = computeAzkiPayrollCenterData(rows, azkiState.payroll.slaByCenterKey);
   const grandCount = centerData.reduce((s, c) => s + c.count, 0);
   const grandAmount = centerData.reduce((s, c) => s + c.amount, 0);
+
+  if (currentUserRole === 'leader') {
+    document.getElementById('azki-payroll-center-count').textContent = formatNumber(centerData.length);
+    document.getElementById('azki-payroll-total').textContent = formatNumber(grandCount);
+    container.innerHTML = centerData.map(c => `
+      <div class="row-item">
+        <div class="pay-name">${c.name}</div>
+        <div class="row-badge">${formatNumber(c.count)}</div>
+      </div>`).join('');
+    return;
+  }
 
   document.getElementById('azki-payroll-center-count').textContent = formatNumber(centerData.length);
   document.getElementById('azki-payroll-total').textContent = formatNumber(grandCount);
@@ -3748,6 +3792,52 @@ async function exportAzkiPayrollExcel() {
     const centerData = computeAzkiPayrollCenterData(azkiState.payroll.rows, azkiState.payroll.slaByCenterKey);
     const grandCount = centerData.reduce((s, c) => s + c.count, 0);
     const grandAmount = centerData.reduce((s, c) => s + c.amount, 0);
+
+    if (currentUserRole === 'leader') {
+      // سرگروه: فقط تعداد صدور (بدون نرخ و مبلغ)
+      const lb = azkiState.bounds;
+      const meta2 = `فقط تعداد صدور   |   شرکت: ${azkiState.companies.all ? 'همه شرکت‌ها' : azkiActiveScopes().join('، ')}`;
+      const centersWs = azkiXlsxSheet({
+        title: 'صدور سنترها', bounds: lb, metaLine2: meta2,
+        headers: ['ردیف', 'نام سنتر', 'تعداد صدور'],
+        rows: centerData.map((c, i) => [i + 1, c.name, c.count]),
+        total: ['', 'جمع کل', grandCount],
+        widths: [8, 36, 16], fmts: ['int', 'text', 'int'],
+      });
+      const lwb = XLSX.utils.book_new();
+      lwb.Workbook = { Views: [{ RTL: true }] };
+      XLSX.utils.book_append_sheet(lwb, centersWs, 'صدور سنترها');
+      try {
+        const keys = azkiState.payroll.leaderKeys;
+        const det = await fetchAzkiPayrollAgentDetail(lb, centerData);
+        // کارشناس‌های سنترهای این سرگروه + همه‌ی کسانی که از سنتر حذف شدن (با وضعیت مشخص)
+        const agents = det.agents.filter(a => a.status === 'از سنتر حذف شده' || (keys && keys.has(normCenterKey(a.centerName))));
+        const okIds = new Set(agents.map(a => a.id));
+        const days = det.days.filter(d => okIds.has(d.id));
+        if (agents.length) {
+          const tot = agents.reduce((s0, a) => s0 + a.count, 0);
+          XLSX.utils.book_append_sheet(lwb, azkiXlsxSheet({
+            title: 'ریز صدور کارشناس‌ها', bounds: lb, metaLine2: meta2,
+            headers: ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'وضعیت', 'تعداد روز', 'تعداد صدور'],
+            rows: agents.map(a => [a.centerName, a.name, a.backoffice, a.status, a.daysCount, a.count]),
+            total: ['جمع کل', '', '', '', '', tot],
+            widths: [32, 28, 18, 18, 12, 14], fmts: ['text', 'text', 'text', 'text', 'int', 'int'],
+          }), 'ریز کارشناس‌ها');
+          XLSX.utils.book_append_sheet(lwb, azkiXlsxSheet({
+            title: 'جزئیات روزانه کارشناس‌ها', bounds: lb, metaLine2: meta2,
+            headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
+            rows: days.map(d => [d.agent.centerName, d.agent.name, d.agent.status, d.date, d.count]),
+            total: ['جمع کل', '', '', '', tot],
+            widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
+          }), 'جزئیات روزانه');
+        }
+      } catch (detailErr) {
+        console.error('ریز کارشناس‌ها به اکسل اضافه نشد:', detailErr);
+        alert('اکسل اصلی ساخته شد ولی ریز کارشناس‌ها دریافت نشد: ' + detailErr.message);
+      }
+      XLSX.writeFile(lwb, `صدور-سنترها_${lb.startLabel.replace(/\//g, '-')}_تا_${lb.endLabel.replace(/\//g, '-')}.xlsx`);
+      return;
+    }
 
     const bounds = azkiState.bounds;
     const aoa = [
@@ -4689,7 +4779,7 @@ async function enterApp(user) {
     document.getElementById('panel-supervisor').classList.remove('active');
     (function relocateAzkiViewsForLeader() {
       const filterEl = document.getElementById('azki-filter');
-      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active']].forEach(([hostId, viewId]) => {
+      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
         const host = document.getElementById(hostId);
         const viewEl = document.getElementById(viewId);
         if (host && viewEl && !host.contains(viewEl)) {
