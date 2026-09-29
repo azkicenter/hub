@@ -3679,7 +3679,7 @@ function renderAzkiPayrollView() {
     document.getElementById('azki-payroll-total').textContent = formatNumber(grandCount);
     container.innerHTML = centerData.map(c => `
       <div class="row-item">
-        <div class="pay-name">${fmtCenterName(c.name)}</div>
+        <div class="pay-name">${c.name}</div>
         <div class="row-badge">${formatNumber(c.count)}</div>
       </div>`).join('');
     return;
@@ -3691,7 +3691,7 @@ function renderAzkiPayrollView() {
 
   container.innerHTML = centerData.map(c => `
     <div class="row-item azki-payroll-row">
-      <div class="pay-name">${fmtCenterName(c.name)}</div>
+      <div class="pay-name">${c.name}</div>
       <div class="pay-metrics">
         <div class="pay-metric"><span class="k">تعداد صدور</span><span class="v">${formatNumber(c.count)}</span></div>
         <div class="pay-metric${c.hasSla ? '' : ' is-missing'}" title="منبع: گزارش SLA اپراتورها">
@@ -3807,7 +3807,7 @@ async function exportAzkiPayrollExcel() {
       const centersWs = azkiXlsxSheet({
         title: 'صدور سنترها', bounds: lb, metaLine2: meta2,
         headers: ['ردیف', 'نام سنتر', 'تعداد صدور'],
-        rows: centerData.map((c, i) => [i + 1, fmtCenterName(c.name), c.count]),
+        rows: centerData.map((c, i) => [i + 1, c.name, c.count]),
         total: ['', 'جمع کل', grandCount],
         widths: [8, 36, 16], fmts: ['int', 'text', 'int'],
       });
@@ -3826,14 +3826,14 @@ async function exportAzkiPayrollExcel() {
           XLSX.utils.book_append_sheet(lwb, azkiXlsxSheet({
             title: 'ریز صدور کارشناس‌ها', bounds: lb, metaLine2: meta2,
             headers: ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'وضعیت', 'تعداد روز', 'تعداد صدور'],
-            rows: agents.map(a => [fmtCenterName(a.centerName), a.name, a.backoffice, a.status, a.daysCount, a.count]),
+            rows: agents.map(a => [a.centerName, a.name, a.backoffice, a.status, a.daysCount, a.count]),
             total: ['جمع کل', '', '', '', '', tot],
             widths: [32, 28, 18, 18, 12, 14], fmts: ['text', 'text', 'text', 'text', 'int', 'int'],
           }), 'ریز کارشناس‌ها');
           XLSX.utils.book_append_sheet(lwb, azkiXlsxSheet({
             title: 'جزئیات روزانه کارشناس‌ها', bounds: lb, metaLine2: meta2,
             headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
-            rows: days.map(d => [fmtCenterName(d.agent.centerName), d.agent.name, d.agent.status, d.date, d.count]),
+            rows: days.map(d => [d.agent.centerName, d.agent.name, d.agent.status, d.date, d.count]),
             total: ['جمع کل', '', '', '', tot],
             widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
           }), 'جزئیات روزانه');
@@ -3849,7 +3849,7 @@ async function exportAzkiPayrollExcel() {
     const bounds = azkiState.bounds;
     const aoa = [
       ['نام سنتر', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور (ریال)', 'مبلغ قابل پرداخت (ریال)'],
-      ...centerData.map(c => [fmtCenterName(c.name), c.count, c.avgMin != null ? c.avgMin : '—', c.rate, c.amount]),
+      ...centerData.map(c => [c.name, c.count, c.avgMin != null ? c.avgMin : '—', c.rate, c.amount]),
       ['جمع کل', grandCount, '', '', grandAmount],
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -3895,7 +3895,7 @@ async function exportAzkiPayrollExcel() {
         const agentsWs = azkiXlsxSheet({
           title: 'محاسبه حقوق — ریز صدور کارشناس‌ها', bounds, metaLine2: meta2,
           headers: ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'وضعیت', 'تعداد روز', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور سنتر (ریال)', 'مبلغ برآوردی (ریال)'],
-          rows: detail.agents.map(a => [fmtCenterName(a.centerName), a.name, a.backoffice, a.status, a.daysCount, a.count, a.sla != null ? a.sla : '', a.rate, a.amount]),
+          rows: detail.agents.map(a => [a.centerName, a.name, a.backoffice, a.status, a.daysCount, a.count, a.sla != null ? a.sla : '', a.rate, a.amount]),
           total: ['جمع کل', '', '', '', '', totCount, '', '', totAmount],
           widths: [32, 28, 18, 18, 12, 14, 22, 22, 22], fmts: ['text', 'text', 'text', 'text', 'int', 'int', 'pct', 'int', 'int'],
         });
@@ -3903,7 +3903,7 @@ async function exportAzkiPayrollExcel() {
         const daysWs = azkiXlsxSheet({
           title: 'محاسبه حقوق — جزئیات روزانه کارشناس‌ها', bounds, metaLine2: meta2,
           headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
-          rows: detail.days.map(d => [fmtCenterName(d.agent.centerName), d.agent.name, d.agent.status, d.date, d.count]),
+          rows: detail.days.map(d => [d.agent.centerName, d.agent.name, d.agent.status, d.date, d.count]),
           total: ['جمع کل', '', '', '', totCount],
           widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
         });
