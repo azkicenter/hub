@@ -536,6 +536,51 @@
     overflow: hidden;
     box-shadow: var(--shadow-card);
   }
+
+  .azki-trend {
+    background: var(--surface);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 16px 18px 12px;
+    margin-bottom: 16px;
+  }
+  .azki-trend-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .azki-trend-title { font-size: 15px; font-weight: 800; color: var(--ink); }
+  .azki-trend-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .azki-trend-stat { font-size: 12.5px; color: var(--ink-soft); background: var(--surface-tint); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+  .azki-trend-stat b { color: var(--accent-strong); font-weight: 800; margin-inline-start: 4px; }
+  .azki-trend-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .azki-trend-chip {
+    font-family: inherit; font-size: 12.5px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); background: transparent; color: var(--ink-soft);
+    border-radius: 999px; padding: 4px 11px; transition: background .12s, border-color .12s;
+  }
+  .azki-trend-chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); opacity: .35; }
+  .azki-trend-chip.on { color: var(--ink); border-color: var(--c); background: var(--surface-tint); font-weight: 700; }
+  .azki-trend-chip.on i { opacity: 1; }
+  .azki-trend-note { padding: 26px 8px; text-align: center; color: var(--ink-faint); font-size: 13.5px; }
+  .azki-trend-plot { position: relative; direction: ltr; }
+  .azki-trend-plot svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+  .azki-trend-plot text { font-family: inherit; fill: var(--ink-faint); font-size: 11.5px; }
+  .azki-trend-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; opacity: .7; }
+  .azki-trend-guide { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 3 3; }
+  .azki-trend-tip {
+    position: absolute; top: 6px; display: none; z-index: 5; pointer-events: none;
+    direction: rtl; min-width: 170px; padding: 9px 12px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%); backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    box-shadow: var(--shadow-float); font-size: 12.5px; color: var(--ink);
+  }
+  .azki-trend-tip .t-h { font-weight: 800; margin-bottom: 6px; }
+  .azki-trend-tip .t-r { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+  .azki-trend-tip .t-r i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .azki-trend-tip .t-r span { flex: 1; }
+  .azki-trend-tip .t-r b { font-weight: 800; }
+  .azki-trend-tip .t-r small { color: var(--ink-faint); font-size: 11px; }
   .row-item {
     display: flex;
     align-items: center;
@@ -2064,6 +2109,7 @@
 
       <div id="sup-view-azki-compare" style="display:none;">
         <div class="period-label" id="azki-compare-label"></div>
+        <div id="azki-compare-chart"></div>
         <div class="list-card" id="azki-compare-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
@@ -2871,7 +2917,7 @@ const azkiState = {
   period:  { loaded: false, rows: [] },
   centers: { loaded: false, rows: [] },
   shifts:  { loaded: false, rows: [], mode: 'date' },
-  compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
+  compare: { loaded: false, byScope: {}, list: [], hideEmpty: true, trend: null, trendSel: new Set(['__all']) },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
 };
@@ -4204,6 +4250,8 @@ async function loadAzkiCompareView() {
   const { data, error } = await fetchAzkiPeriodRows(companies, bounds);
   if (bounds !== azkiState.bounds) return;
   if (error) {
+    const chartHost = document.getElementById('azki-compare-chart');
+    if (chartHost) chartHost.innerHTML = '';
     container.innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${error.message}</div>`;
     return;
   }
@@ -4236,11 +4284,205 @@ function azkiPeriodRowHtml(g) {
     </div>`;
 }
 
+
+// ───────── نمودار روند درصد صدور (تب مقایسه درصد صدور) ─────────
+const AZKI_TREND_COLORS = ['#F59E0B', '#7C5CE0', '#1FA971', '#E0453F', '#0EA5E9', '#DB2777', '#65A30D', '#0D9488', '#9333EA', '#EA580C'];
+
+function azkiTrendPct(x) { return x && x.total ? x.center / x.total * 100 : null; }
+
+function azkiTrendLabel(p) {
+  return azkiState.granularity === 'daily' ? faDigits(String(p.key).slice(5)) : p.label;
+}
+
+function azkiBuildTrendData(summaries) {
+  const map = new Map();
+  summaries.forEach(s => s.groups.forEach(g => {
+    let p = map.get(g.key);
+    if (!p) { p = { key: g.key, label: g.label, sortKey: g.sortKey, total: 0, center: 0, by: {} }; map.set(g.key, p); }
+    p.sortKey = Math.min(p.sortKey, g.sortKey);
+    p.total += g.total;
+    p.center += g.center;
+    p.by[s.company] = { total: g.total, center: g.center };
+  }));
+  return [...map.values()].sort((a, b) => a.sortKey - b.sortKey);
+}
+
+function azkiTrendDefs() {
+  const c = azkiState.compare;
+  const defs = [{ id: '__all', name: 'مجموع', color: 'var(--accent-deep)', pick: p => p }];
+  c.trend.companies.forEach(name => {
+    const idx = Math.max(0, c.list.indexOf(name));
+    defs.push({ id: name, name, color: AZKI_TREND_COLORS[idx % AZKI_TREND_COLORS.length], pick: p => p.by[name] });
+  });
+  return defs;
+}
+
+function azkiRenderTrendChart() {
+  const host = document.getElementById('azki-compare-chart');
+  if (!host) return;
+  const t = azkiState.compare.trend;
+  if (!t || !t.data.length) { host.innerHTML = ''; return; }
+
+  const data = t.data, n = data.length;
+  const allDefs = azkiTrendDefs();
+  const sel = azkiState.compare.trendSel;
+  const defs = allDefs.filter(d => sel.has(d.id));
+  const granFa = (typeof AZKI_GRAN_FA !== 'undefined' && AZKI_GRAN_FA[azkiState.granularity]) || '';
+
+  // آمار کلی روی سری «مجموع»
+  const allPcts = data.map(p => azkiTrendPct(p));
+  let best = -1, worst = -1;
+  allPcts.forEach((v, i) => {
+    if (v === null) return;
+    if (best < 0 || v > allPcts[best]) best = i;
+    if (worst < 0 || v < allPcts[worst]) worst = i;
+  });
+  const gT = data.reduce((a, p) => a + p.total, 0), gC = data.reduce((a, p) => a + p.center, 0);
+  const statsHtml = `
+    <div class="azki-trend-stats">
+      <span class="azki-trend-stat">کل بازه<b>${formatNumber(gT ? round2(gC / gT * 100) : 0)}٪</b></span>
+      ${best >= 0 ? `<span class="azki-trend-stat">بیشترین (${azkiTrendLabel(data[best])})<b>${formatNumber(round2(allPcts[best]))}٪</b></span>` : ''}
+      ${worst >= 0 ? `<span class="azki-trend-stat">کمترین (${azkiTrendLabel(data[worst])})<b>${formatNumber(round2(allPcts[worst]))}٪</b></span>` : ''}
+    </div>`;
+
+  const chipsHtml = allDefs.length > 1 ? `
+    <div class="azki-trend-chips">
+      ${allDefs.map(d => `<button type="button" class="azki-trend-chip${sel.has(d.id) ? ' on' : ''}" data-id="${d.id}" style="--c:${d.color}"><i></i>${d.id === '__all' ? 'مجموع شرکت‌ها' : d.name}</button>`).join('')}
+    </div>` : '';
+
+  const head = `
+    <div class="azki-trend-head">
+      <div class="azki-trend-title">روند درصد صدور ازکی سنتر ${granFa ? '(' + granFa + ')' : ''}</div>
+      ${statsHtml}
+    </div>${chipsHtml}`;
+
+  let body;
+  if (n < 2) {
+    body = '<div class="azki-trend-note">برای رسم روند، حداقل دو دوره لازم است؛ بازه را بزرگ‌تر کنید یا حالت نمایش را روزانه بگذارید.</div>';
+  } else if (!defs.length) {
+    body = '<div class="azki-trend-note">حداقل یک مورد را برای نمایش روی نمودار انتخاب کنید.</div>';
+  } else {
+    const W = 900, H = 300, L = 46, R = 14, T = 14, B = 34;
+    const pw = W - L - R, ph = H - T - B;
+    const X = i => L + pw * i / (n - 1);
+
+    const series = defs.map(d => ({ d, vals: data.map(p => azkiTrendPct(d.pick(p))) }));
+    let mx = 0;
+    series.forEach(s => s.vals.forEach(v => { if (v !== null && v > mx) mx = v; }));
+    const top = mx <= 5 ? Math.max(1, Math.ceil(mx * 1.2)) : Math.min(100, Math.ceil(mx * 1.15 / 5) * 5);
+    const Y = v => T + ph * (1 - v / top);
+
+    let grid = '';
+    for (let k = 0; k <= 4; k++) {
+      const v = top * k / 4, y = Y(v);
+      grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`
+            + `<text x="${L - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${faDigits(round2(v))}٪</text>`;
+    }
+    const step = Math.ceil(n / 8);
+    let xl = '';
+    data.forEach((p, i) => {
+      if (i % step !== 0) return;
+      xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${azkiTrendLabel(p)}</text>`;
+    });
+
+    let paths = '';
+    series.forEach((s, si) => {
+      const segs = []; let cur = null;
+      s.vals.forEach((v, i) => {
+        if (v === null) { cur = null; return; }
+        if (!cur) { cur = []; segs.push(cur); }
+        cur.push([X(i), Y(v)]);
+      });
+      const line = segs.map(sg => 'M' + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L')).join(' ');
+      if (s.d.id === '__all') {
+        const base = (T + ph).toFixed(1);
+        const area = segs.filter(sg => sg.length > 1).map(sg =>
+          `M${sg[0][0].toFixed(1)} ${base} L` + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') + ` L${sg[sg.length - 1][0].toFixed(1)} ${base} Z`).join(' ');
+        paths += `<path d="${area}" style="fill:${s.d.color}" opacity=".10"/>`;
+      }
+      paths += `<path d="${line}" fill="none" style="stroke:${s.d.color}" stroke-width="${s.d.id === '__all' ? 2.8 : 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
+      if (n <= 45) {
+        s.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${s.d.color}"/>`; });
+      }
+    });
+
+    body = `
+      <div class="azki-trend-plot" id="azki-trend-plot">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="نمودار روند درصد صدور">
+          ${grid}${xl}${paths}
+          <line class="azki-trend-guide" id="azki-trend-guide" y1="${T}" y2="${T + ph}" style="display:none"/>
+          <g id="azki-trend-hover"></g>
+          <rect id="azki-trend-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
+        </svg>
+        <div class="azki-trend-tip" id="azki-trend-tip"></div>
+      </div>`;
+
+    host.innerHTML = `<div class="azki-trend">${head}${body}</div>`;
+    azkiBindTrendHover({ W, H, L, pw, T, ph, n, X, Y, data, series });
+    azkiBindTrendChips(host);
+    return;
+  }
+  host.innerHTML = `<div class="azki-trend">${head}${body}</div>`;
+  azkiBindTrendChips(host);
+}
+
+function azkiBindTrendChips(host) {
+  host.querySelectorAll('.azki-trend-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sel = azkiState.compare.trendSel, id = btn.dataset.id;
+      if (sel.has(id)) sel.delete(id); else sel.add(id);
+      azkiRenderTrendChart();
+    });
+  });
+}
+
+function azkiBindTrendHover(g) {
+  const wrap = document.getElementById('azki-trend-plot');
+  const hit = document.getElementById('azki-trend-hit');
+  const guide = document.getElementById('azki-trend-guide');
+  const hov = document.getElementById('azki-trend-hover');
+  const tip = document.getElementById('azki-trend-tip');
+  if (!wrap || !hit) return;
+  const svg = wrap.querySelector('svg');
+
+  function show(clientX) {
+    const r = svg.getBoundingClientRect();
+    if (!r.width) return;
+    const vx = (clientX - r.left) * (g.W / r.width);
+    const i = Math.max(0, Math.min(g.n - 1, Math.round((vx - g.L) / g.pw * (g.n - 1))));
+    const x = g.X(i), p = g.data[i];
+    guide.setAttribute('x1', x.toFixed(1)); guide.setAttribute('x2', x.toFixed(1)); guide.style.display = '';
+    let dots = '', rows = '';
+    g.series.forEach(s => {
+      const v = s.vals[i];
+      if (v === null) return;
+      dots += `<circle cx="${x.toFixed(1)}" cy="${g.Y(v).toFixed(1)}" r="5" style="fill:${s.d.color};stroke:#fff" stroke-width="2"/>`;
+      const src = s.d.pick(p);
+      rows += `<div class="t-r"><i style="background:${s.d.color}"></i><span>${s.d.id === '__all' ? 'مجموع' : s.d.name}</span><b>${formatNumber(round2(v))}٪</b><small>${formatNumber(src.center)} از ${formatNumber(src.total)}</small></div>`;
+    });
+    hov.innerHTML = dots;
+    tip.innerHTML = `<div class="t-h">${p.label}</div>${rows || '<div class="t-r"><span>بدون صدور در این دوره</span></div>'}`;
+    tip.style.display = 'block';
+    const px = x / g.W * r.width;
+    if (px > r.width / 2) { tip.style.left = 'auto'; tip.style.right = (r.width - px + 12) + 'px'; }
+    else { tip.style.right = 'auto'; tip.style.left = (px + 12) + 'px'; }
+  }
+  function hide() { guide.style.display = 'none'; hov.innerHTML = ''; tip.style.display = 'none'; }
+
+  hit.addEventListener('mousemove', e => show(e.clientX));
+  hit.addEventListener('mouseleave', hide);
+  hit.addEventListener('touchstart', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
+  hit.addEventListener('touchmove', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
+  hit.addEventListener('touchend', hide);
+}
+
 function renderAzkiCompareView() {
   const container = document.getElementById('azki-compare-list');
   const list = azkiState.compare.list;
   const anyRows = list.some(c => (azkiState.compare.byScope[c] || []).length);
   if (!anyRows) {
+    const chartHost = document.getElementById('azki-compare-chart');
+    if (chartHost) chartHost.innerHTML = '';
     container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
     return;
   }
@@ -4251,6 +4493,9 @@ function renderAzkiCompareView() {
     const center = groups.reduce((s, g) => s + g.center, 0);
     return { company, groups, total, center };
   }).filter(x => !azkiState.compare.hideEmpty || x.total > 0).sort((a, b) => b.total - a.total);
+
+  azkiState.compare.trend = { data: azkiBuildTrendData(summaries), companies: summaries.map(s => s.company) };
+  azkiRenderTrendChart();
 
   const grandTotal = summaries.reduce((s, x) => s + x.total, 0);
   const grandCenter = summaries.reduce((s, x) => s + x.center, 0);
