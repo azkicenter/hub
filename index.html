@@ -562,6 +562,10 @@
   .azki-trend-chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); opacity: .35; }
   .azki-trend-chip.on { color: var(--ink); border-color: var(--c); background: var(--surface-tint); font-weight: 700; }
   .azki-trend-chip.on i { opacity: 1; }
+
+  .azc-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
+  .azc-tools .azki-fld { min-width: 0; }
+  .azki-trend-plot.azc svg text { font-size: 11.5px; }
   .azki-trend-note { padding: 26px 8px; text-align: center; color: var(--ink-faint); font-size: 13.5px; }
   .azki-trend-plot { position: relative; direction: ltr; }
   .azki-trend-plot svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
@@ -1754,6 +1758,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
         مقایسه درصد صدور
       </button>
+      <button class="subtab-btn" data-team-tab="azki-chart" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+        نمودار
+      </button>
     </div>
 
     <div class="panel" id="panel-team">
@@ -1806,6 +1814,7 @@
 
     <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
+    <div class="panel" id="panel-azki-chart"></div>
     <div class="panel" id="panel-azki-active"></div>
     <div class="panel" id="panel-azki-payroll"></div>
 
@@ -1924,6 +1933,10 @@
           <button class="subtab-btn" data-sup-tab="azki-compare" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
           مقایسه درصد صدور
+        </button>
+          <button class="subtab-btn" data-sup-tab="azki-chart" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+          نمودار
         </button>
       </div>
 
@@ -2113,6 +2126,11 @@
         <div class="list-card" id="azki-compare-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
+      </div>
+
+      <div id="sup-view-azki-chart" style="display:none;">
+        <div class="period-label" id="azki-chart-label"></div>
+        <div id="azki-chart-root"><div class="loading-state">در حال بارگذاری...</div></div>
       </div>
 
       <div id="sup-view-azki-payroll" style="display:none;">
@@ -2355,7 +2373,7 @@ document.querySelectorAll('#center-agent-tabs .tab-btn').forEach(btn => {
 });
 
 window.teamCurrentTab = 'team';
-const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare'];
+const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare', 'azki-chart'];
 let teamLastReportTab = 'azki-shifts';
 function teamShowTab(tab) {
   window.teamCurrentTab = tab;
@@ -2372,7 +2390,7 @@ function teamShowTab(tab) {
   }
   document.getElementById('panel-team').classList.remove('active');
   document.getElementById('panel-team-bugs').classList.remove('active');
-  ['panel-azki-compare', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll'].forEach(id => {
+  ['panel-azki-compare', 'panel-azki-chart', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2385,6 +2403,7 @@ function teamShowTab(tab) {
   if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
   if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
   if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
+  if (tab === 'azki-chart') azkiChartEnsure();
   if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
   if (tab === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
   if (tab === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
@@ -2708,7 +2727,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   }
 
   window.supCurrentTab = 'targets';
-  const SUP_REPORT_TABS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare'];
+  const SUP_REPORT_TABS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare', 'azki-chart'];
   let supLastReportTab = 'azki-period';
   function supShowTab(which) {
     window.supCurrentTab = which;
@@ -2726,6 +2745,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
     $('sup-view-azki-shifts').style.display = which === 'azki-shifts' ? '' : 'none';
     $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
+    $('sup-view-azki-chart').style.display = which === 'azki-chart' ? '' : 'none';
     $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
     $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
     // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
@@ -2736,6 +2756,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'azki-centers' && !azkiState.centers.loaded) loadAzkiCentersView();
     if (which === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
     if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
+    if (which === 'azki-chart') azkiChartEnsure();
     if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
     if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
     if (window.refreshGlassReveals) window.refreshGlassReveals();
@@ -2920,6 +2941,7 @@ const azkiState = {
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true, trend: null, trendSel: new Set(['__all']) },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
+  chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']) }, gen: 0 },
 };
 
 function faDigits(v) { return String(v).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
@@ -4212,8 +4234,9 @@ function azkiBuildCompareExport() {
 }
 
 async function exportAzkiReportExcel() {
-  const tab = azkiActiveTab();
+  let tab = azkiActiveTab();
   if (tab === 'azki-payroll') return exportAzkiPayrollExcel();
+  if (tab === 'azki-chart') tab = { pct: 'azki-compare', shift: 'azki-shifts', period: 'azki-period' }[azkiState.chart.report];
   const btn = document.getElementById('azki-export-btn');
   const cfg = {
     'azki-period':  { st: azkiState.period,  has: () => azkiState.period.rows.length,  build: azkiBuildPeriodExport },
@@ -4476,6 +4499,279 @@ function azkiBindTrendHover(g) {
   hit.addEventListener('touchend', hide);
 }
 
+
+// ───────── تب «نمودار»: انتخاب گزارش و رسم روند آن روی بازه‌ی انتخاب‌شده ─────────
+const AZC_REPORTS = [
+  { id: 'pct', label: 'درصد صدور' },
+  { id: 'shift', label: 'تفکیک شیفت' },
+  { id: 'period', label: 'تعداد صدور' },
+];
+const AZC_SHIFT_DEFS = [
+  { id: 'morning', name: 'شیفت صبح', color: '#1656F5' },
+  { id: 'evening', name: 'شیفت عصر', color: '#F59E0B' },
+  { id: 'other', name: 'خارج از شیفت (۰ تا ۸)', color: '#9AA5B8' },
+];
+
+function azcNiceTop(mx, pct) {
+  if (pct) return mx <= 5 ? Math.max(1, Math.ceil(mx * 1.2)) : Math.min(100, Math.ceil(mx * 1.15 / 5) * 5);
+  if (mx <= 0) return 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(mx)));
+  const f = mx / mag;
+  const nice = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+  return nice * mag;
+}
+
+function azcXLabel(p) { return azkiState.granularity === 'daily' ? faDigits(String(p.key).slice(5)) : p.label; }
+
+// خروجی: { points:[{key,label}], series:[{id,name,color,vals:[],sub:[]}], pct:bool, empty:bool, allSeries:[...] }
+function azcBuildModel() {
+  const st = azkiState.chart;
+  if (st.report === 'pct') {
+    const c = azkiState.compare;
+    const summaries = c.list.map(company => {
+      const groups = groupAzkiPeriodRows(c.byScope[company] || [], azkiState.granularity);
+      return { company, groups, total: groups.reduce((a, g) => a + g.total, 0) };
+    }).filter(x => !c.hideEmpty || x.total > 0).sort((a, b) => b.total - a.total);
+    const data = azkiBuildTrendData(summaries);
+    const mk = (id, name, color, pick) => {
+      const vals = data.map(p => { const x = pick(p); return x && x.total ? x.center / x.total * 100 : null; });
+      const sub = data.map(p => { const x = pick(p); return x ? `${formatNumber(x.center)} از ${formatNumber(x.total)}` : ''; });
+      return { id, name, color, vals, sub };
+    };
+    const all = [mk('__all', 'مجموع شرکت‌ها', 'var(--accent-deep)', p => p)];
+    summaries.forEach(sm => {
+      const idx = Math.max(0, c.list.indexOf(sm.company));
+      all.push(mk(sm.company, sm.company, AZKI_TREND_COLORS[idx % AZKI_TREND_COLORS.length], p => p.by[sm.company]));
+    });
+    return { points: data, all, pct: true, empty: !data.length, selKey: 'pct', title: 'روند درصد صدور ازکی سنتر', areaId: '__all' };
+  }
+
+  if (st.report === 'shift') {
+    const agg = aggregateAzkiShiftRows(azkiState.shifts.rows, azkiState.granularity);
+    const pts = agg.periods;
+    const asPct = st.metric === 'pct';
+    const defs = asPct ? AZC_SHIFT_DEFS.slice(0, 2) : AZC_SHIFT_DEFS;
+    const all = defs.map(d => {
+      const vals = pts.map(p => { const b = p.all[d.id]; return asPct ? (b.total ? b.center / b.total * 100 : null) : b.center; });
+      const sub = pts.map(p => {
+        const b = p.all[d.id];
+        return asPct ? `${formatNumber(b.center)} از ${formatNumber(b.total)}` : `از کل صدور شیفت: ${formatNumber(b.total)}`;
+      });
+      return { id: d.id, name: d.name, color: d.color, vals, sub };
+    });
+    return { points: pts, all, pct: asPct, empty: !pts.length, selKey: 'shift',
+      title: asPct ? 'روند درصد صدور ازکی سنتر به تفکیک شیفت' : 'روند تعداد صدور ازکی سنتر به تفکیک شیفت', areaId: null };
+  }
+
+  // period: کل صدور و صدور ازکی سنتر
+  const groups = groupAzkiPeriodRows(azkiState.period.rows, azkiState.granularity);
+  const pts = groups.map(g => ({ key: g.key, label: g.label }));
+  const all = [
+    { id: 'total', name: 'کل صدور', color: '#7C5CE0', vals: groups.map(g => g.total), sub: groups.map(() => '') },
+    { id: 'center', name: 'صدور ازکی سنتر', color: 'var(--accent-deep)', vals: groups.map(g => g.center),
+      sub: groups.map(g => g.total ? `${formatNumber(round2(g.center / g.total * 100))}٪ از کل` : '') },
+  ];
+  return { points: pts, all, pct: false, empty: !groups.length, selKey: 'period', title: 'روند تعداد صدور (کل و ازکی سنتر)', areaId: 'center' };
+}
+
+function azcFmtVal(v, pct) { return pct ? `${formatNumber(round2(v))}٪` : formatNumber(Math.round(v)); }
+
+function azkiChartRender() {
+  const root = document.getElementById('azki-chart-root');
+  if (!root) return;
+  const st = azkiState.chart;
+  document.getElementById('azki-chart-label').textContent = azkiRangeText(getAzkiBounds());
+
+  const tabsHtml = `
+    <div class="azc-tools">
+      <div class="azki-fld">
+        <span class="azki-fld-label">گزارش</span>
+        <div class="azki-seg" id="azc-report">
+          ${AZC_REPORTS.map(r => `<button type="button" class="azki-seg-btn${st.report === r.id ? ' active' : ''}" data-report="${r.id}">${r.label}</button>`).join('')}
+        </div>
+      </div>
+      ${st.report === 'shift' ? `
+      <div class="azki-fld">
+        <span class="azki-fld-label">مقدار</span>
+        <div class="azki-seg" id="azc-metric">
+          <button type="button" class="azki-seg-btn${st.metric === 'count' ? ' active' : ''}" data-metric="count">تعداد صدور</button>
+          <button type="button" class="azki-seg-btn${st.metric === 'pct' ? ' active' : ''}" data-metric="pct">درصد صدور</button>
+        </div>
+      </div>` : ''}
+    </div>`;
+
+  const m = azcBuildModel();
+  let inner;
+  if (m.empty) {
+    inner = '<div class="azki-trend"><div class="azki-trend-note">ردیفی برای این بازه پیدا نشد</div></div>';
+  } else {
+    const sel = st.sel[m.selKey];
+    const defs = m.all.filter(d => sel.has(d.id));
+    const n = m.points.length;
+
+    const chips = m.all.length > 1 ? `
+      <div class="azki-trend-chips">
+        ${m.all.map(d => `<button type="button" class="azki-trend-chip${sel.has(d.id) ? ' on' : ''}" data-id="${d.id}" style="--c:${d.color}"><i></i>${d.name}</button>`).join('')}
+      </div>` : '';
+
+    // آمار روی اولین سری انتخاب‌شده
+    let stats = '';
+    const ref = defs[0];
+    if (ref) {
+      let best = -1, worst = -1;
+      ref.vals.forEach((v, i) => {
+        if (v === null) return;
+        if (best < 0 || v > ref.vals[best]) best = i;
+        if (worst < 0 || v < ref.vals[worst]) worst = i;
+      });
+      if (best >= 0) stats = `<div class="azki-trend-stats">
+        <span class="azki-trend-stat">بیشترین ${ref.name} (${azcXLabel(m.points[best])})<b>${azcFmtVal(ref.vals[best], m.pct)}</b></span>
+        <span class="azki-trend-stat">کمترین (${azcXLabel(m.points[worst])})<b>${azcFmtVal(ref.vals[worst], m.pct)}</b></span></div>`;
+    }
+    const head = `<div class="azki-trend-head"><div class="azki-trend-title">${m.title} (${AZKI_GRAN_FA[azkiState.granularity] || ''})</div>${stats}</div>${chips}`;
+
+    let body;
+    if (n < 2) {
+      body = '<div class="azki-trend-note">برای رسم روند، حداقل دو دوره لازم است؛ بازه را بزرگ‌تر کنید یا حالت نمایش را روزانه بگذارید.</div>';
+    } else if (!defs.length) {
+      body = '<div class="azki-trend-note">حداقل یک مورد را برای نمایش روی نمودار انتخاب کنید.</div>';
+    } else {
+      const W = 900, H = 300, L = m.pct ? 46 : 58, R = 14, T = 14, B = 34;
+      const pw = W - L - R, ph = H - T - B;
+      const X = i => L + pw * i / (n - 1);
+      let mx = 0;
+      defs.forEach(d => d.vals.forEach(v => { if (v !== null && v > mx) mx = v; }));
+      const top = azcNiceTop(mx, m.pct);
+      const Y = v => T + ph * (1 - v / top);
+
+      let grid = '';
+      for (let k = 0; k <= 4; k++) {
+        const v = top * k / 4, y = Y(v);
+        grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`
+              + `<text x="${L - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${m.pct ? faDigits(round2(v)) + '٪' : formatNumber(Math.round(v))}</text>`;
+      }
+      const step = Math.ceil(n / 8);
+      let xl = '';
+      m.points.forEach((p, i) => { if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${azcXLabel(p)}</text>`; });
+
+      let paths = '';
+      defs.forEach(d => {
+        const segs = []; let cur = null;
+        d.vals.forEach((v, i) => {
+          if (v === null) { cur = null; return; }
+          if (!cur) { cur = []; segs.push(cur); }
+          cur.push([X(i), Y(v)]);
+        });
+        const line = segs.map(sg => 'M' + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L')).join(' ');
+        if (d.id === m.areaId) {
+          const base = (T + ph).toFixed(1);
+          const area = segs.filter(sg => sg.length > 1).map(sg =>
+            `M${sg[0][0].toFixed(1)} ${base} L` + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') + ` L${sg[sg.length - 1][0].toFixed(1)} ${base} Z`).join(' ');
+          paths += `<path d="${area}" style="fill:${d.color}" opacity=".10"/>`;
+        }
+        paths += `<path d="${line}" fill="none" style="stroke:${d.color}" stroke-width="${d.id === m.areaId ? 2.8 : 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
+        if (n <= 45) d.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${d.color}"/>`; });
+      });
+
+      body = `
+        <div class="azki-trend-plot azc" id="azc-plot">
+          <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.title}">
+            ${grid}${xl}${paths}
+            <line class="azki-trend-guide" id="azc-guide" y1="${T}" y2="${T + ph}" style="display:none"/>
+            <g id="azc-hover"></g>
+            <rect id="azc-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
+          </svg>
+          <div class="azki-trend-tip" id="azc-tip"></div>
+        </div>`;
+      root.innerHTML = tabsHtml + `<div class="azki-trend">${head}${body}</div>`;
+      azcBindHover({ W, L, pw, T, ph, n, X, Y, m, defs });
+      azcBindControls(root, m);
+      return;
+    }
+    inner = `<div class="azki-trend">${head}${body}</div>`;
+    root.innerHTML = tabsHtml + inner;
+    azcBindControls(root, m);
+    return;
+  }
+  root.innerHTML = tabsHtml + inner;
+  azcBindControls(root, null);
+}
+
+function azcBindControls(root, m) {
+  root.querySelectorAll('#azc-report .azki-seg-btn').forEach(b => b.addEventListener('click', () => {
+    azkiState.chart.report = b.dataset.report;
+    azkiChartEnsure();
+  }));
+  root.querySelectorAll('#azc-metric .azki-seg-btn').forEach(b => b.addEventListener('click', () => {
+    azkiState.chart.metric = b.dataset.metric;
+    azkiChartRender();
+  }));
+  if (m) root.querySelectorAll('.azki-trend-chip').forEach(btn => btn.addEventListener('click', () => {
+    const sel = azkiState.chart.sel[m.selKey], id = btn.dataset.id;
+    if (sel.has(id)) sel.delete(id); else sel.add(id);
+    azkiChartRender();
+  }));
+}
+
+function azcBindHover(g) {
+  const wrap = document.getElementById('azc-plot');
+  const hit = document.getElementById('azc-hit');
+  const guide = document.getElementById('azc-guide');
+  const hov = document.getElementById('azc-hover');
+  const tip = document.getElementById('azc-tip');
+  if (!wrap || !hit) return;
+  const svg = wrap.querySelector('svg');
+
+  function show(clientX) {
+    const r = svg.getBoundingClientRect();
+    if (!r.width) return;
+    const vx = (clientX - r.left) * (g.W / r.width);
+    const i = Math.max(0, Math.min(g.n - 1, Math.round((vx - g.L) / g.pw * (g.n - 1))));
+    const x = g.X(i), p = g.m.points[i];
+    guide.setAttribute('x1', x.toFixed(1)); guide.setAttribute('x2', x.toFixed(1)); guide.style.display = '';
+    let dots = '', rows = '';
+    g.defs.forEach(d => {
+      const v = d.vals[i];
+      if (v === null) return;
+      dots += `<circle cx="${x.toFixed(1)}" cy="${g.Y(v).toFixed(1)}" r="5" style="fill:${d.color};stroke:#fff" stroke-width="2"/>`;
+      rows += `<div class="t-r"><i style="background:${d.color}"></i><span>${d.name}</span><b>${azcFmtVal(v, g.m.pct)}</b>${d.sub[i] ? `<small>${d.sub[i]}</small>` : ''}</div>`;
+    });
+    hov.innerHTML = dots;
+    tip.innerHTML = `<div class="t-h">${p.label}</div>${rows || '<div class="t-r"><span>بدون داده در این دوره</span></div>'}`;
+    tip.style.display = 'block';
+    const px = x / g.W * r.width;
+    if (px > r.width / 2) { tip.style.left = 'auto'; tip.style.right = (r.width - px + 12) + 'px'; }
+    else { tip.style.right = 'auto'; tip.style.left = (px + 12) + 'px'; }
+  }
+  function hide() { guide.style.display = 'none'; hov.innerHTML = ''; tip.style.display = 'none'; }
+  hit.addEventListener('mousemove', e => show(e.clientX));
+  hit.addEventListener('mouseleave', hide);
+  hit.addEventListener('touchstart', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
+  hit.addEventListener('touchmove', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
+  hit.addEventListener('touchend', hide);
+}
+
+// داده‌ی گزارش انتخاب‌شده را (اگر لازم باشد) می‌گیرد و بعد نمودار را می‌کشد
+async function azkiChartEnsure() {
+  if (!azkiAllowed()) return;
+  const st = azkiState.chart;
+  const root = document.getElementById('azki-chart-root');
+  if (!root) return;
+  const gen = ++st.gen;
+  const key = { pct: 'compare', shift: 'shifts', period: 'period' }[st.report];
+  if (!azkiState[key].loaded) {
+    root.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+    const loader = { compare: loadAzkiCompareView, shifts: loadAzkiShiftsView, period: loadAzkiPeriodView }[key];
+    await loader();
+    if (gen !== st.gen) return;
+    if (!azkiState[key].loaded) {
+      if (!root.querySelector('.empty-state')) root.innerHTML = '<div class="empty-state">خطا در دریافت گزارش؛ دوباره تلاش کنید.</div>';
+      return;
+    }
+  }
+  azkiChartRender();
+}
+
 function renderAzkiCompareView() {
   const container = document.getElementById('azki-compare-list');
   const list = azkiState.compare.list;
@@ -4577,6 +4873,7 @@ function azkiRenderLoadedViews() {
   if (azkiState.shifts.loaded) renderAzkiShiftsView();
   if (azkiState.compare.loaded) renderAzkiCompareView();
   if (azkiState.payroll.loaded) renderAzkiPayrollView();
+  if (azkiActiveTab() === 'azki-chart') azkiChartEnsure();
 }
 
 function azkiApplyRange() {
@@ -4613,6 +4910,7 @@ function azkiApplyRange() {
   else if (tab === 'azki-centers') loadAzkiCentersView();
   else if (tab === 'azki-shifts') loadAzkiShiftsView();
   else if (tab === 'azki-compare') loadAzkiCompareView();
+  else if (tab === 'azki-chart') azkiChartEnsure();
   else if (tab === 'azki-payroll') loadAzkiPayrollView();
 }
 
@@ -5051,7 +5349,7 @@ async function enterApp(user) {
     document.getElementById('panel-supervisor').classList.remove('active');
     (function relocateAzkiViewsForLeader() {
       const filterEl = document.getElementById('azki-filter');
-      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
+      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-chart', 'sup-view-azki-chart'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
         const host = document.getElementById(hostId);
         const viewEl = document.getElementById(viewId);
         if (host && viewEl && !host.contains(viewEl)) {
