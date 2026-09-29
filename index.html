@@ -3652,7 +3652,20 @@ async function loadAzkiPayrollView() {
   }
   if (slaRes.error) console.error('خطا در دریافت گزارش SLA اپراتورها:', slaRes.error.message);
   azkiState.payroll.leaderKeys = leaderKeys;
-  azkiState.payroll.rows = (breakdownRes.data || []).filter(r => !leaderKeys || leaderKeys.has(normCenterKey(r.center_name)));
+  const rawRows = breakdownRes.data || [];
+  // تطبیق نام سنتر: برابری کامل کلید نرمال‌شده، یا شامل بودن یکی در دیگری (مثلاً «رضوانی» و «رضوانی شعبه ۲»)
+  const keyMatchesLeader = name => {
+    if (!leaderKeys) return true;
+    const k = normCenterKey(name);
+    if (!k) return false;
+    if (leaderKeys.has(k)) return true;
+    for (const lk of leaderKeys) { if (lk.length >= 3 && k.length >= 3 && (k.includes(lk) || lk.includes(k))) return true; }
+    return false;
+  };
+  azkiState.payroll.rawCount = rawRows.length;
+  azkiState.payroll.rawNames = [...new Set(rawRows.map(r => r.center_name).filter(Boolean))].slice(0, 5);
+  azkiState.payroll.rows = rawRows.filter(r => keyMatchesLeader(r.center_name));
+  if (isLeader) console.log('[حقوق سرگروه] سنترهای سرگروه:', [...leaderKeys], '| ردیف گزارش:', rawRows.length, '| بعد از فیلتر:', azkiState.payroll.rows.length, '| نمونه نام‌ها:', azkiState.payroll.rawNames);
   azkiState.payroll.slaByCenterKey = slaRes.byCenterKey || {};
   azkiState.payroll.loaded = true;
   renderAzkiPayrollView();
@@ -3663,7 +3676,14 @@ function renderAzkiPayrollView() {
   const rows = azkiState.payroll.rows;
   const container = document.getElementById('azki-payroll-list');
   if (!rows.length) {
-    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
+    let why = '';
+    if (currentUserRole === 'leader') {
+      const st = azkiState.payroll, lk = st.leaderKeys ? [...st.leaderKeys] : [];
+      if (!lk.length) why = 'هیچ سنتری به شما اساین نشده (یا دسترسی خواندن جدول leader_centers/profiles بسته است).';
+      else if (!st.rawCount) why = 'برای این بازه و شرکت‌های انتخاب‌شده گزارشی در سیستم ثبت نشده.';
+      else why = `${faDigits(st.rawCount)} ردیف گزارش هست ولی نام هیچ‌کدوم با سنترهای شما (${lk.slice(0, 3).join('، ')}) نمی‌خونه. نمونه‌ی نام‌ها در گزارش: ${(st.rawNames || []).join('، ')}`;
+    }
+    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد' + (why ? `<div style="margin-top:8px;font-size:12px;opacity:.75;">${why}</div>` : '') + '</div>';
     document.getElementById('azki-payroll-center-count').textContent = '۰';
     document.getElementById('azki-payroll-total').textContent = '۰';
     document.getElementById('azki-payroll-amount').textContent = '۰';
