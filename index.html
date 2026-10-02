@@ -1923,6 +1923,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
           وضعیت پنل کارشناسان
         </button>
+        <button class="tab-btn" data-sup-tab="users-monitor" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3c2.2.6 3.5 2.4 3.5 5.7"/></svg>
+          رصد کاربران
+        </button>
         <button class="tab-btn" data-sup-tab="azki-payroll" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
           محاسبه حقوق
@@ -2141,6 +2145,38 @@
       <div id="sup-view-azki-chart" style="display:none;">
         <div class="period-label" id="azki-chart-label"></div>
         <div id="azki-chart-root"><div class="loading-state">در حال بارگذاری...</div></div>
+      </div>
+
+      <div id="sup-view-users-monitor" style="display:none;">
+        <div class="period-label">وضعیت هر ۲۰ ثانیه به‌صورت خودکار به‌روزرسانی می‌شود</div>
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="label">تعداد آنلاین</div>
+            <div class="value" id="um-online-count">—</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">تعداد ورود امروز</div>
+            <div class="value" id="um-today-count">—</div>
+          </div>
+        </div>
+        <div class="admin-groups-row">
+          <div class="admin-group-card">
+            <div class="admin-group-header"><span class="admin-group-title">سرگروه‌ها</span><span class="admin-group-count" id="um-count-leader">—</span></div>
+            <div class="admin-group-list" id="um-list-leader"><div class="loading-state">در حال بارگذاری...</div></div>
+          </div>
+          <div class="admin-group-card">
+            <div class="admin-group-header"><span class="admin-group-title">کارشناس‌های عادی</span><span class="admin-group-count" id="um-count-normal">—</span></div>
+            <div class="admin-group-list" id="um-list-normal"><div class="loading-state">در حال بارگذاری...</div></div>
+          </div>
+          <div class="admin-group-card">
+            <div class="admin-group-header"><span class="admin-group-title">کارشناسان مرکز</span><span class="admin-group-count" id="um-count-center_agent">—</span></div>
+            <div class="admin-group-list" id="um-list-center_agent"><div class="loading-state">در حال بارگذاری...</div></div>
+          </div>
+          <div class="admin-group-card">
+            <div class="admin-group-header"><span class="admin-group-title">سنترها</span><span class="admin-group-count" id="um-count-center">—</span></div>
+            <div class="admin-group-list" id="um-list-center"><div class="loading-state">در حال بارگذاری...</div></div>
+          </div>
+        </div>
       </div>
 
       <div id="sup-view-azki-payroll" style="display:none;">
@@ -2758,6 +2794,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-azki-chart').style.display = which === 'azki-chart' ? '' : 'none';
     $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
     $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
+    $('sup-view-users-monitor').style.display = which === 'users-monitor' ? '' : 'none';
     // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
     $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
     document.querySelector('main').classList.toggle('sm-wide', which === 'map');
@@ -2769,6 +2806,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'azki-chart') azkiChartEnsure();
     if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
     if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
+    if (which === 'users-monitor') startUsersMonitor(); else stopUsersMonitor();
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   }
   document.querySelectorAll('#supervisor-tabs .tab-btn').forEach(btn => {
@@ -5342,6 +5380,89 @@ async function loadAdminLoginChart() {
     <div class="admin-login-chart-total">مجموع ۳۰ روز: ${formatNumber(totalCount)} ورود</div>
     <div class="admin-login-chart-bars">${bars}</div>
   `;
+}
+
+// تب «رصد کاربران» سرپرست: وضعیت آنلاین/آفلاین بر اساس profiles.last_seen_at (هر ۲۰ ثانیه تازه می‌شود، فقط وقتی تب باز و صفحه دیده می‌شود)
+let umTimer = null;
+function startUsersMonitor() {
+  loadUsersMonitor();
+  if (umTimer) return;
+  umTimer = setInterval(() => {
+    if (window.supCurrentTab === 'users-monitor' && document.visibilityState === 'visible') loadUsersMonitor();
+  }, 20000);
+}
+function stopUsersMonitor() {
+  if (umTimer) { clearInterval(umTimer); umTimer = null; }
+}
+
+async function loadUsersMonitor() {
+  const groupIds = ['leader', 'normal', 'center_agent', 'center'];
+  const lists = Object.fromEntries(groupIds.map(g => [g, document.getElementById('um-list-' + g)]));
+  const counts = Object.fromEntries(groupIds.map(g => [g, document.getElementById('um-count-' + g)]));
+  const onlineEl = document.getElementById('um-online-count');
+  const todayEl = document.getElementById('um-today-count');
+
+  const { data, error } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_PROFILES)
+      .select('backoffice_id, full_name, last_seen_at, role')
+      .order('full_name', { ascending: true })
+      .range(from, to)
+  );
+
+  if (error) {
+    groupIds.forEach(g => { lists[g].innerHTML = '<div class="admin-group-empty">خطا در دریافت لیست کاربران</div>'; counts[g].textContent = '—'; });
+    onlineEl.textContent = '—'; todayEl.textContent = '—';
+    return;
+  }
+
+  const now = Date.now();
+  const users = (data || [])
+    .filter(u => u.role !== 'admin' && u.role !== 'supervisor')
+    .map(u => {
+      const ms = u.last_seen_at ? new Date(u.last_seen_at).getTime() : null;
+      return { ...u, isOnline: ms != null && (now - ms) < ONLINE_THRESHOLD_MS };
+    });
+
+  users.sort((a, b) => {
+    if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
+    const at = a.last_seen_at ? new Date(a.last_seen_at).getTime() : -Infinity;
+    const bt = b.last_seen_at ? new Date(b.last_seen_at).getTime() : -Infinity;
+    return bt - at;
+  });
+
+  const todayKey = tehranDateKey(new Date());
+  onlineEl.textContent = formatNumber(users.filter(u => u.isOnline).length);
+  todayEl.textContent = formatNumber(users.filter(u => u.last_seen_at && tehranDateKey(new Date(u.last_seen_at)) === todayKey).length);
+
+  const groups = { leader: [], normal: [], center_agent: [], center: [] };
+  users.forEach(u => {
+    if (u.role === 'leader') groups.leader.push(u);
+    else if (u.role === 'center_agent') groups.center_agent.push(u);
+    else if (u.role === 'center') groups.center.push(u);
+    else groups.normal.push(u);
+  });
+
+  const renderRow = u => `
+    <div class="row-item">
+      <div class="admin-row-name-wrap">
+        <span class="admin-status-dot ${u.isOnline ? 'online' : ''}"></span>
+        <div class="admin-row-info">
+          <span class="admin-row-name">${u.full_name || '—'}</span>
+          <span class="admin-row-username">${u.backoffice_id || '—'}</span>
+        </div>
+      </div>
+      <div style="text-align:left;">
+        <span class="admin-status-badge ${u.isOnline ? 'online' : ''}">${u.isOnline ? 'آنلاین' : 'آفلاین'}</span>
+        <div class="admin-last-seen">${relativeTimeFa(u.last_seen_at)}</div>
+      </div>
+    </div>`;
+
+  groupIds.forEach(g => {
+    counts[g].textContent = formatNumber(groups[g].length);
+    lists[g].innerHTML = groups[g].length ? groups[g].map(renderRow).join('') : '<div class="admin-group-empty">کسی در این گروه نیست</div>';
+  });
+  if (window.refreshGlassReveals) window.refreshGlassReveals();
 }
 
 async function loadAdminView() {
