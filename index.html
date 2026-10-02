@@ -566,6 +566,12 @@
   .azc-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
   .azc-tools .azki-fld { min-width: 0; }
   .azki-trend-plot.azc svg text { font-size: 11.5px; }
+  /* برچسب مقدار بالای هر نقطه‌ی نمودار (همیشه نمایان، بدون نیاز به هاور) */
+  .azki-trend-plot.azc svg text.azc-lbl {
+    font-size: 11px; font-weight: 700; pointer-events: none;
+    paint-order: stroke; stroke: rgba(255,255,255,.92); stroke-width: 3.5px; stroke-linejoin: round;
+  }
+  html[data-theme="dark"] .azki-trend-plot.azc svg text.azc-lbl { stroke: rgba(14,20,36,.88); }
   .azki-trend-note { padding: 26px 8px; text-align: center; color: var(--ink-faint); font-size: 13.5px; }
   .azki-trend-plot { position: relative; direction: ltr; }
   .azki-trend-plot svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
@@ -4498,10 +4504,30 @@ function azkiChartRender() {
         if (n <= 45) d.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${d.color}"/>`; });
       });
 
+      // مقدار هر نقطه بالای آن نوشته می‌شود (درصد یا تعداد، بسته به گزارش).
+      // اگر نقاط شلوغ باشند، برچسب‌هایی که روی هم می‌افتند حذف می‌شوند (مقدار دقیق همه‌ی نقاط در هاور/لمس هست).
+      // سری اصلی (ناحیه‌دار) اولویت دارد.
+      const placed = [];
+      let labels = '';
+      const ordered = defs.slice().sort((a, b) => (b.id === m.areaId) - (a.id === m.areaId));
+      ordered.forEach(d => d.vals.forEach((v, i) => {
+        if (v === null) return;
+        const txt = azcFmtVal(v, m.pct);
+        const w = txt.length * 6.8 + 6;
+        const px = X(i), py = Y(v);
+        let ly = py - 9;                       // خط‌پایه‌ی متن، بالای نقطه
+        if (ly - 10 < 2) ly = py + 19;         // اگر نقطه به سقف نمودار چسبیده، زیر نقطه بنویس
+        const cx = Math.min(Math.max(px, w / 2 + 2), W - w / 2 - 2);
+        const r = { x1: cx - w / 2 - 3, x2: cx + w / 2 + 3, y1: ly - 11, y2: ly + 3 };
+        if (placed.some(q => r.x1 < q.x2 && r.x2 > q.x1 && r.y1 < q.y2 && r.y2 > q.y1)) return;
+        placed.push(r);
+        labels += `<text class="azc-lbl" x="${cx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" style="fill:${d.color}">${txt}</text>`;
+      }));
+
       body = `
         <div class="azki-trend-plot azc" id="azc-plot">
           <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.title}">
-            ${grid}${xl}${paths}
+            ${grid}${xl}${paths}${labels}
             <line class="azki-trend-guide" id="azc-guide" y1="${T}" y2="${T + ph}" style="display:none"/>
             <g id="azc-hover"></g>
             <rect id="azc-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
