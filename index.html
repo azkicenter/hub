@@ -3906,13 +3906,23 @@ async function fetchAzkiPayrollAgentDetail(bounds, centerData) {
   const agents = Object.values(byAgent).map(a => {
     const pr = profById[a.id];
     const centerName = centerByAgent[a.id] || '';
-    const info = centerName ? rateByCenterKey[normCenterKey(centerName)] : null;
+    // نام سنتر در پروفایل کامله («امیرحسین خوش سیرت») ولی کلید گزارش مالی کوتاهه («خوش سیرت»)؛
+    // اول تطبیق دقیق، بعد فقط اگه دقیقاً یک کلید به‌صورت کلمه‌ی کامل داخل نام باشه.
+    let info = null, payKey = '';
+    if (centerName) {
+      const ck = normCenterKey(centerName);
+      if (rateByCenterKey[ck]) { info = rateByCenterKey[ck]; payKey = ck; }
+      else {
+        const hits = Object.keys(rateByCenterKey).filter(k => k && (' ' + ck + ' ').includes(' ' + k + ' '));
+        if (hits.length === 1) { info = rateByCenterKey[hits[0]]; payKey = hits[0]; }
+      }
+    }
     const rate = info ? info.rate : 0;
     return {
       id: a.id,
       name: pr ? (pr.full_name || pr.backoffice_id || '—') : 'کاربر حذف‌شده / نامشخص',
       backoffice: pr ? (pr.backoffice_id || '') : '',
-      centerName: centerName || 'بدون سنتر',
+      centerName: centerName || 'بدون سنتر', payKey,
       status: centerName ? 'در سنتر' : 'از سنتر حذف شده',
       count: a.count, daysCount: a.daysCount,
       sla: slaMap[a.id] != null ? round2(Number(slaMap[a.id])) : null,
@@ -3920,10 +3930,55 @@ async function fetchAzkiPayrollAgentDetail(bounds, centerData) {
     };
   }).sort((a, b) => a.centerName.localeCompare(b.centerName, 'fa') || b.count - a.count);
 
+  // اختلافِ «تعداد صدور سنتر» (گزارش مالی) با جمعِ کارشناس‌ها (daily_targets): کارشناس‌های حذف‌شده از سیستم،
+  // پنل‌های «آموزش» و کسی که بین دو سنتر مشترکه ریز روزانه ندارن. این ردیف باقی‌مونده رو اضافه می‌کنیم تا
+  // جمع ریز کارشناس‌ها با جمع سنتر بخونه. (فقط وقتی مثبته؛ اگه منفی بود یعنی کارشناس مشترک بین دو سنتره.)
+  const sumByKey = {};
+  agents.forEach(a => { if (a.payKey) sumByKey[a.payKey] = (sumByKey[a.payKey] || 0) + a.count; });
+  const dispByKey = {};
+  agents.forEach(a => { if (a.payKey && !dispByKey[a.payKey]) dispByKey[a.payKey] = a.centerName; });
+  centerData.forEach(c => {
+    const k = normCenterKey(c.name);
+    const rest = c.count - (sumByKey[k] || 0);
+    if (rest > 0) agents.push({
+      id: '__rest__' + k, name: 'سایر (کارشناس حذف‌شده / پنل آموزش / ثبت‌نشده)', backoffice: '',
+      centerName: dispByKey[k] || c.name, payKey: k, synthetic: true,
+      status: 'باقی‌مانده نسبت به جمع سنتر', count: rest, daysCount: '', sla: null,
+      rate: c.rate, amount: c.rate * rest,
+    });
+  });
+  agents.sort((a, b) => a.centerName.localeCompare(b.centerName, 'fa') || (a.synthetic ? 1 : 0) - (b.synthetic ? 1 : 0) || b.count - a.count);
+
   const nameById = {}; agents.forEach(a => { nameById[a.id] = a; });
   const dayRows = days.map(d => ({ ...d, agent: nameById[d.id] })).sort((a, b) =>
     a.agent.centerName.localeCompare(b.agent.centerName, 'fa') || a.agent.name.localeCompare(b.agent.name, 'fa') || a.sort - b.sort);
   return { agents, days: dayRows };
+}
+
+// فقط برای خروجی اکسل: نام کوتاه/فامیلیِ مرکز در گزارش مالی («رضوانی») رو به نام کاملِ پروفایل سنتر
+// («مرکز صدور مجید رضوانی») تبدیل می‌کنه. محاسبه‌ها (SLA، نرخ، جمع) هنوز با همون نام قبلی انجام می‌شن؛
+// این فقط برچسبِ نمایشی ستون «نام سنتر» رو عوض می‌کنه. اگه نام با هیچ پروفایلی نخونه یا با بیش از یک
+// پروفایل جدا بخونه (مثلاً دو سنتر هم‌فامیل)، همون نام قبلی می‌مونه تا اشتباه نشه.
+async function azkiResolveCenterDisplayNames(centerData) {
+  const out = {};
+  try {
+    const { data: centers } = await fetchAllRows((from, to) =>
+      supabaseClient.from(TABLE_PROFILES).select('id, full_name').eq('role', 'center').range(from, to));
+    const list = (centers || [])
+      .map(c => ({ full: String(c.full_name || '').trim(), key: normCenterKey(c.full_name) }))
+      .filter(c => c.full && c.key);
+    centerData.forEach(c => {
+      const k = normCenterKey(c.name);
+      if (!k) return;
+      let m = list.filter(x => x.key === k);
+      if (!m.length) m = list.filter(x => (' ' + x.key + ' ').includes(' ' + k + ' '));
+      const uniq = [...new Set(m.map(x => x.full))];
+      if (uniq.length === 1) out[c.name] = uniq[0];
+    });
+  } catch (e) {
+    console.warn('نام کامل سنترها برای اکسل دریافت نشد، نام قبلی استفاده می‌شه:', e);
+  }
+  return out;
 }
 
 async function exportAzkiPayrollExcel() {
@@ -3937,6 +3992,8 @@ async function exportAzkiPayrollExcel() {
     const centerData = computeAzkiPayrollCenterData(azkiState.payroll.rows, azkiState.payroll.slaByCenterKey);
     const grandCount = centerData.reduce((s, c) => s + c.count, 0);
     const grandAmount = centerData.reduce((s, c) => s + c.amount, 0);
+    const dispNames = await azkiResolveCenterDisplayNames(centerData);
+    const dn = c => dispNames[c.name] || c.name;
 
     if (currentUserRole === 'leader') {
       // سرگروه: فقط تعداد صدور (بدون نرخ و مبلغ)
@@ -3945,7 +4002,7 @@ async function exportAzkiPayrollExcel() {
       const centersWs = azkiXlsxSheet({
         title: 'صدور سنترها', bounds: lb, metaLine2: meta2,
         headers: ['ردیف', 'نام سنتر', 'تعداد صدور'],
-        rows: centerData.map((c, i) => [i + 1, c.name, c.count]),
+        rows: centerData.map((c, i) => [i + 1, dn(c), c.count]),
         total: ['', 'جمع کل', grandCount],
         widths: [8, 36, 16], fmts: ['int', 'text', 'int'],
       });
@@ -3956,7 +4013,7 @@ async function exportAzkiPayrollExcel() {
         const keys = azkiState.payroll.leaderKeys;
         const det = await fetchAzkiPayrollAgentDetail(lb, centerData);
         // کارشناس‌های سنترهای این سرگروه + همه‌ی کسانی که از سنتر حذف شدن (با وضعیت مشخص)
-        const agents = det.agents.filter(a => a.status === 'از سنتر حذف شده' || (keys && keys.has(normCenterKey(a.centerName))));
+        const agents = det.agents.filter(a => a.synthetic ? (keys && [...keys].some(lk => (' ' + lk + ' ').includes(' ' + a.payKey + ' '))) : (a.status === 'از سنتر حذف شده' || (keys && keys.has(normCenterKey(a.centerName)))));
         const okIds = new Set(agents.map(a => a.id));
         const days = det.days.filter(d => okIds.has(d.id));
         if (agents.length) {
@@ -3972,7 +4029,7 @@ async function exportAzkiPayrollExcel() {
             title: 'جزئیات روزانه کارشناس‌ها', bounds: lb, metaLine2: meta2,
             headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
             rows: days.map(d => [d.agent.centerName, d.agent.name, d.agent.status, d.date, d.count]),
-            total: ['جمع کل', '', '', '', tot],
+            total: ['جمع کل', '', '', '', days.reduce((s0, d) => s0 + d.count, 0)],
             widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
           }), 'جزئیات روزانه');
         }
@@ -3987,7 +4044,7 @@ async function exportAzkiPayrollExcel() {
     const bounds = azkiState.bounds;
     const aoa = [
       ['نام سنتر', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور (ریال)', 'مبلغ قابل پرداخت (ریال)'],
-      ...centerData.map(c => [c.name, c.count, c.avgMin != null ? c.avgMin : '—', c.rate, c.amount]),
+      ...centerData.map(c => [dn(c), c.count, c.avgMin != null ? c.avgMin : '—', c.rate, c.amount]),
       ['جمع کل', grandCount, '', '', grandAmount],
     ];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -4042,7 +4099,7 @@ async function exportAzkiPayrollExcel() {
           title: 'محاسبه حقوق — جزئیات روزانه کارشناس‌ها', bounds, metaLine2: meta2,
           headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
           rows: detail.days.map(d => [d.agent.centerName, d.agent.name, d.agent.status, d.date, d.count]),
-          total: ['جمع کل', '', '', '', totCount],
+          total: ['جمع کل', '', '', '', detail.days.reduce((s0, d) => s0 + d.count, 0)],
           widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
         });
         XLSX.utils.book_append_sheet(wb, daysWs, 'جزئیات روزانه');
