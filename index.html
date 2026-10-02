@@ -566,6 +566,7 @@
   .azc-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
   .azc-tools .azki-fld { min-width: 0; }
   .azki-trend-plot.azc svg text { font-size: 11.5px; }
+  .azki-trend-plot.azc svg text.azc-ax { font-size: 9.5px; opacity: .85; }
   /* برچسب مقدار بالای هر نقطه‌ی نمودار (همیشه نمایان، بدون نیاز به هاور) */
   .azki-trend-plot.azc svg text.azc-lbl {
     font-size: 11px; font-weight: 700; pointer-events: none;
@@ -4343,8 +4344,16 @@ const AZC_SHIFT_DEFS = [
   { id: 'other', name: 'خارج از شیفت (۰ تا ۸)', color: '#9AA5B8' },
 ];
 
+// گام خطوط محور درصد: ۵ تا ۴۰٪، سپس ۱۰ و ۲۰ (مضرب ۵ تا شلوغ نشود)
+function azcPctStep(top) { return top <= 40 ? 5 : top <= 80 ? 10 : 20; }
+
 function azcNiceTop(mx, pct) {
-  if (pct) return mx <= 5 ? Math.max(1, Math.ceil(mx * 1.2)) : Math.min(100, Math.ceil(mx * 1.15 / 5) * 5);
+  if (pct) {
+    if (mx <= 5) return Math.max(1, Math.ceil(mx * 1.2));
+    const raw = Math.min(100, Math.ceil(mx * 1.15 / 5) * 5);
+    const stp = azcPctStep(raw);
+    return Math.min(100, Math.ceil(raw / stp) * stp);
+  }
   if (mx <= 0) return 4;
   const mag = Math.pow(10, Math.floor(Math.log10(mx)));
   const f = mx / mag;
@@ -4476,11 +4485,14 @@ function azkiChartRender() {
       const Y = v => T + ph * (1 - v / top);
 
       let grid = '';
-      for (let k = 0; k <= 4; k++) {
-        const v = top * k / 4, y = Y(v);
+      const ticks = [];
+      if (m.pct && top >= 10) { const stp = azcPctStep(top); for (let v = 0; v <= top + 1e-9; v += stp) ticks.push(v); }
+      else { for (let k = 0; k <= 4; k++) ticks.push(top * k / 4); }
+      ticks.forEach(v => {
+        const y = Y(v);
         grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`
-              + `<text x="${L - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${m.pct ? faDigits(round2(v)) + '٪' : formatNumber(Math.round(v))}</text>`;
-      }
+              + `<text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${m.pct ? faDigits(round2(v)) + '٪' : formatNumber(Math.round(v))}</text>`;
+      });
       const step = Math.ceil(n / 8);
       let xl = '';
       m.points.forEach((p, i) => { if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${azcXLabel(p)}</text>`; });
@@ -4517,7 +4529,7 @@ function azkiChartRender() {
         const px = X(i), py = Y(v);
         let ly = py - 9;                       // خط‌پایه‌ی متن، بالای نقطه
         if (ly - 10 < 2) ly = py + 19;         // اگر نقطه به سقف نمودار چسبیده، زیر نقطه بنویس
-        const cx = Math.min(Math.max(px, w / 2 + 2), W - w / 2 - 2);
+        const cx = Math.min(Math.max(px, L + w / 2 + 1), W - R - w / 2 + 2);
         const r = { x1: cx - w / 2 - 3, x2: cx + w / 2 + 3, y1: ly - 11, y2: ly + 3 };
         if (placed.some(q => r.x1 < q.x2 && r.x2 > q.x1 && r.y1 < q.y2 && r.y2 > q.y1)) return;
         placed.push(r);
