@@ -2159,6 +2159,12 @@
             <div class="value" id="um-today-count">—</div>
           </div>
         </div>
+        <div class="admin-login-chart-card">
+          <div class="admin-group-header">
+            <span class="admin-group-title">تعداد کاربران وارد‌شده در ۳۰ روز گذشته (هر کاربر در هر روز یک بار)</span>
+          </div>
+          <div id="um-login-chart"><div class="loading-state">در حال بارگذاری...</div></div>
+        </div>
         <div class="admin-groups-row">
           <div class="admin-group-card">
             <div class="admin-group-header"><span class="admin-group-title">سرگروه‌ها</span><span class="admin-group-count" id="um-count-leader">—</span></div>
@@ -5380,15 +5386,70 @@ async function loadAdminLoginChart() {
 
 // تب «رصد کاربران» سرپرست: وضعیت آنلاین/آفلاین بر اساس profiles.last_seen_at (هر ۲۰ ثانیه تازه می‌شود، فقط وقتی تب باز و صفحه دیده می‌شود)
 let umTimer = null;
+let umChartAt = 0;
 function startUsersMonitor() {
   loadUsersMonitor();
+  loadUsersLoginChart();
   if (umTimer) return;
   umTimer = setInterval(() => {
-    if (window.supCurrentTab === 'users-monitor' && document.visibilityState === 'visible') loadUsersMonitor();
+    if (window.supCurrentTab === 'users-monitor' && document.visibilityState === 'visible') {
+      loadUsersMonitor();
+      if (Date.now() - umChartAt > 5 * 60000) loadUsersLoginChart();
+    }
   }, 20000);
 }
 function stopUsersMonitor() {
   if (umTimer) { clearInterval(umTimer); umTimer = null; }
+}
+
+// نمودار ۳۰ روز اخیر: تعداد کاربران یکتا در هر روز (چند بار ورود یک نفر در یک روز یک بار شمرده می‌شود)
+async function loadUsersLoginChart() {
+  const container = document.getElementById('um-login-chart');
+  if (!container) return;
+  umChartAt = Date.now();
+
+  const DAYS = 30;
+  const now = new Date();
+  const dayKeys = [];
+  for (let i = DAYS - 1; i >= 0; i--) dayKeys.push(tehranJalaliKey(new Date(now.getTime() - i * 24 * 60 * 60 * 1000)));
+  const rangeStart = new Date(now.getTime() - (DAYS - 1) * 24 * 60 * 60 * 1000);
+  rangeStart.setHours(0, 0, 0, 0);
+
+  const [evRes, profRes] = await Promise.all([
+    fetchAllRows((from, to) => supabaseClient.from('login_events').select('user_id, logged_in_at').gte('logged_in_at', rangeStart.toISOString()).range(from, to)),
+    fetchAllRows((from, to) => supabaseClient.from(TABLE_PROFILES).select('id, role').range(from, to)),
+  ]);
+  if (evRes.error || profRes.error) {
+    container.innerHTML = '<div class="admin-group-empty">خطا در دریافت آمار ورود</div>';
+    return;
+  }
+
+  // سرپرست‌ها (مثل لیست‌ها) در نمودار حساب نمی‌شوند
+  const skip = new Set((profRes.data || []).filter(p => p.role === 'supervisor').map(p => p.id));
+  const usersByDay = Object.fromEntries(dayKeys.map(k => [k, new Set()]));
+  (evRes.data || []).forEach(row => {
+    if (skip.has(row.user_id)) return;
+    const key = tehranJalaliKey(new Date(row.logged_in_at));
+    if (usersByDay[key]) usersByDay[key].add(row.user_id);
+  });
+
+  const counts = dayKeys.map(k => usersByDay[k].size);
+  const maxCount = Math.max(1, ...counts);
+  const bars = dayKeys.map((key, i) => {
+    const count = counts[i];
+    const [, m, d] = key.split('/');
+    return `
+      <div class="admin-login-bar-wrap ${count > 0 ? 'has-logins' : ''}" title="${key} — ${formatNumber(count)} کاربر">
+        <span class="admin-login-bar-count">${formatNumber(count)}</span>
+        <div class="admin-login-bar" style="height:${count > 0 ? (count / maxCount) * 100 : 0}%;"></div>
+        <span class="admin-login-bar-label">${m}/${d}</span>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="admin-login-chart-total">امروز: ${formatNumber(counts[counts.length - 1])} کاربر یکتا</div>
+    <div class="admin-login-chart-bars">${bars}</div>
+  `;
 }
 
 async function loadUsersMonitor() {
@@ -5414,7 +5475,7 @@ async function loadUsersMonitor() {
 
   const now = Date.now();
   const users = (data || [])
-    .filter(u => u.role !== 'admin' && u.role !== 'supervisor' && u.role !== 'center_agent')
+    .filter(u => u.role !== 'supervisor')
     .map(u => {
       const ms = u.last_seen_at ? new Date(u.last_seen_at).getTime() : null;
       return { ...u, isOnline: ms != null && (now - ms) < ONLINE_THRESHOLD_MS };
