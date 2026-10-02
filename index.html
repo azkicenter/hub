@@ -2203,12 +2203,6 @@
           <div class="azki-rate-rows" id="azki-rate-rows"></div>
         </div>
 
-        <div class="azki-payroll-actions">
-          <button type="button" class="sm-btn" id="azki-payroll-export">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
-            خروجی اکسل
-          </button>
-        </div>
         <div class="list-card" id="azki-payroll-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
@@ -3982,7 +3976,7 @@ async function azkiResolveCenterDisplayNames(centerData) {
 }
 
 async function exportAzkiPayrollExcel() {
-  const btn = document.getElementById('azki-payroll-export');
+  const btn = document.getElementById('azki-export-btn');
   if (!azkiState.payroll.loaded || !azkiState.payroll.rows.length) return;
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
@@ -4073,6 +4067,8 @@ async function exportAzkiPayrollExcel() {
           border,
           fill: isTotalRow ? { patternType: 'solid', fgColor: { rgb: 'FFD9D9D9' } } : undefined,
         };
+        // جداکننده‌ی سه‌رقمی (۱,۲۳۴,۵۶۷) برای همه‌ی ستون‌های عددی؛ میانگین زمان با دو رقم اعشار
+        if (!isHeader && typeof ws[addr].v === 'number') ws[addr].z = C === 2 ? '#,##0.00' : '#,##0';
       }
     }
 
@@ -4118,7 +4114,6 @@ async function exportAzkiPayrollExcel() {
     btn.innerHTML = originalHtml;
   }
 }
-document.getElementById('azki-payroll-export').addEventListener('click', exportAzkiPayrollExcel);
 
 // ============================================================
 // خروجی اکسل تب‌های «گزارش» (گزارش دوره‌ای، به تفکیک مرکز، تفکیک شیفت، مقایسه درصد صدور)
