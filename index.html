@@ -2169,10 +2169,6 @@
             <div class="admin-group-list" id="um-list-normal"><div class="loading-state">در حال بارگذاری...</div></div>
           </div>
           <div class="admin-group-card">
-            <div class="admin-group-header"><span class="admin-group-title">کارشناسان مرکز</span><span class="admin-group-count" id="um-count-center_agent">—</span></div>
-            <div class="admin-group-list" id="um-list-center_agent"><div class="loading-state">در حال بارگذاری...</div></div>
-          </div>
-          <div class="admin-group-card">
             <div class="admin-group-header"><span class="admin-group-title">سنترها</span><span class="admin-group-count" id="um-count-center">—</span></div>
             <div class="admin-group-list" id="um-list-center"><div class="loading-state">در حال بارگذاری...</div></div>
           </div>
@@ -5396,7 +5392,7 @@ function stopUsersMonitor() {
 }
 
 async function loadUsersMonitor() {
-  const groupIds = ['leader', 'normal', 'center_agent', 'center'];
+  const groupIds = ['leader', 'normal', 'center'];
   const lists = Object.fromEntries(groupIds.map(g => [g, document.getElementById('um-list-' + g)]));
   const counts = Object.fromEntries(groupIds.map(g => [g, document.getElementById('um-count-' + g)]));
   const onlineEl = document.getElementById('um-online-count');
@@ -5418,7 +5414,7 @@ async function loadUsersMonitor() {
 
   const now = Date.now();
   const users = (data || [])
-    .filter(u => u.role !== 'admin' && u.role !== 'supervisor')
+    .filter(u => u.role !== 'admin' && u.role !== 'supervisor' && u.role !== 'center_agent')
     .map(u => {
       const ms = u.last_seen_at ? new Date(u.last_seen_at).getTime() : null;
       return { ...u, isOnline: ms != null && (now - ms) < ONLINE_THRESHOLD_MS };
@@ -5435,10 +5431,9 @@ async function loadUsersMonitor() {
   onlineEl.textContent = formatNumber(users.filter(u => u.isOnline).length);
   todayEl.textContent = formatNumber(users.filter(u => u.last_seen_at && tehranDateKey(new Date(u.last_seen_at)) === todayKey).length);
 
-  const groups = { leader: [], normal: [], center_agent: [], center: [] };
+  const groups = { leader: [], normal: [], center: [] };
   users.forEach(u => {
     if (u.role === 'leader') groups.leader.push(u);
-    else if (u.role === 'center_agent') groups.center_agent.push(u);
     else if (u.role === 'center') groups.center.push(u);
     else groups.normal.push(u);
   });
