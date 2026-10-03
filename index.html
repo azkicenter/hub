@@ -563,6 +563,19 @@
   .azki-trend-chip.on { color: var(--ink); border-color: var(--c); background: var(--surface-tint); font-weight: 700; }
   .azki-trend-chip.on i { opacity: 1; }
 
+  /* گزارش قطعی */
+  .aog-row { display: grid; grid-template-columns: minmax(84px, 150px) 1fr auto; align-items: center; gap: 6px 12px; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .aog-row:last-child { border-bottom: 0; }
+  .aog-name { font-weight: 700; font-size: 13.5px; color: var(--ink); }
+  .aog-bar { display: flex; height: 20px; border-radius: 6px; overflow: hidden; background: var(--surface-tint); min-width: 0; }
+  .aog-seg { height: 100%; min-width: 3px; }
+  .aog-total { font-weight: 800; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .aog-detail { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+  .aog-dchip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-soft); background: var(--surface-tint); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+  .aog-dchip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+  .aog-dchip b { color: var(--ink); font-weight: 800; }
+  .aog-open { color: var(--danger); font-size: 11.5px; font-weight: 700; margin-inline-start: 6px; }
+  .aog-foot { padding: 10px 4px 2px; color: var(--ink-faint); font-size: 12px; line-height: 1.8; }
   .azc-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
   .azc-tools .azki-fld { min-width: 0; }
   .azki-trend-plot.azc svg text { font-size: 11.5px; }
@@ -1772,6 +1785,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
         نمودار
       </button>
+      <button class="subtab-btn" data-team-tab="azki-outage" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        گزارش قطعی
+      </button>
     </div>
 
     <div class="panel" id="panel-team">
@@ -1829,6 +1846,7 @@
     <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
     <div class="panel" id="panel-azki-chart"></div>
+    <div class="panel" id="panel-azki-outage"></div>
     <div class="panel" id="panel-azki-active"></div>
     <div class="panel" id="panel-azki-payroll"></div>
 
@@ -1972,6 +1990,10 @@
           <button class="subtab-btn" data-sup-tab="azki-chart" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
           نمودار
+        </button>
+          <button class="subtab-btn" data-sup-tab="azki-outage" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          گزارش قطعی
         </button>
       </div>
 
@@ -2165,6 +2187,11 @@
       <div id="sup-view-azki-chart" style="display:none;">
         <div class="period-label" id="azki-chart-label"></div>
         <div id="azki-chart-root"><div class="loading-state">در حال بارگذاری...</div></div>
+      </div>
+
+      <div id="sup-view-azki-outage" style="display:none;">
+        <div class="period-label" id="azki-outage-label"></div>
+        <div id="azki-outage-root"><div class="loading-state">در حال بارگذاری...</div></div>
       </div>
 
       <div id="sup-view-users-monitor" style="display:none;">
@@ -2409,7 +2436,7 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
 });
 
 window.teamCurrentTab = 'team';
-const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare', 'azki-chart'];
+const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare', 'azki-chart', 'azki-outage'];
 let teamLastReportTab = 'azki-shifts';
 function teamShowTab(tab) {
   window.teamCurrentTab = tab;
@@ -2426,7 +2453,7 @@ function teamShowTab(tab) {
   }
   document.getElementById('panel-team').classList.remove('active');
   document.getElementById('panel-team-bugs').classList.remove('active');
-  ['panel-azki-compare', 'panel-azki-chart', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll'].forEach(id => {
+  ['panel-azki-compare', 'panel-azki-chart', 'panel-azki-outage', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2440,6 +2467,8 @@ function teamShowTab(tab) {
   if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
   if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
   if (tab === 'azki-chart') azkiChartEnsure();
+  azkiOutageSyncFilter(tab);
+  if (tab === 'azki-outage' && !azkiState.outage.loaded) loadAzkiOutageView();
   if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
   if (tab === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
   if (tab === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
@@ -2765,7 +2794,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   }
 
   window.supCurrentTab = 'targets';
-  const SUP_REPORT_TABS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare', 'azki-chart'];
+  const SUP_REPORT_TABS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare', 'azki-chart', 'azki-outage'];
   let supLastReportTab = 'azki-period';
   function supShowTab(which) {
     window.supCurrentTab = which;
@@ -2784,6 +2813,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-azki-shifts').style.display = which === 'azki-shifts' ? '' : 'none';
     $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
     $('sup-view-azki-chart').style.display = which === 'azki-chart' ? '' : 'none';
+    $('sup-view-azki-outage').style.display = which === 'azki-outage' ? '' : 'none';
     $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
     $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
     $('sup-view-users-monitor').style.display = which === 'users-monitor' ? '' : 'none';
@@ -2796,6 +2826,8 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
     if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
     if (which === 'azki-chart') azkiChartEnsure();
+    azkiOutageSyncFilter(which);
+    if (which === 'azki-outage' && !azkiState.outage.loaded) loadAzkiOutageView();
     if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
     if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
     if (which === 'users-monitor') startUsersMonitor(); else stopUsersMonitor();
@@ -2981,6 +3013,7 @@ const azkiState = {
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
+  outage:  { loaded: false, rows: [], tagOff: new Set(), companyMap: null, gen: 0 },
   chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']) }, gen: 0 },
 };
 
@@ -4340,6 +4373,7 @@ async function exportAzkiReportExcel() {
     'azki-period':  { st: azkiState.period,  has: () => azkiState.period.rows.length,  build: azkiBuildPeriodExport },
     'azki-centers': { st: azkiState.centers, has: () => azkiState.centers.rows.length, build: azkiBuildCentersExport },
     'azki-shifts':  { st: azkiState.shifts,  has: () => azkiState.shifts.rows.length,  build: azkiBuildShiftsExport },
+    'azki-outage':  { st: azkiState.outage,  has: () => azkiState.outage.rows.length,  build: azkiBuildOutageExport },
     'azki-compare': { st: azkiState.compare, has: () => azkiState.compare.list.some(c => (azkiState.compare.byScope[c] || []).length), build: azkiBuildCompareExport },
   }[tab];
   if (!cfg) return;
@@ -4814,11 +4848,212 @@ function azkiActiveTab() {
   return window.supCurrentTab || null;
 }
 
+/* ==========================================================
+   گزارش قطعی — از جدول incidents (همان دیتای وال‌برد)، بدون وابستگی به لینک گوگل‌شیت
+========================================================== */
+const AOG_COLORS = ['#17a9ff', '#7c5ce0', '#e08a17', '#1fa971', '#e0453f', '#14b8c4', '#d946a8', '#8a94a6'];
+
+// فیلتر «حالت نمایش» (روزانه/هفتگی/ماهانه) برای این گزارش معنی ندارد؛ فقط در همین تب مخفی می‌شود
+function azkiOutageSyncFilter(tab) {
+  const g = document.getElementById('azki-gran');
+  const fld = g && g.closest('.azki-fld');
+  if (fld) fld.style.display = (tab === 'azki-outage') ? 'none' : '';
+}
+
+function outageNorm(n) {
+  return String(n || '').replace(/[\u200c\u200e\u200f]/g, ' ').replace(/ي/g, 'ی').replace(/ك/g, 'ک')
+    .replace(/\s+/g, ' ').trim().replace(/^بیمه /, '');
+}
+// نام شرکت در جدول companies را به نام کوتاه فهرست فیلتر (AZKI_COMPANIES) وصل می‌کند؛ اگر نخورد null
+function outageMatchCompany(raw) {
+  const n = outageNorm(raw);
+  if (!n) return null;
+  const exact = AZKI_COMPANIES.find(a => outageNorm(a) === n);
+  if (exact) return exact;
+  const padded = ' ' + n + ' ';
+  const hits = AZKI_COMPANIES.filter(a => padded.includes(' ' + outageNorm(a) + ' '));
+  if (!hits.length) return null;
+  return hits.sort((a, b) => b.length - a.length)[0];
+}
+
+function outageFmtDur(h) {
+  const mins = Math.round(h * 60);
+  if (mins < 1) return h > 0 ? 'کمتر از ۱ دقیقه' : '۰';
+  const hh = Math.floor(mins / 60), mm = mins % 60;
+  if (!hh) return faDigits(mm) + ' دقیقه';
+  return faDigits(hh) + ' ساعت' + (mm ? ' و ' + faDigits(mm) + ' دقیقه' : '');
+}
+
+async function loadAzkiOutageView() {
+  if (!azkiAllowed()) return;
+  const bounds = getAzkiBounds();
+  const st = azkiState.outage;
+  const root = document.getElementById('azki-outage-root');
+  document.getElementById('azki-outage-label').textContent = azkiRangeText(bounds);
+  const gen = ++st.gen;
+  try {
+    if (!st.companyMap) {
+      const { data, error } = await supabaseClient.from('companies').select('id,name');
+      if (error) throw error;
+      st.companyMap = {};
+      (data || []).forEach(c => { st.companyMap[c.id] = c.name; });
+    }
+    // بازه‌ی تقویم شمسی انتخاب‌شده به وقت تهران (UTC+3:30)
+    const startISO = new Date(bounds.startDate + 'T00:00:00+03:30').toISOString();
+    const endISO = new Date(bounds.endDate + 'T23:59:59.999+03:30').toISOString();
+    const { data, error } = await fetchAllRows((from, to) =>
+      supabaseClient.from('incidents')
+        .select('id,company_id,title,line,opened_at,closed_at,status')
+        .lt('opened_at', endISO)
+        .or('closed_at.is.null,closed_at.gt.' + startISO)
+        .order('opened_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to));
+    if (error) throw error;
+    if (bounds !== azkiState.bounds || gen !== st.gen) return;
+    st.rows = data || [];
+    st.loaded = true;
+    renderAzkiOutageView();
+  } catch (e) {
+    if (bounds !== azkiState.bounds) return;
+    root.innerHTML = '<div class="empty-state">خطا در دریافت گزارش: ' + azkiShiftEsc(e && (e.message || e.details) || String(e)) + '</div>';
+  }
+}
+
+// ساعت قطعی هر شرکت به تفکیک تگ، فقط سهمِ داخل بازه‌ی انتخاب‌شده
+function azkiOutageCompute() {
+  const st = azkiState.outage;
+  const b = azkiState.bounds || getAzkiBounds();
+  const startMs = new Date(b.startDate + 'T00:00:00+03:30').getTime();
+  const endMs = new Date(b.endDate + 'T23:59:59.999+03:30').getTime();
+  const now = Date.now();
+  const sel = azkiState.companies.all ? null : azkiState.companies.selected;
+  const comps = {};
+  const tagTotals = {};
+  let anyOpen = false;
+
+  const ensure = (name) => comps[name] || (comps[name] = { name, tags: {}, open: false });
+  if (sel) AZKI_COMPANIES.filter(n => sel.has(n)).forEach(ensure);
+
+  st.rows.forEach(r => {
+    const raw = (st.companyMap && st.companyMap[r.company_id]) || 'نامشخص';
+    const az = outageMatchCompany(raw);
+    if (sel && !(az && sel.has(az))) return;
+    const rs = Math.max(new Date(r.opened_at).getTime(), startMs);
+    const isOpen = !r.closed_at;
+    const re = Math.min(isOpen ? now : new Date(r.closed_at).getTime(), endMs);
+    if (!(re > rs)) return;
+    const h = (re - rs) / 3600000;
+    const tag = r.title || 'بدون عنوان';
+    const c = ensure(az || raw);
+    const t = c.tags[tag] || (c.tags[tag] = { h: 0, n: 0 });
+    t.h += h; t.n += 1;
+    if (isOpen) { c.open = true; anyOpen = true; }
+    const tt = tagTotals[tag] || (tagTotals[tag] = { h: 0, n: 0 });
+    tt.h += h; tt.n += 1;
+  });
+  return { companies: Object.values(comps), tagTotals, anyOpen };
+}
+
+function renderAzkiOutageView() {
+  const root = document.getElementById('azki-outage-root');
+  if (!root) return;
+  document.getElementById('azki-outage-label').textContent = azkiRangeText(azkiState.bounds || getAzkiBounds());
+  const st = azkiState.outage;
+  const data = azkiOutageCompute();
+  const tags = Object.keys(data.tagTotals).sort((a, b) => data.tagTotals[b].h - data.tagTotals[a].h);
+  if (!tags.length) {
+    root.innerHTML = '<div class="azki-trend"><div class="azki-trend-note">قطعی‌ای برای این بازه و شرکت‌های انتخاب‌شده ثبت نشده است</div></div>';
+    return;
+  }
+  const color = {};
+  tags.forEach((t, i) => { color[t] = AOG_COLORS[i % AOG_COLORS.length]; });
+  const activeTags = tags.filter(t => !st.tagOff.has(t));
+  const esc = azkiShiftEsc;
+
+  let rows = data.companies.map(c => {
+    const segs = activeTags.map(t => ({ t, h: (c.tags[t] || {}).h || 0, n: (c.tags[t] || {}).n || 0 })).filter(x => x.n > 0);
+    return { name: c.name, open: c.open, segs, total: segs.reduce((a, x) => a + x.h, 0), count: segs.reduce((a, x) => a + x.n, 0) };
+  });
+  if (azkiState.companies.all) rows = rows.filter(r => r.count > 0);
+  rows.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'fa'));
+
+  const totalH = rows.reduce((a, r) => a + r.total, 0);
+  const totalN = rows.reduce((a, r) => a + r.count, 0);
+  const affected = rows.filter(r => r.count > 0).length;
+  const maxTotal = Math.max(0.0001, ...rows.map(r => r.total));
+  const topCompany = rows.find(r => r.count > 0);
+
+  const chips = tags.map(t => `<button type="button" class="azki-trend-chip${st.tagOff.has(t) ? '' : ' on'}" data-tag="${esc(t)}" style="--c:${color[t]}"><i></i>${esc(t)}</button>`).join('');
+
+  const rowsHtml = rows.map(r => {
+    const segHtml = r.segs.map(x => `<div class="aog-seg" style="width:${(x.h / maxTotal * 100).toFixed(2)}%;background:${color[x.t]}" title="${esc(r.name)} — ${esc(x.t)}: ${outageFmtDur(x.h)} (${faDigits(x.n)} قطعی)"></div>`).join('');
+    const detail = r.segs.map(x => `<span class="aog-dchip" style="--c:${color[x.t]}"><i></i>${esc(x.t)}<b>${outageFmtDur(x.h)}</b>${x.n > 1 ? `<span>(${faDigits(x.n)} بار)</span>` : ''}</span>`).join('');
+    return `<div class="aog-row">
+      <div class="aog-name">${esc(r.name)}${r.open ? '<span class="aog-open">● باز</span>' : ''}</div>
+      <div class="aog-bar">${segHtml}</div>
+      <div class="aog-total">${r.count ? formatNumber(r.total) + ' ساعت' : '—'}</div>
+      ${detail ? `<div class="aog-detail">${detail}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const stats = `<div class="azki-trend-stats">
+      <span class="azki-trend-stat">مجموع ساعت قطعی<b>${formatNumber(totalH)}</b></span>
+      <span class="azki-trend-stat">تعداد قطعی<b>${formatNumber(totalN)}</b></span>
+      <span class="azki-trend-stat">شرکت‌های درگیر<b>${formatNumber(affected)}</b></span>
+      ${topCompany ? `<span class="azki-trend-stat">بیشترین قطعی<b>${esc(topCompany.name)}</b></span>` : ''}
+    </div>`;
+
+  root.innerHTML = `
+    <div class="azki-trend">
+      <div class="azki-trend-head"><div class="azki-trend-title">ساعت قطعی هر شرکت به تفکیک تگ</div>${stats}</div>
+      <div class="azki-trend-chips">${chips}</div>
+      ${activeTags.length ? (rowsHtml || '<div class="azki-trend-note">برای تگ‌های انتخاب‌شده قطعی‌ای نیست</div>')
+                          : '<div class="azki-trend-note">حداقل یک تگ را برای نمایش انتخاب کنید.</div>'}
+      <div class="aog-foot">ساعت‌ها از زمان شروع تا وصل‌شدن هر قطعی و فقط برای بخشی که داخل بازه‌ی انتخابی است حساب می‌شود.${data.anyOpen ? ' قطعی‌های هنوز وصل‌نشده (● باز) تا همین لحظه حساب شده‌اند.' : ''} قطعی‌های هم‌زمانِ یک شرکت جداگانه جمع می‌شوند.</div>
+    </div>`;
+
+  root.querySelectorAll('.azki-trend-chip').forEach(btn => btn.addEventListener('click', () => {
+    const t = btn.dataset.tag;
+    if (st.tagOff.has(t)) st.tagOff.delete(t); else st.tagOff.add(t);
+    renderAzkiOutageView();
+  }));
+}
+
+function azkiBuildOutageExport() {
+  const data = azkiOutageCompute();
+  const comps = data.companies.map(c => {
+    const tagList = Object.keys(c.tags);
+    return { name: c.name, tags: c.tags, h: tagList.reduce((a, t) => a + c.tags[t].h, 0), n: tagList.reduce((a, t) => a + c.tags[t].n, 0) };
+  }).filter(c => c.n > 0 || !azkiState.companies.all).sort((a, b) => b.h - a.h);
+  const grandH = comps.reduce((a, c) => a + c.h, 0), grandN = comps.reduce((a, c) => a + c.n, 0);
+  const meta = 'شرکت: ' + (azkiState.companies.all ? 'همه شرکت‌ها' : azkiActiveScopes().join('، ')) + '   |   واحد: ساعت';
+  const summary = azkiXlsxSheet({
+    title: 'گزارش قطعی — خلاصه شرکت‌ها',
+    headers: ['ردیف', 'شرکت بیمه', 'تعداد قطعی', 'مجموع ساعت قطعی'],
+    rows: comps.map((c, i) => [i + 1, c.name, c.n, round2(c.h)]),
+    total: ['', 'جمع کل', grandN, round2(grandH)],
+    widths: [8, 28, 16, 20], fmts: ['int', 'text', 'int', 'pct'], metaLine2: meta,
+  });
+  const detailRows = [];
+  comps.forEach(c => Object.keys(c.tags).sort((a, b) => c.tags[b].h - c.tags[a].h)
+    .forEach(t => detailRows.push([c.name, t, c.tags[t].n, round2(c.tags[t].h)])));
+  const detail = azkiXlsxSheet({
+    title: 'گزارش قطعی — به تفکیک تگ',
+    headers: ['شرکت بیمه', 'تگ قطعی', 'تعداد قطعی', 'ساعت قطعی'],
+    rows: detailRows,
+    total: ['جمع کل', '', grandN, round2(grandH)],
+    widths: [26, 30, 14, 16], fmts: ['text', 'text', 'int', 'pct'], metaLine2: meta,
+  });
+  return { sheets: [['خلاصه شرکت‌ها', summary], ['به تفکیک تگ', detail]], label: 'گزارش-قطعی' };
+}
+
 function azkiRenderLoadedViews() {
   if (azkiState.period.loaded) renderAzkiPeriodView();
   if (azkiState.centers.loaded) renderAzkiCentersView();
   if (azkiState.shifts.loaded) renderAzkiShiftsView();
   if (azkiState.compare.loaded) renderAzkiCompareView();
+  if (azkiState.outage.loaded) renderAzkiOutageView();
   if (azkiState.payroll.loaded) renderAzkiPayrollView();
   if (azkiActiveTab() === 'azki-chart') azkiChartEnsure();
 }
@@ -4847,8 +5082,9 @@ function azkiApplyRange() {
   azkiState.centers.loaded = false;
   azkiState.shifts.loaded = false;
   azkiState.compare.loaded = false;
+  azkiState.outage.loaded = false;
   azkiState.payroll.loaded = false;
-  ['azki-period-list', 'azki-centers-list', 'azki-shifts-list', 'azki-compare-list', 'azki-payroll-list'].forEach(id => {
+  ['azki-period-list', 'azki-centers-list', 'azki-shifts-list', 'azki-compare-list', 'azki-outage-root', 'azki-payroll-list'].forEach(id => {
     document.getElementById(id).innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
   });
 
@@ -4858,6 +5094,7 @@ function azkiApplyRange() {
   else if (tab === 'azki-shifts') loadAzkiShiftsView();
   else if (tab === 'azki-compare') loadAzkiCompareView();
   else if (tab === 'azki-chart') azkiChartEnsure();
+  else if (tab === 'azki-outage') loadAzkiOutageView();
   else if (tab === 'azki-payroll') loadAzkiPayrollView();
 }
 
@@ -5146,7 +5383,7 @@ async function enterApp(user) {
     document.getElementById('panel-supervisor').classList.remove('active');
     (function relocateAzkiViewsForLeader() {
       const filterEl = document.getElementById('azki-filter');
-      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-chart', 'sup-view-azki-chart'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
+      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-chart', 'sup-view-azki-chart'], ['panel-azki-outage', 'sup-view-azki-outage'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
         const host = document.getElementById(hostId);
         const viewEl = document.getElementById(viewId);
         if (host && viewEl && !host.contains(viewEl)) {
