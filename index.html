@@ -5110,7 +5110,7 @@ function azkiOutageDayChartHtml(tags, tagTotals, color) {
   const tagBtns = `<button type="button" class="aod-tag${allOn ? ' on' : ''}" data-dtag="__all"><i></i><span>همه تگ‌ها</span></button>`
     + allTagList.map(t => { const tt = tagTotals[t]; return `<button type="button" class="aod-tag${selSet.has(t) ? ' on' : ''}${tt ? '' : ' zero'}" data-dtag="${esc(t)}" style="--c:${colOf[t]}"><i></i><span>${esc(t)}</span>${tt ? `<small>${outageFmtDur(tt.h)}</small>` : ''}</button>`; }).join('');
   const side = `<div class="aod-tags"><div class="aod-tags-title">تگ قطعی</div>${tagBtns}</div>`;
-  const title = `<button type="button" class="aod-head" id="aod-toggle" aria-expanded="${st.dayOpen ? 'true' : 'false'}"><span class="azki-trend-title">ساعت قطعی به تفکیک روز</span><svg class="aod-arrow" viewBox="0 0 24 24" aria-hidden="true"><polygon points="17,4 17,20 5,12"/></svg></button>`;
+  const title = `<button type="button" class="aod-head" id="aod-toggle" aria-expanded="${st.dayOpen ? 'true' : 'false'}"><span class="azki-trend-title">نمودار ساعت قطعی به تفکیک روز</span><svg class="aod-arrow" viewBox="0 0 24 24" aria-hidden="true"><polygon points="17,4 17,20 5,12"/></svg></button>`;
   const n = d.points.length;
   let plot;
   if (!d.series.length) {
