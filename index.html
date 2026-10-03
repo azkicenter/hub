@@ -578,12 +578,19 @@
   .aog-foot { padding: 10px 4px 2px; color: var(--ink-faint); font-size: 12px; line-height: 1.8; }
   /* نمودار روزانه‌ی قطعی: تگ‌ها سمت راست، نمودار سمت چپ */
   .aod-card { margin-bottom: 14px; }
-  .aod-wrap { display: flex; gap: 14px; align-items: flex-start; direction: rtl; }
-  .aod-tags { flex: 0 0 190px; display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; padding-inline-end: 2px; }
-  .aod-tags-title { font-size: 12px; font-weight: 800; color: var(--ink-soft); margin-bottom: 2px; }
-  .aod-tag { display: flex; align-items: center; gap: 8px; text-align: right; font: inherit; font-size: 12.5px; color: var(--ink-soft); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; cursor: pointer; transition: background .12s, border-color .12s; }
+  .aod-head { display: flex; align-items: center; gap: 10px; width: 100%; background: transparent; border: 0; padding: 2px 0; margin: 0; cursor: pointer; font: inherit; color: var(--ink); text-align: right; direction: rtl; }
+  .aod-head .azki-trend-title { margin: 0; }
+  .aod-arrow { width: 14px; height: 14px; flex: none; color: var(--ink-soft); fill: currentColor; transition: transform .2s ease; }
+  .aod-card.open .aod-arrow { transform: rotate(-90deg); }
+  .aod-body { display: none; margin-top: 12px; }
+  .aod-card.open .aod-body { display: block; }
+  .aod-wrap { display: flex; flex-direction: column; gap: 12px; direction: rtl; }
+  .aod-tags { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 6px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+  .aod-tags-title { font-size: 12px; font-weight: 800; color: var(--ink-soft); white-space: nowrap; flex: none; }
+  .aod-tag { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 8px; text-align: right; font: inherit; font-size: 12.5px; color: var(--ink-soft); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; cursor: pointer; transition: background .12s, border-color .12s; }
   .aod-tag i { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--ink-faint)); flex: none; opacity: .5; }
-  .aod-tag span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .aod-tag span { white-space: nowrap; }
+  .aod-tag.zero { opacity: .6; }
   .aod-tag small { color: var(--ink-faint); font-size: 11px; white-space: nowrap; }
   .aod-tag.on { color: var(--ink); font-weight: 700; border-color: var(--c, var(--accent)); background: var(--surface-tint); }
   .aod-tag.on i { opacity: 1; }
@@ -591,10 +598,6 @@
   .aod-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
   .aod-legend span { display: inline-flex; align-items: center; gap: 6px; }
   .aod-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
-  @media (max-width: 720px) {
-    .aod-wrap { flex-direction: column; }
-    .aod-tags { flex: none; width: 100%; max-height: 190px; }
-  }
   .azc-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
   .azc-tools .azki-fld { min-width: 0; }
   .azki-trend-plot.azc svg text { font-size: 11.5px; }
@@ -3032,7 +3035,7 @@ const azkiState = {
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
-  outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), companyMap: null, gen: 0 },
+  outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), dayOpen: false, allTags: null, companyMap: null, gen: 0 },
   chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']) }, gen: 0 },
 };
 
@@ -4917,14 +4920,23 @@ async function loadAzkiOutageView() {
       st.companyMap = {};
       (data || []).forEach(c => { st.companyMap[c.id] = c.name; });
     }
+    // فهرست کامل تگ‌های قطعی (از کل جدول، نه فقط بازه‌ی انتخابی) تا همیشه همه نمایش داده شوند
+    if (!st.allTags) {
+      try {
+        const { data: tg, error: tgErr } = await fetchAllRows((from, to) =>
+          supabaseClient.from('incidents').select('id,title').order('id', { ascending: true }).range(from, to));
+        if (tgErr) throw tgErr;
+        st.allTags = [...new Set((tg || []).map(r => (r.title || '').trim()).filter(Boolean))];
+      } catch (e) { st.allTags = []; }
+    }
     // بازه‌ی تقویم شمسی انتخاب‌شده به وقت تهران (UTC+3:30)
     const startISO = new Date(bounds.startDate + 'T00:00:00+03:30').toISOString();
     const endISO = new Date(bounds.endDate + 'T23:59:59.999+03:30').toISOString();
     const { data, error } = await fetchAllRows((from, to) =>
       supabaseClient.from('incidents')
         .select('id,company_id,title,line,opened_at,closed_at,status')
-        .lt('opened_at', endISO)
-        .or('closed_at.is.null,closed_at.gt.' + startISO)
+        .gte('opened_at', startISO)
+        .lte('opened_at', endISO)
         .order('opened_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to));
@@ -4958,9 +4970,10 @@ function azkiOutageCompute() {
     const raw = (st.companyMap && st.companyMap[r.company_id]) || 'نامشخص';
     const az = outageMatchCompany(raw);
     if (sel && !(az && sel.has(az))) return;
-    const rs = Math.max(new Date(r.opened_at).getTime(), startMs);
+    const rs = new Date(r.opened_at).getTime();
+    if (rs < startMs || rs > endMs) return;
     const isOpen = !r.closed_at;
-    const re = Math.min(isOpen ? now : new Date(r.closed_at).getTime(), endMs);
+    const re = isOpen ? now : new Date(r.closed_at).getTime();
     if (!(re > rs)) return;
     const h = (re - rs) / 3600000;
     const tag = r.title || 'بدون عنوان';
@@ -4982,7 +4995,8 @@ function renderAzkiOutageView() {
   const data = azkiOutageCompute();
   const tags = Object.keys(data.tagTotals).sort((a, b) => data.tagTotals[b].h - data.tagTotals[a].h);
   if (!tags.length) {
-    root.innerHTML = '<div class="azki-trend"><div class="azki-trend-note">قطعی‌ای برای این بازه و شرکت‌های انتخاب‌شده ثبت نشده است</div></div>';
+    root.innerHTML = azkiOutageDayChartHtml([], {}, {}) + '<div class="azki-trend"><div class="azki-trend-note">قطعی‌ای برای این بازه و شرکت‌های انتخاب‌شده ثبت نشده است</div></div>';
+    azkiOutageDayChartBind(root, []);
     return;
   }
   const color = {};
@@ -5029,7 +5043,7 @@ function renderAzkiOutageView() {
       <div class="azki-trend-chips">${chips}</div>
       ${activeTags.length ? (rowsHtml || '<div class="azki-trend-note">برای تگ‌های انتخاب‌شده قطعی‌ای نیست</div>')
                           : '<div class="azki-trend-note">حداقل یک تگ را برای نمایش انتخاب کنید.</div>'}
-      <div class="aog-foot">ساعت‌ها از زمان شروع تا وصل‌شدن هر قطعی و فقط برای بخشی که داخل بازه‌ی انتخابی است حساب می‌شود.${data.anyOpen ? ' قطعی‌های هنوز وصل‌نشده (● باز) تا همین لحظه حساب شده‌اند.' : ''} قطعی‌های هم‌زمانِ یک شرکت جداگانه جمع می‌شوند.</div>
+      <div class="aog-foot">هر قطعی با کل مدتش (از شروع تا وصل‌شدن) و در روزی که شروع شده حساب می‌شود، حتی اگر بعد از نیمه‌شب وصل شده باشد.${data.anyOpen ? ' قطعی‌های هنوز وصل‌نشده (● باز) تا همین لحظه حساب شده‌اند.' : ''} قطعی‌های هم‌زمانِ یک شرکت جداگانه جمع می‌شوند.</div>
     </div>`;
 
   root.querySelectorAll('.azki-trend-chip').forEach(btn => btn.addEventListener('click', () => {
@@ -5066,16 +5080,13 @@ function azkiOutageDaily(tagSet) {
     const az = outageMatchCompany(raw);
     if (sel && !(az && sel.has(az))) return;
     const name = az || raw;
-    const rs = Math.max(new Date(r.opened_at).getTime(), startMs);
-    const re = Math.min(r.closed_at ? new Date(r.closed_at).getTime() : now, endMs);
+    const rs = new Date(r.opened_at).getTime();
+    if (rs < startMs || rs > endMs) return;
+    const re = r.closed_at ? new Date(r.closed_at).getTime() : now;
     if (!(re > rs)) return;
     const arr = by[name] || (by[name] = new Array(nDays).fill(0));
-    for (let i = Math.floor((rs - startMs) / DAY); i < nDays; i++) {
-      const ds = startMs + i * DAY, de = ds + DAY;
-      if (ds >= re) break;
-      const ov = Math.min(re, de) - Math.max(rs, ds);
-      if (ov > 0) arr[i] += ov / 3600000;
-    }
+    const di = Math.min(nDays - 1, Math.floor((rs - startMs) / DAY));
+    arr[di] += (re - rs) / 3600000;
   });
   let series = Object.keys(by).map(name => ({ name, vals: by[name], total: by[name].reduce((a, v) => a + v, 0) }));
   if (!sel) series = series.filter(x => x.total > 0);
@@ -5089,13 +5100,17 @@ function azkiOutageDaily(tagSet) {
 function azkiOutageDayChartHtml(tags, tagTotals, color) {
   const st = azkiState.outage;
   const esc = azkiShiftEsc;
-  const selSet = new Set([...st.dayTags].filter(t => tags.includes(t)));
+  const allTagList = [...new Set([...tags, ...(st.allTags || [])])];
+  const selSet = new Set([...st.dayTags].filter(t => allTagList.includes(t)));
   const allOn = selSet.size === 0;
   const d = azkiOutageDaily(selSet);
+  let ci = tags.length;
+  const colOf = {};
+  allTagList.forEach(t => { colOf[t] = color[t] || AOG_COLORS[ci++ % AOG_COLORS.length]; });
   const tagBtns = `<button type="button" class="aod-tag${allOn ? ' on' : ''}" data-dtag="__all"><i></i><span>همه تگ‌ها</span></button>`
-    + tags.map(t => `<button type="button" class="aod-tag${selSet.has(t) ? ' on' : ''}" data-dtag="${esc(t)}" style="--c:${color[t]}"><i></i><span>${esc(t)}</span><small>${outageFmtDur(tagTotals[t].h)}</small></button>`).join('');
+    + allTagList.map(t => { const tt = tagTotals[t]; return `<button type="button" class="aod-tag${selSet.has(t) ? ' on' : ''}${tt ? '' : ' zero'}" data-dtag="${esc(t)}" style="--c:${colOf[t]}"><i></i><span>${esc(t)}</span>${tt ? `<small>${outageFmtDur(tt.h)}</small>` : ''}</button>`; }).join('');
   const side = `<div class="aod-tags"><div class="aod-tags-title">تگ قطعی</div>${tagBtns}</div>`;
-  const title = `<div class="azki-trend-head"><div class="azki-trend-title">ساعت قطعی به تفکیک روز</div></div>`;
+  const title = `<button type="button" class="aod-head" id="aod-toggle" aria-expanded="${st.dayOpen ? 'true' : 'false'}"><span class="azki-trend-title">ساعت قطعی به تفکیک روز</span><svg class="aod-arrow" viewBox="0 0 24 24" aria-hidden="true"><polygon points="17,4 17,20 5,12"/></svg></button>`;
   const n = d.points.length;
   let plot;
   if (!d.series.length) {
@@ -5144,11 +5159,17 @@ function azkiOutageDayChartHtml(tags, tagTotals, color) {
       ${d.trimmed ? `<div class="aog-foot">فقط ۸ شرکت با بیشترین قطعی نمایش داده شد (${faDigits(d.trimmed)} شرکت دیگر مخفی است)؛ برای دیدن بقیه از فیلتر شرکت بیمه استفاده کنید.</div>` : ''}`;
     azkiState.outage._dayModel = { W, L, pw, n, X, Y, d, T, ph };
   }
-  return `<div class="azki-trend aod-card">${title}<div class="aod-wrap">${side}<div class="aod-main">${plot}</div></div></div>`;
+  return `<div class="azki-trend aod-card${st.dayOpen ? ' open' : ''}" id="aod-card">${title}<div class="aod-body"><div class="aod-wrap">${side}<div class="aod-main">${plot}</div></div></div></div>`;
 }
 
 function azkiOutageDayChartBind(root, tags) {
   const st = azkiState.outage;
+  const tgl = root.querySelector('#aod-toggle'), card = root.querySelector('#aod-card');
+  if (tgl && card) tgl.addEventListener('click', () => {
+    st.dayOpen = !st.dayOpen;
+    card.classList.toggle('open', st.dayOpen);
+    tgl.setAttribute('aria-expanded', st.dayOpen ? 'true' : 'false');
+  });
   root.querySelectorAll('.aod-tag').forEach(btn => btn.addEventListener('click', () => {
     const t = btn.dataset.dtag;
     if (t === '__all') st.dayTags = new Set();
@@ -7780,4 +7801,3 @@ document.addEventListener('visibilitychange', () => {
 
 </body>
 </html>
- 
