@@ -964,6 +964,8 @@
     transition: transform .2s ease;
   }
   .team-item.open .team-chevron { transform: rotate(180deg); color: var(--accent-deep); }
+  .team-item.is-disabled .team-name { color: var(--ink-faint); }
+  .team-disabled-badge { flex: none; margin-inline-start: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--ink-faint); background: rgba(128,128,128,.14); white-space: nowrap; }
   .team-name { font-size: 14.5px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .team-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .team-total {
@@ -5521,11 +5523,11 @@ function buildMemberItemsHtml(membersWithTotals) {
       : '<div class="team-empty-days">هنوز تارگتی برای این بازه ثبت نشده است</div>';
 
     return `
-      <div class="team-item" data-member="${m.id}">
+      <div class="team-item${m.status === 'disabled' ? ' is-disabled' : ''}" data-member="${m.id}">
         <button class="team-header" type="button">
           <div class="team-name-wrap">
             <svg class="team-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            <span class="team-name">${displayName}</span>
+            <span class="team-name">${displayName}</span>${m.status === 'disabled' ? '<span class="team-disabled-badge" title="دیگر با ما همکاری ندارد؛ فقط آمار صدورش در این بازه حفظ شده">غیرفعال</span>' : ''}
           </div>
           <div class="team-right">
             ${slaHtml}
@@ -5802,10 +5804,9 @@ async function loadTeamView(leaderId) {
   const { data: allMembers, error: membersError } = await fetchAllRows((from, to) =>
     supabaseClient
       .from(TABLE_PROFILES)
-      .select('id, backoffice_id, full_name, role')
+      .select('id, backoffice_id, full_name, role, status')
       .in('id', memberIdsFromLinks)
       .eq('role', 'agent')
-      .neq('status', 'disabled')
       .range(from, to)
   );
 
@@ -5823,9 +5824,7 @@ async function loadTeamView(leaderId) {
   }
 
   allMembers.forEach(m => { m.centerName = centerNameByAgentId[m.id] || 'بدون سنتر'; });
-  document.getElementById('team-agent-count').textContent = formatNumber(allMembers.length);
-
-  const members = allMembers;
+  let members = allMembers;
 
   if (members.length === 0) {
     container.innerHTML = '<div class="empty-state">هنوز نیرویی به شما اساین نشده است</div>';
@@ -5835,7 +5834,7 @@ async function loadTeamView(leaderId) {
     return;
   }
 
-  const memberIds = members.map(m => m.id);
+  const memberIds = allMembers.map(m => m.id);
 
   const { data: rows, error: rowsError } = await fetchAllRows((from, to) =>
     supabaseClient
@@ -5881,6 +5880,10 @@ async function loadTeamView(leaderId) {
     bugsByUser[b.user_id].push(b);
   }
 
+  // کارشناس غیرفعال فقط وقتی نمایش داده می‌شه که تو بازه‌ی انتخابی صدور داشته باشه
+  members = allMembers.filter(m => m.status !== 'disabled' || (rowsByUser[m.id] || []).length > 0);
+  document.getElementById('team-agent-count').textContent = formatNumber(members.filter(m => m.status !== 'disabled').length);
+
   let teamTotal = 0;
   const membersWithTotals = members.map(m => {
     const myRows = rowsByUser[m.id] || [];
@@ -5897,7 +5900,7 @@ async function loadTeamView(leaderId) {
   window.teamTargetsData = { items: membersWithTotals, period, slaMap: agentSlaMap };
   const memberBlocks = buildGroupedMemberItemsHtml(membersWithTotals);
 
-  container.innerHTML = memberBlocks;
+  container.innerHTML = memberBlocks || '<div class="empty-state">هنوز نیرویی به شما اساین نشده است</div>';
   document.getElementById('team-period-total').textContent = formatNumber(teamTotal);
   document.getElementById('team-with-target-count').textContent = formatNumber(membersWithTotals.filter(x => x.myRows.length > 0).length);
 
@@ -6115,7 +6118,7 @@ async function exportTargetsExcelFrom(d, btnId) {
     if (hasSla) agentHeads.push('میانگین زمان صدور (دقیقه)');
     const agentRows = [];
     centers.forEach(c => c.items.forEach(it => {
-      const row = [c.name, it.m.full_name || '—', it.m.backoffice_id || '', it.myRows.length, it.myTotal];
+      const row = [c.name, (it.m.full_name || '—') + (it.m.status === 'disabled' ? ' (غیرفعال)' : ''), it.m.backoffice_id || '', it.myRows.length, it.myTotal];
       if (hasSla) { const v = d.slaMap[it.m.id]; row.push(v != null ? round2(Number(v)) : ''); }
       agentRows.push(row);
     }));
@@ -6208,10 +6211,9 @@ async function loadSupervisorView() {
   const { data: agentProfiles, error: agentProfilesError } = await fetchAllRows((from, to) =>
     supabaseClient
       .from(TABLE_PROFILES)
-      .select('id, backoffice_id, full_name, role')
+      .select('id, backoffice_id, full_name, role, status')
       .in('id', allAgentIds)
       .eq('role', 'agent')
-      .neq('status', 'disabled')
       .range(from, to)
   );
 
@@ -6273,15 +6275,16 @@ async function loadSupervisorView() {
     const myBugs = bugsByAgent[agentId] || [];
     const myTotal = myRows.reduce((sum, r) => sum + (Number(r.target_count) || 0), 0);
     return { m: { ...m, centerName: centerNameByAgentId[agentId] || 'بدون سنتر' }, myRows, myBugs, myTotal };
-  }).filter(Boolean);
+  }).filter(it => it && (it.m.status !== 'disabled' || it.myRows.length > 0));   // غیرفعال فقط اگه تو بازه صدور داشته باشه
 
+  const shownAgentIds = new Set(items.map(it => it.m.id));
   const targetCenterIds = new Set((centerAgentLinks || [])
-    .filter(l => agentProfileById[l.agent_id] && centerNameById[l.center_id])
+    .filter(l => shownAgentIds.has(l.agent_id) && centerNameById[l.center_id])
     .map(l => l.center_id));
   publishSupTargetCenters([...targetCenterIds].map(id => ({ id, name: centerNameById[id] })));
 
   const grandTotal = items.reduce((sum, it) => sum + it.myTotal, 0);
-  const grandAgentCount = items.length;
+  const grandAgentCount = items.filter(it => it.m.status !== 'disabled').length;
   const grandAgentWithTargetCount = items.filter(it => it.myRows.length > 0).length;
 
   agentSlaMap = buildSlaMapFromRows(rows, period.startSort);
@@ -6355,11 +6358,11 @@ function renderTeamPerformance(membersWithTotals, allTeamRows) {
       : '<div class="team-empty-days">روز بدون صدوری ثبت نشده</div>';
 
     return `
-      <div class="team-item" data-member="${m.id}">
+      <div class="team-item${m.status === 'disabled' ? ' is-disabled' : ''}" data-member="${m.id}">
         <button class="team-header" type="button">
           <div class="team-name-wrap">
             <svg class="team-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            <span class="team-name">${displayName}</span>
+            <span class="team-name">${displayName}</span>${m.status === 'disabled' ? '<span class="team-disabled-badge" title="دیگر با ما همکاری ندارد؛ فقط آمار صدورش در این بازه حفظ شده">غیرفعال</span>' : ''}
           </div>
           <div class="team-right">
             <span class="${isBelow ? 'perf-below-badge' : 'perf-above-badge'}">${isBelow ? 'زیر' : 'بالای'} میانگین</span>
@@ -6545,7 +6548,11 @@ function centerAgentDisplayName(m) { return m.full_name || m.backoffice_id || '�
 function renderCenterTargets() {
   const listEl = document.getElementById('center-list');
   if (!listEl) return;
-  const agents = centerNormalAgentsAll;
+  const rowsByUser = {};
+  centerTargetRowsAll.forEach(r => { (rowsByUser[r.agent_id] = rowsByUser[r.agent_id] || []).push(r); });
+
+  // کارشناس غیرفعال فقط وقتی نمایش داده می‌شه که تو بازه‌ی انتخابی صدور داشته باشه
+  const agents = centerNormalAgentsAll.filter(m => m.status !== 'disabled' || (rowsByUser[m.id] || []).length > 0);
 
   if (!agents.length) {
     listEl.innerHTML = '<div class="empty-state">هنوز نیرویی به شما اساین نشده است</div>';
@@ -6553,9 +6560,6 @@ function renderCenterTargets() {
     document.getElementById('center-agent-count').textContent = '۰';
     return;
   }
-
-  const rowsByUser = {};
-  centerTargetRowsAll.forEach(r => { (rowsByUser[r.agent_id] = rowsByUser[r.agent_id] || []).push(r); });
   const bugsByUser = {};
   centerBugRowsAll.forEach(b => { (bugsByUser[b.user_id] = bugsByUser[b.user_id] || []).push(b); });
 
@@ -6570,7 +6574,7 @@ function renderCenterTargets() {
   items.sort((a, b) => b.myTotal - a.myTotal || centerAgentDisplayName(a.m).localeCompare(centerAgentDisplayName(b.m), 'fa'));
 
   document.getElementById('center-period-total').textContent = formatNumber(total);
-  document.getElementById('center-agent-count').textContent = formatNumber(agents.length);
+  document.getElementById('center-agent-count').textContent = formatNumber(agents.filter(m => m.status !== 'disabled').length);
 
   listEl.innerHTML = items.length
     ? buildMemberItemsHtml(items)
@@ -6742,10 +6746,9 @@ async function loadCenterView(centerId) {
   const { data: allAssignedMembers, error: agentsError } = await fetchAllRows((from, to) =>
     supabaseClient
       .from(TABLE_PROFILES)
-      .select('id, backoffice_id, full_name, role')
+      .select('id, backoffice_id, full_name, role, status')
       .in('id', myAgentIds)
       .eq('role', 'agent')
-      .neq('status', 'disabled')
       .range(from, to)
   );
 
