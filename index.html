@@ -576,6 +576,25 @@
   .aog-dchip b { color: var(--ink); font-weight: 800; }
   .aog-open { color: var(--danger); font-size: 11.5px; font-weight: 700; margin-inline-start: 6px; }
   .aog-foot { padding: 10px 4px 2px; color: var(--ink-faint); font-size: 12px; line-height: 1.8; }
+  /* نمودار روزانه‌ی قطعی: تگ‌ها سمت راست، نمودار سمت چپ */
+  .aod-card { margin-bottom: 14px; }
+  .aod-wrap { display: flex; gap: 14px; align-items: flex-start; direction: rtl; }
+  .aod-tags { flex: 0 0 190px; display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; padding-inline-end: 2px; }
+  .aod-tags-title { font-size: 12px; font-weight: 800; color: var(--ink-soft); margin-bottom: 2px; }
+  .aod-tag { display: flex; align-items: center; gap: 8px; text-align: right; font: inherit; font-size: 12.5px; color: var(--ink-soft); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; cursor: pointer; transition: background .12s, border-color .12s; }
+  .aod-tag i { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--ink-faint)); flex: none; opacity: .5; }
+  .aod-tag span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .aod-tag small { color: var(--ink-faint); font-size: 11px; white-space: nowrap; }
+  .aod-tag.on { color: var(--ink); font-weight: 700; border-color: var(--c, var(--accent)); background: var(--surface-tint); }
+  .aod-tag.on i { opacity: 1; }
+  .aod-main { flex: 1; min-width: 0; }
+  .aod-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
+  .aod-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .aod-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+  @media (max-width: 720px) {
+    .aod-wrap { flex-direction: column; }
+    .aod-tags { flex: none; width: 100%; max-height: 190px; }
+  }
   .azc-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
   .azc-tools .azki-fld { min-width: 0; }
   .azki-trend-plot.azc svg text { font-size: 11.5px; }
@@ -3013,7 +3032,7 @@ const azkiState = {
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
-  outage:  { loaded: false, rows: [], tagOff: new Set(), companyMap: null, gen: 0 },
+  outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), companyMap: null, gen: 0 },
   chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']) }, gen: 0 },
 };
 
@@ -5004,7 +5023,7 @@ function renderAzkiOutageView() {
       ${topCompany ? `<span class="azki-trend-stat">بیشترین قطعی<b>${esc(topCompany.name)}</b></span>` : ''}
     </div>`;
 
-  root.innerHTML = `
+  root.innerHTML = azkiOutageDayChartHtml(tags, data.tagTotals, color) + `
     <div class="azki-trend">
       <div class="azki-trend-head"><div class="azki-trend-title">ساعت قطعی هر شرکت به تفکیک تگ</div>${stats}</div>
       <div class="azki-trend-chips">${chips}</div>
@@ -5018,6 +5037,154 @@ function renderAzkiOutageView() {
     if (st.tagOff.has(t)) st.tagOff.delete(t); else st.tagOff.add(t);
     renderAzkiOutageView();
   }));
+  azkiOutageDayChartBind(root, tags);
+}
+
+
+// ساعت قطعی هر شرکت در هر روز (به وقت تهران)، فقط برای تگ‌های انتخاب‌شده
+function azkiOutageDaily(tagSet) {
+  const st = azkiState.outage;
+  const b = azkiState.bounds || getAzkiBounds();
+  const DAY = 86400000;
+  const startMs = new Date(b.startDate + 'T00:00:00+03:30').getTime();
+  const endMs = new Date(b.endDate + 'T23:59:59.999+03:30').getTime();
+  const nDays = Math.max(1, Math.round((endMs - startMs) / DAY));
+  const points = [];
+  for (let i = 0; i < nDays; i++) {
+    const [gy, gm, gd] = new Date(startMs + i * DAY + 12 * 3600000).toISOString().slice(0, 10).split('-').map(Number);
+    const [jy, jm, jd] = gregorianToJalali(gy, gm, gd);
+    points.push({ label: faDigits(`${jy}/${pad2(jm)}/${pad2(jd)}`), short: faDigits(`${pad2(jm)}/${pad2(jd)}`) });
+  }
+  const sel = azkiState.companies.all ? null : azkiState.companies.selected;
+  const now = Date.now();
+  const by = {};
+  if (sel) AZKI_COMPANIES.filter(n => sel.has(n)).forEach(n => { by[n] = new Array(nDays).fill(0); });
+  st.rows.forEach(r => {
+    const tag = r.title || 'بدون عنوان';
+    if (tagSet.size && !tagSet.has(tag)) return;
+    const raw = (st.companyMap && st.companyMap[r.company_id]) || 'نامشخص';
+    const az = outageMatchCompany(raw);
+    if (sel && !(az && sel.has(az))) return;
+    const name = az || raw;
+    const rs = Math.max(new Date(r.opened_at).getTime(), startMs);
+    const re = Math.min(r.closed_at ? new Date(r.closed_at).getTime() : now, endMs);
+    if (!(re > rs)) return;
+    const arr = by[name] || (by[name] = new Array(nDays).fill(0));
+    for (let i = Math.floor((rs - startMs) / DAY); i < nDays; i++) {
+      const ds = startMs + i * DAY, de = ds + DAY;
+      if (ds >= re) break;
+      const ov = Math.min(re, de) - Math.max(rs, ds);
+      if (ov > 0) arr[i] += ov / 3600000;
+    }
+  });
+  let series = Object.keys(by).map(name => ({ name, vals: by[name], total: by[name].reduce((a, v) => a + v, 0) }));
+  if (!sel) series = series.filter(x => x.total > 0);
+  series.sort((a, b2) => b2.total - a.total);
+  let trimmed = 0;
+  if (!sel && series.length > 8) { trimmed = series.length - 8; series = series.slice(0, 8); }
+  series.forEach((x, i) => { x.color = AOG_COLORS[i % AOG_COLORS.length]; });
+  return { points, series, trimmed };
+}
+
+function azkiOutageDayChartHtml(tags, tagTotals, color) {
+  const st = azkiState.outage;
+  const esc = azkiShiftEsc;
+  const selSet = new Set([...st.dayTags].filter(t => tags.includes(t)));
+  const allOn = selSet.size === 0;
+  const d = azkiOutageDaily(selSet);
+  const tagBtns = `<button type="button" class="aod-tag${allOn ? ' on' : ''}" data-dtag="__all"><i></i><span>همه تگ‌ها</span></button>`
+    + tags.map(t => `<button type="button" class="aod-tag${selSet.has(t) ? ' on' : ''}" data-dtag="${esc(t)}" style="--c:${color[t]}"><i></i><span>${esc(t)}</span><small>${outageFmtDur(tagTotals[t].h)}</small></button>`).join('');
+  const side = `<div class="aod-tags"><div class="aod-tags-title">تگ قطعی</div>${tagBtns}</div>`;
+  const title = `<div class="azki-trend-head"><div class="azki-trend-title">ساعت قطعی به تفکیک روز</div></div>`;
+  const n = d.points.length;
+  let plot;
+  if (!d.series.length) {
+    plot = '<div class="azki-trend-note">برای این تگ و شرکت‌ها قطعی‌ای در این بازه ثبت نشده است</div>';
+  } else if (n < 2) {
+    plot = '<div class="azki-trend-note">برای رسم نمودار روزانه، بازه را حداقل دو روز انتخاب کنید.</div>';
+  } else {
+    const W = 900, H = 300, L = 52, R = 14, T = 16, B = 34;
+    const pw = W - L - R, ph = H - T - B;
+    const X = i => L + pw * i / (n - 1);
+    let mx = 0;
+    d.series.forEach(x => x.vals.forEach(v => { if (v > mx) mx = v; }));
+    const top = azcNiceTop(mx || 1, false);
+    const Y = v => T + ph * (1 - v / top);
+    let grid = '';
+    for (let k = 0; k <= 4; k++) {
+      const v = top * k / 4, y = Y(v);
+      grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/><text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${faDigits(round2(v))}</text>`;
+    }
+    const step = Math.ceil(n / 10);
+    let xl = '';
+    d.points.forEach((p, i) => { if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${p.short}</text>`; });
+    let paths = '';
+    d.series.forEach(x => {
+      const pts = x.vals.map((v, i) => X(i).toFixed(1) + ' ' + Y(v).toFixed(1));
+      paths += `<path d="M${pts.join(' L')}" fill="none" style="stroke:${x.color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      if (n <= 45) x.vals.forEach((v, i) => { paths += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${v > 0 ? 3.2 : 2}" style="fill:${x.color}" opacity="${v > 0 ? 1 : .45}"/>`; });
+    });
+    let labels = '';
+    if (n <= 31 && d.series.length <= 3) {
+      d.series.forEach(x => x.vals.forEach((v, i) => {
+        if (v <= 0) return;
+        labels += `<text class="azc-lbl" x="${X(i).toFixed(1)}" y="${(Y(v) - 8).toFixed(1)}" text-anchor="middle" style="fill:${x.color}">${faDigits(round2(v))}</text>`;
+      }));
+    }
+    plot = `<div class="azki-trend-plot azc" id="aod-plot">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="ساعت قطعی به تفکیک روز">
+          ${grid}${xl}${paths}${labels}
+          <line class="azki-trend-guide" id="aod-guide" y1="${T}" y2="${T + ph}" style="display:none"/>
+          <g id="aod-hover"></g>
+          <rect id="aod-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
+        </svg>
+        <div class="azki-trend-tip" id="aod-tip"></div>
+      </div>
+      <div class="aod-legend">${d.series.map(x => `<span style="--c:${x.color}"><i></i>${esc(x.name)}</span>`).join('')}<span style="color:var(--ink-faint)">واحد: ساعت</span></div>
+      ${d.trimmed ? `<div class="aog-foot">فقط ۸ شرکت با بیشترین قطعی نمایش داده شد (${faDigits(d.trimmed)} شرکت دیگر مخفی است)؛ برای دیدن بقیه از فیلتر شرکت بیمه استفاده کنید.</div>` : ''}`;
+    azkiState.outage._dayModel = { W, L, pw, n, X, Y, d, T, ph };
+  }
+  return `<div class="azki-trend aod-card">${title}<div class="aod-wrap">${side}<div class="aod-main">${plot}</div></div></div>`;
+}
+
+function azkiOutageDayChartBind(root, tags) {
+  const st = azkiState.outage;
+  root.querySelectorAll('.aod-tag').forEach(btn => btn.addEventListener('click', () => {
+    const t = btn.dataset.dtag;
+    if (t === '__all') st.dayTags = new Set();
+    else if (!st.dayTags.size) st.dayTags = new Set([t]);
+    else { if (st.dayTags.has(t)) st.dayTags.delete(t); else st.dayTags.add(t); }
+    renderAzkiOutageView();
+  }));
+  const wrap = root.querySelector('#aod-plot'), hit = root.querySelector('#aod-hit');
+  const g = st._dayModel;
+  if (!wrap || !hit || !g) return;
+  const svg = wrap.querySelector('svg'), guide = root.querySelector('#aod-guide'), hov = root.querySelector('#aod-hover'), tip = root.querySelector('#aod-tip');
+  function show(clientX) {
+    const r = svg.getBoundingClientRect(); if (!r.width) return;
+    const vx = (clientX - r.left) * (g.W / r.width);
+    const i = Math.max(0, Math.min(g.n - 1, Math.round((vx - g.L) / g.pw * (g.n - 1))));
+    const x = g.X(i);
+    guide.setAttribute('x1', x.toFixed(1)); guide.setAttribute('x2', x.toFixed(1)); guide.style.display = '';
+    let dots = '', rows = '';
+    g.d.series.forEach(sr => {
+      const v = sr.vals[i];
+      dots += `<circle cx="${x.toFixed(1)}" cy="${g.Y(v).toFixed(1)}" r="5" style="fill:${sr.color};stroke:#fff" stroke-width="2"/>`;
+      rows += `<div class="t-r"><i style="background:${sr.color}"></i><span>${azkiShiftEsc(sr.name)}</span><b>${v > 0 ? outageFmtDur(v) : '۰'}</b></div>`;
+    });
+    hov.innerHTML = dots;
+    tip.innerHTML = `<div class="t-h">${g.d.points[i].label}</div>${rows}`;
+    tip.style.display = 'block';
+    const px = x / g.W * r.width;
+    if (px > r.width / 2) { tip.style.left = 'auto'; tip.style.right = (r.width - px + 12) + 'px'; }
+    else { tip.style.right = 'auto'; tip.style.left = (px + 12) + 'px'; }
+  }
+  function hide() { guide.style.display = 'none'; hov.innerHTML = ''; tip.style.display = 'none'; }
+  hit.addEventListener('mousemove', e => show(e.clientX));
+  hit.addEventListener('mouseleave', hide);
+  hit.addEventListener('touchstart', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
+  hit.addEventListener('touchmove', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
+  hit.addEventListener('touchend', hide);
 }
 
 function azkiBuildOutageExport() {
