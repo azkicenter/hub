@@ -518,7 +518,7 @@ const INSURANCE_LINES = [
 /* ترتیب ثابت نمایش شرکت‌ها (از راست به چپ، از بالا به پایین) -
    اگه شرکتی توی این لیست نباشه، آخر لیست و به ترتیب الفبا میاد */
 const COMPANY_DISPLAY_ORDER = [
-  'razi', 'hooshmand', 'dey', 'sina', 'iran', 'taavon',
+  'razi', 'hoshmand', 'day', 'sina', 'iran', 'taavon',
   'parsian', 'arman', 'moallem', 'alborz', 'tejaratno', 'asia',
   'pardis', 'hekmat', 'saman', 'kosar', 'novin', 'ma'
 ];
@@ -746,8 +746,15 @@ function typeLabelForCompany(typeObj, company) {
   return typeObj.label;
 }
 
+// کلید ثابت شرکت: از روی اسم (هم‌کلید با لوگوها) گرفته می‌شه تا به نوع id (uuid یا متن) وابسته نباشه
+function companySlug(c) {
+  const norm = normalizeCompanyName(c.name);
+  const hit = LOGO_LOOKUP.find(([n]) => n === norm);
+  return hit ? hit[1] : c.id;
+}
+
 function companyRank(c) {
-  const idx = COMPANY_DISPLAY_ORDER.indexOf(c.id);
+  const idx = COMPANY_DISPLAY_ORDER.indexOf(companySlug(c));
   return idx === -1 ? 999 : idx;
 }
 
