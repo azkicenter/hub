@@ -965,6 +965,7 @@
   }
   .team-item.open .team-chevron { transform: rotate(180deg); color: var(--accent-deep); }
   .team-item.is-disabled .team-name { color: var(--ink-faint); }
+  .team-edu-badge { flex: none; margin-inline-start: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--accent-deep); background: rgba(99,102,241,.14); white-space: nowrap; }
   .team-disabled-badge { flex: none; margin-inline-start: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--ink-faint); background: rgba(128,128,128,.14); white-space: nowrap; }
   .team-name { font-size: 14.5px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .team-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
@@ -5504,6 +5505,9 @@ async function loadAdminView() {
   });
 }
 
+// پنل آموزش هر سنتر: نام پروفایل به «| آموزش» ختم می‌شه (مثلا «مرکز صدور قادری | آموزش»)
+function isTrainingPanel(m) { return /\|\s*آموزش\s*$/.test((m && m.full_name) || ''); }
+
 function buildMemberItemsHtml(membersWithTotals) {
   return membersWithTotals.map(({ m, myRows, myBugs, myTotal }) => {
     const displayName = m.full_name || m.backoffice_id || '—';
@@ -5527,7 +5531,7 @@ function buildMemberItemsHtml(membersWithTotals) {
         <button class="team-header" type="button">
           <div class="team-name-wrap">
             <svg class="team-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            <span class="team-name">${displayName}</span>${m.status === 'disabled' ? '<span class="team-disabled-badge" title="دیگر با ما همکاری ندارد؛ فقط آمار صدورش در این بازه حفظ شده">غیرفعال</span>' : ''}
+            <span class="team-name">${displayName}</span>${isTrainingPanel(m) ? '<span class="team-edu-badge" title="پنل آموزش این سنتر">پنل آموزش</span>' : ''}${m.status === 'disabled' ? '<span class="team-disabled-badge" title="دیگر با ما همکاری ندارد؛ فقط آمار صدورش در این بازه حفظ شده">غیرفعال</span>' : ''}
           </div>
           <div class="team-right">
             ${slaHtml}
@@ -6362,7 +6366,7 @@ function renderTeamPerformance(membersWithTotals, allTeamRows) {
         <button class="team-header" type="button">
           <div class="team-name-wrap">
             <svg class="team-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            <span class="team-name">${displayName}</span>${m.status === 'disabled' ? '<span class="team-disabled-badge" title="دیگر با ما همکاری ندارد؛ فقط آمار صدورش در این بازه حفظ شده">غیرفعال</span>' : ''}
+            <span class="team-name">${displayName}</span>${isTrainingPanel(m) ? '<span class="team-edu-badge" title="پنل آموزش این سنتر">پنل آموزش</span>' : ''}${m.status === 'disabled' ? '<span class="team-disabled-badge" title="دیگر با ما همکاری ندارد؛ فقط آمار صدورش در این بازه حفظ شده">غیرفعال</span>' : ''}
           </div>
           <div class="team-right">
             <span class="${isBelow ? 'perf-below-badge' : 'perf-above-badge'}">${isBelow ? 'زیر' : 'بالای'} میانگین</span>
