@@ -1757,6 +1757,11 @@
         خطاها
         <span class="tab-dot bugs-dot" id="bugs-dot"></span>
       </button>
+      <button class="tab-btn" data-tab="agent-tasks" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/></svg>
+        تسک‌ها
+        <span class="tab-dot kb-dot"></span>
+      </button>
     </div>
 
     <div class="panel active" id="panel-targets">
@@ -1796,6 +1801,7 @@
       <button class="tab-btn" data-team-tab="kanban" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/></svg>
         تسک‌ها
+        <span class="tab-dot kb-dot"></span>
       </button>
     </div>
     <div class="subtabs" id="team-subtabs" style="display:none;">
@@ -1999,6 +2005,7 @@
         <button class="tab-btn" data-sup-tab="kanban" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/></svg>
           تسک‌ها
+        <span class="tab-dot kb-dot"></span>
         </button>
       </div>
       <div class="subtabs" id="supervisor-subtabs" style="display:none;">
@@ -2342,6 +2349,7 @@
       </div>
     </div>
 
+    <div class="panel" id="panel-agent-tasks"></div>
     <div class="panel" id="panel-bugs">
       <div class="list-card" id="bugs-list">
         <div class="loading-state">در حال بارگذاری...</div>
@@ -2458,8 +2466,10 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
     document.querySelectorAll('#main-tabs .tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('panel-targets').classList.remove('active');
     document.getElementById('panel-bugs').classList.remove('active');
+    document.getElementById('panel-agent-tasks').classList.remove('active');
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'agent-tasks') kbOpen(document.getElementById('panel-agent-tasks'));
     if (btn.dataset.tab === 'bugs') {
       markBugsSeen(lastBugsKeys);
     }
@@ -5615,6 +5625,8 @@ async function enterApp(user) {
     loadBugs(user.id);
   }
 
+  if (isLeader || isSupervisor || (!isAdmin && !isCenter)) kbNotifyStart();
+
   if (window.refreshGlassReveals) window.refreshGlassReveals();
 }
 
@@ -7813,58 +7825,77 @@ document.addEventListener('visibilitychange', () => {
 </script>
 
 <style>
+.kb-wrap{direction:ltr;text-align:left;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .kb-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
-.kb-bar input,.kb-bar select,.kb-m input,.kb-m select,.kb-m textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;min-width:0}
+.kb-bar input,.kb-bar select,.kb-m input,.kb-m select,.kb-m textarea,.kb-quick textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;min-width:0}
 .kb-bar input[type=search]{flex:1;min-width:140px}
 .kb-chip{padding:5px 11px;border-radius:99px;background:var(--accent-soft);color:var(--accent-strong);font-size:12px;font-weight:600}
 .kb-chip.bad{background:var(--danger-soft);color:var(--danger)}
 .kb-btn{font:inherit;cursor:pointer;border:0;border-radius:var(--radius-sm);padding:8px 16px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-deep))}
 .kb-btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}.kb-btn.del{background:var(--danger)}
 .kb-mine{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink-soft)}
-.kb-board{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px;overflow-x:auto;align-items:start;padding-bottom:8px}
-.kb-col{background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius);padding:10px;min-height:160px;backdrop-filter:blur(var(--glass-blur))}
+.kb-board{display:grid;grid-template-columns:repeat(4,minmax(240px,1fr));gap:12px;overflow-x:auto;align-items:start;padding-bottom:8px}
+.kb-col{background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius);padding:10px;min-height:160px}
 .kb-col.over{outline:2px dashed var(--accent)}
 .kb-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:10px;border-bottom:3px solid var(--c);padding-bottom:7px}
 .kb-h b{background:var(--c);color:#fff;border-radius:99px;font-size:11px;padding:1px 8px}
-.kb-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;margin-bottom:9px;cursor:grab;box-shadow:var(--shadow-card);border-right:4px solid var(--p)}
-.kb-card.drag{opacity:.4}.kb-card .t{font-weight:700;font-size:14px;margin-bottom:4px}
+.kb-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;margin-bottom:9px;cursor:grab;box-shadow:var(--shadow-card);border-left:4px solid var(--p);touch-action:none;user-select:none;-webkit-user-select:none}
+.kb-card:hover{border-color:var(--accent)}.kb-card.new{box-shadow:0 0 0 2px var(--accent)}
+.kb-card .t{font-weight:700;font-size:14px;margin-bottom:4px;word-break:break-word}
 .kb-card .d{font-size:12px;color:var(--ink-soft);margin-bottom:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.kb-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--ink-soft)}
+.kb-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px;color:var(--ink-soft)}
 .kb-meta span{background:var(--accent-soft);border-radius:99px;padding:2px 8px}.kb-meta .late{background:var(--danger-soft);color:var(--danger)}
+.kb-av{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex!important;align-items:center;justify-content:center;font-size:10px;font-weight:700;padding:0!important;margin-left:auto}
 .kb-empty{text-align:center;color:var(--ink-faint);font-size:12px;padding:14px 0}
+.kb-add-card{width:100%;text-align:left;font:inherit;font-size:13px;cursor:pointer;background:transparent;border:0;color:var(--ink-soft);padding:8px;border-radius:var(--radius-sm)}
+.kb-add-card:hover{background:var(--accent-soft)}
+.kb-quick{display:grid;gap:6px}.kb-quick textarea{resize:none;width:100%;box-sizing:border-box}.kb-quick .r{display:flex;gap:6px}
+.kb-ghost{position:fixed;z-index:1001;pointer-events:none;opacity:.9;transform:rotate(3deg);margin:0;box-shadow:0 12px 30px rgba(0,0,0,.3)}
+.kb-card.drag{opacity:.35}
 .kb-ov{position:fixed;inset:0;background:rgba(10,20,40,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:14px}
-.kb-m{background:var(--surface);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;width:min(460px,100%);max-height:92vh;overflow:auto;display:grid;gap:10px;color:var(--ink)}
+.kb-m{direction:ltr;text-align:left;background:var(--surface);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;width:min(480px,100%);max-height:92vh;overflow:auto;display:grid;gap:10px;color:var(--ink)}
 .kb-m label{font-size:12px;color:var(--ink-soft);display:grid;gap:4px}.kb-m .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kb-m .row3{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:6px}
 .kb-m .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-@media(max-width:760px){.kb-board{grid-template-columns:repeat(4,78vw)}}
+.kb-bell{position:relative;background:transparent;border:0;cursor:pointer;color:var(--ink-soft);padding:4px;display:flex}
+.kb-bell svg{width:20px;height:20px}
+.kb-bell b{position:absolute;top:-4px;right:-5px;min-width:16px;height:16px;border-radius:99px;background:var(--danger);color:#fff;font-size:10px;line-height:16px;text-align:center;display:none;padding:0 3px}
+.kb-pop{position:fixed;top:64px;left:14px;width:min(340px,calc(100vw - 28px));max-height:70vh;overflow:auto;z-index:1000;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 14px 40px rgba(0,0,0,.25);padding:8px;direction:rtl}
+.kb-pop h4{margin:4px 8px 8px;font-size:13px}.kb-pop .it{display:block;width:100%;text-align:right;font:inherit;font-size:13px;background:transparent;border:0;border-bottom:1px solid var(--line);padding:9px 8px;cursor:pointer;color:var(--ink)}
+.kb-pop .it small{display:block;color:var(--ink-soft);margin-top:2px}.kb-pop .it:hover{background:var(--accent-soft)}
+.kb-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1002;background:var(--surface);color:var(--ink);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 18px;box-shadow:0 12px 30px rgba(0,0,0,.3);cursor:pointer;direction:rtl;font-size:14px}
+@media(max-width:760px){.kb-board{grid-template-columns:repeat(4,80vw)}}
 </style>
 <script>
 (function(){
-const T='kanban_tasks',COLS=[['todo','انجام نشده','#7C5CE0'],['doing','در حال انجام','#17A9FF'],['review','در انتظار بررسی','#E08A17'],['done','انجام شد','#1FA971']];
-const PRI={low:['کم','#1FA971'],medium:['متوسط','#17A9FF'],high:['زیاد','#E08A17'],urgent:['فوری','#E0453F']};
-const S={tasks:[],people:{},me:null,host:null,q:'',who:'',mine:false,err:''};
+const T='kanban_tasks',COLS=[['todo','To Do','#7C5CE0'],['doing','In Progress','#17A9FF'],['review','In Review','#E08A17'],['done','Done','#1FA971']];
+const PRI={low:['Low','#1FA971'],medium:['Medium','#17A9FF'],high:['High','#E08A17'],urgent:['Urgent','#E0453F']};
+const JM=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
+const S={tasks:[],people:{},me:null,host:null,q:'',who:'',mine:false,err:'',seen:null,timer:null,popOpen:false};
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isSup=()=>currentUserRole==='supervisor';
-const fd=d=>faDigits(new Date(d+'T00:00:00').toLocaleDateString('fa-IR'));
-const today=()=>new Date().toISOString().slice(0,10);
+const p2=n=>String(n).padStart(2,'0');
+const toJ=d=>{if(!d)return null;const[y,m,x]=d.split('-').map(Number);return gregorianToJalali(y,m,x)};
+const fd=d=>{const j=toJ(d);return j?`${j[2]} ${JM[j[1]-1]} ${j[0]}`:''};
+const today=()=>{const j=tehranTodayJalali();return jalaliToGregorian(j[0],j[1],j[2])};
 const late=t=>t.due_date&&t.status!=='done'&&t.due_date<today();
+const ini=n=>(n||'?').trim().slice(0,2);
 async function load(){
   S.me=(await supabaseClient.auth.getUser()).data.user?.id;
   const r=await supabaseClient.from(T).select('*').order('created_at',{ascending:false});
-  S.err=r.error?('خطا در دریافت تسک‌ها: '+r.error.message):''; S.tasks=r.data||[];
-  const roles=isSup()?['leader']:['agent'];
-  const p=await supabaseClient.from('profiles').select('id, full_name').in('role',roles).limit(500);
+  S.err=r.error?('Failed to load tasks: '+r.error.message):''; S.tasks=r.data||[];
+  const p=await supabaseClient.from('profiles').select('id, full_name').in('role',isSup()?['leader']:['agent']).limit(500);
   S.people={}; (p.data||[]).forEach(x=>S.people[x.id]=x.full_name||'—');
   const miss=[...new Set(S.tasks.flatMap(t=>[t.assignee_id,t.created_by]).concat(S.me).filter(i=>i&&!S.people[i]))];
   if(miss.length){const n=await supabaseClient.from('profiles').select('id, full_name').in('id',miss);(n.data||[]).forEach(x=>S.people[x.id]=x.full_name||'—');}
 }
 function shell(){
   const opts=Object.entries(S.people).sort((a,b)=>a[1].localeCompare(b[1],'fa')).map(([i,n])=>`<option value="${e(i)}">${e(n)}</option>`).join('');
-  S.host.innerHTML=`<div class="kb-bar"><input type="search" id="kb-q" placeholder="جستجو در تسک‌ها..." value="${e(S.q)}">
-  <select id="kb-who"><option value="">همه مسئول‌ها</option>${opts}</select>
-  <label class="kb-mine"><input type="checkbox" id="kb-mine" ${S.mine?'checked':''}> فقط تسک‌های من</label>
-  <span id="kb-stats"></span><button class="kb-btn" id="kb-add" type="button">+ تسک جدید</button></div>
-  <div class="azki-error" style="display:${S.err?'block':'none'}">${e(S.err)}</div><div class="kb-board" id="kb-board"></div>`;
+  S.host.innerHTML=`<div class="kb-wrap"><div class="kb-bar"><input type="search" id="kb-q" placeholder="Search tasks..." value="${e(S.q)}">
+  <select id="kb-who"><option value="">All assignees</option>${opts}</select>
+  <label class="kb-mine"><input type="checkbox" id="kb-mine" ${S.mine?'checked':''}> My tasks only</label>
+  <span id="kb-stats"></span><button class="kb-btn" id="kb-add" type="button">+ New task</button></div>
+  <div class="azki-error" style="display:${S.err?'block':'none'}">${e(S.err)}</div><div class="kb-board" id="kb-board"></div></div>`;
   const $=i=>S.host.querySelector(i);
   $('#kb-who').value=S.who;
   $('#kb-q').oninput=ev=>{S.q=ev.target.value.trim();board()};
@@ -7875,67 +7906,147 @@ function shell(){
 }
 function board(){
   const list=S.tasks.filter(t=>(!S.q||((t.title||'')+' '+(t.description||'')).includes(S.q))&&(!S.who||t.assignee_id===S.who)&&(!S.mine||t.assignee_id===S.me));
-  const lt=list.filter(late).length;
-  S.host.querySelector('#kb-stats').innerHTML=`<span class="kb-chip">${faDigits(list.length)} تسک</span> ${lt?`<span class="kb-chip bad">${faDigits(lt)} دیرکرد</span>`:''}`;
+  const lt=list.filter(late).length, fresh=newOnes();
+  S.host.querySelector('#kb-stats').innerHTML=`<span class="kb-chip">${list.length} tasks</span> ${lt?`<span class="kb-chip bad">${lt} overdue</span>`:''}`;
   const b=S.host.querySelector('#kb-board');
   b.innerHTML=COLS.map(([k,n,c])=>{const items=list.filter(t=>t.status===k);
-    return `<div class="kb-col" data-col="${k}" style="--c:${c}"><div class="kb-h">${n}<b>${faDigits(items.length)}</b></div>${items.map(t=>`
-    <div class="kb-card" draggable="true" data-id="${e(t.id)}" style="--p:${PRI[t.priority][1]}">
+    return `<div class="kb-col" data-col="${k}" style="--c:${c}"><div class="kb-h">${n}<b>${items.length}</b></div>${items.map(t=>`
+    <div class="kb-card${fresh.includes(t)?' new':''}" data-id="${e(t.id)}" style="--p:${(PRI[t.priority]||PRI.medium)[1]}">
       <div class="t">${e(t.title)}</div>${t.description?`<div class="d">${e(t.description)}</div>`:''}
-      <div class="kb-meta"><span>${PRI[t.priority][0]}</span>${t.assignee_id?`<span>👤 ${e(S.people[t.assignee_id]||'—')}</span>`:''}${t.due_date?`<span class="${late(t)?'late':''}">📅 ${fd(t.due_date)}</span>`:''}</div></div>`).join('')||'<div class="kb-empty">خالی</div>'}</div>`}).join('');
-  b.querySelectorAll('.kb-card').forEach(el=>{
-    el.onclick=()=>modal(S.tasks.find(t=>t.id===el.dataset.id));
-    el.ondragstart=ev=>{ev.dataTransfer.setData('text/plain',el.dataset.id);el.classList.add('drag')};
-    el.ondragend=()=>el.classList.remove('drag');
-  });
-  b.querySelectorAll('.kb-col').forEach(col=>{
-    col.ondragover=ev=>{ev.preventDefault();col.classList.add('over')};
-    col.ondragleave=()=>col.classList.remove('over');
-    col.ondrop=ev=>{ev.preventDefault();col.classList.remove('over');move(ev.dataTransfer.getData('text/plain'),col.dataset.col)};
-  });
+      <div class="kb-meta"><span>${(PRI[t.priority]||PRI.medium)[0]}</span>${t.due_date?`<span class="${late(t)?'late':''}">📅 ${fd(t.due_date)}</span>`:''}${t.assignee_id?`<span class="kb-av" title="${e(S.people[t.assignee_id]||'')}">${e(ini(S.people[t.assignee_id]))}</span>`:''}</div></div>`).join('')||'<div class="kb-empty">No cards</div>'}
+    <div class="kb-quick-host"><button class="kb-add-card" type="button" data-col="${k}">+ Add a card</button></div></div>`}).join('');
+  b.querySelectorAll('.kb-add-card').forEach(btn=>btn.onclick=()=>quick(btn));
+  b.querySelectorAll('.kb-card').forEach(el=>el.addEventListener('pointerdown',ev=>dragStart(ev,el)));
+}
+function quick(btn){
+  const host=btn.parentNode, col=btn.dataset.col;
+  host.innerHTML=`<div class="kb-quick"><textarea rows="2" placeholder="Enter a title for this card..."></textarea><div class="r"><button class="kb-btn" type="button">Add card</button><button class="kb-btn ghost" type="button">✕</button></div></div>`;
+  const ta=host.querySelector('textarea'); ta.focus();
+  const [ok,x]=host.querySelectorAll('button');
+  x.onclick=board;
+  const go=async()=>{const title=ta.value.trim(); if(!title)return board();
+    const r=await supabaseClient.from(T).insert({title,status:col,priority:'medium',assignee_id:isSup()?null:S.me,updated_at:new Date().toISOString()});
+    if(r.error){S.err='Could not add: '+r.error.message;} await refresh();};
+  ok.onclick=go; ta.onkeydown=ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();go()}if(ev.key==='Escape')board()};
+}
+// Pointer-based drag & drop (works with mouse and touch, like Trello)
+function dragStart(ev,el){
+  if(ev.button>0)return;
+  const sx=ev.clientX, sy=ev.clientY; let g=null, over=null, moved=false;
+  const mv=m=>{
+    if(!moved&&Math.hypot(m.clientX-sx,m.clientY-sy)<6)return;
+    if(!moved){moved=true;const r=el.getBoundingClientRect();g=el.cloneNode(true);g.className='kb-card kb-ghost';g.style.width=r.width+'px';document.body.appendChild(g);el.classList.add('drag');g._dx=sx-r.left;g._dy=sy-r.top;}
+    g.style.left=(m.clientX-g._dx)+'px';g.style.top=(m.clientY-g._dy)+'px';
+    const bd=S.host.querySelector('#kb-board'); if(!bd)return;
+    const sc=bd.getBoundingClientRect(); if(m.clientX<sc.left+40)bd.scrollLeft-=14; else if(m.clientX>sc.right-40)bd.scrollLeft+=14;
+    const t=document.elementFromPoint(m.clientX,m.clientY), col=t&&t.closest('.kb-col');
+    if(over!==col){if(over)over.classList.remove('over');over=col;if(over)over.classList.add('over');}
+  };
+  const up=()=>{
+    document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);document.removeEventListener('pointercancel',up);
+    if(g)g.remove(); el.classList.remove('drag'); if(over)over.classList.remove('over');
+    if(!moved){modal(S.tasks.find(t=>t.id===el.dataset.id));return}
+    if(over)move(el.dataset.id,over.dataset.col);
+  };
+  document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);
 }
 async function move(id,st){
   const t=S.tasks.find(x=>x.id===id); if(!t||t.status===st)return;
   const old=t.status; t.status=st; board();
   const r=await supabaseClient.from(T).update({status:st,updated_at:new Date().toISOString()}).eq('id',id);
-  if(r.error){t.status=old;board();alert('جابه‌جایی انجام نشد: '+r.error.message);}
+  if(r.error){t.status=old;board();alert('Move failed: '+r.error.message);}
+}
+function jDateFields(due){
+  const j=toJ(due), cy=tehranTodayJalali()[0];
+  const ys=[''].concat(Array.from({length:7},(_,i)=>cy-1+i)).map(y=>`<option value="${y}" ${j&&j[0]===y?'selected':''}>${y||'Year'}</option>`).join('');
+  const ms=['<option value="">Month</option>'].concat(JM.map((n,i)=>`<option value="${i+1}" ${j&&j[1]===i+1?'selected':''}>${n}</option>`)).join('');
+  const ds=['<option value="">Day</option>'].concat(Array.from({length:31},(_,i)=>`<option value="${i+1}" ${j&&j[2]===i+1?'selected':''}>${i+1}</option>`)).join('');
+  return `<div class="row3"><select id="f-jd">${ds}</select><select id="f-jm">${ms}</select><select id="f-jy">${ys}</select></div>`;
 }
 function modal(t){
-  const isNew=!t, ro=!isNew&&!isSup()&&t.created_by!==S.me, canDel=!isNew&&(isSup()||t.created_by===S.me);
+  const isNew=!t, ro=!isNew&&!isSup()&&t.created_by!==S.me&&t.assignee_id!==S.me, canDel=!isNew&&(isSup()||t.created_by===S.me);
+  if(!isNew)seen(t);
   t=t||{title:'',description:'',status:'todo',priority:'medium',due_date:'',assignee_id:isSup()?'':S.me};
-  const ppl=Object.entries(S.people).filter(([i])=>isSup()?true:true);
   const ov=document.createElement('div'); ov.className='kb-ov';
-  ov.innerHTML=`<div class="kb-m"><b>${isNew?'تسک جدید':'ویرایش تسک'}</b>
-  <label>عنوان<input id="f-t" value="${e(t.title)}" ${ro?'disabled':''}></label>
-  <label>توضیحات<textarea id="f-d" rows="4" ${ro?'disabled':''}>${e(t.description)}</textarea></label>
-  <div class="row"><label>وضعیت<select id="f-s">${COLS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label>
-  <label>اولویت<select id="f-p" ${ro?'disabled':''}>${Object.entries(PRI).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select></label></div>
-  <div class="row"><label>مسئول<select id="f-a" ${ro?'disabled':''}><option value="">بدون مسئول</option>${ppl.map(([i,n])=>`<option value="${e(i)}">${e(n)}</option>`).join('')}</select></label>
-  <label>مهلت<input type="date" id="f-due" value="${e(t.due_date||'')}" ${ro?'disabled':''}></label></div>
+  ov.innerHTML=`<div class="kb-m"><b>${isNew?'New task':'Edit task'}</b>
+  <label>Title<input id="f-t" value="${e(t.title)}" ${ro?'disabled':''}></label>
+  <label>Description<textarea id="f-d" rows="4" ${ro?'disabled':''}>${e(t.description)}</textarea></label>
+  <div class="row"><label>Status<select id="f-s">${COLS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label>
+  <label>Priority<select id="f-p" ${ro?'disabled':''}>${Object.entries(PRI).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select></label></div>
+  <div class="row"><label>Assignee<select id="f-a" ${ro?'disabled':''}><option value="">Unassigned</option>${Object.entries(S.people).map(([i,n])=>`<option value="${e(i)}">${e(n)}</option>`).join('')}</select></label>
+  <label>Due date (Shamsi)<div ${ro?'style="pointer-events:none;opacity:.6"':''}>${jDateFields(t.due_date)}</div></label></div>
   <div class="azki-error" id="f-err"></div>
-  <div class="acts">${canDel?'<button class="kb-btn del" id="f-del" type="button">حذف</button>':''}<button class="kb-btn ghost" id="f-x" type="button">انصراف</button><button class="kb-btn" id="f-ok" type="button">ذخیره</button></div></div>`;
+  <div class="acts">${canDel?'<button class="kb-btn del" id="f-del" type="button">Delete</button>':''}<button class="kb-btn ghost" id="f-x" type="button">Cancel</button><button class="kb-btn" id="f-ok" type="button">Save</button></div></div>`;
   document.body.appendChild(ov);
   const q=i=>ov.querySelector(i); q('#f-s').value=t.status; q('#f-p').value=t.priority; q('#f-a').value=t.assignee_id||'';
   const close=()=>ov.remove(); q('#f-x').onclick=close; ov.onmousedown=ev=>{if(ev.target===ov)close()};
   const fail=m=>{q('#f-err').textContent=m;q('#f-err').style.display='block'};
   q('#f-ok').onclick=async()=>{
-    const title=q('#f-t').value.trim(); if(!title)return fail('عنوان تسک را وارد کنید.');
-    const row={title,description:q('#f-d').value.trim()||null,status:q('#f-s').value,priority:q('#f-p').value,assignee_id:q('#f-a').value||null,due_date:q('#f-due').value||null,updated_at:new Date().toISOString()};
+    const title=q('#f-t').value.trim(); if(!title)return fail('Please enter a title.');
+    let due=null; const jy=+q('#f-jy').value, jm=+q('#f-jm').value, jd=+q('#f-jd').value;
+    if(jy||jm||jd){
+      if(!(jy&&jm&&jd))return fail('Please complete the due date (day, month, year).');
+      due=jalaliToGregorian(jy,jm,jd); const[gy,gm,gd]=due.split('-').map(Number), back=gregorianToJalali(gy,gm,gd);
+      if(back[0]!==jy||back[1]!==jm||back[2]!==jd)return fail('This date does not exist in the Shamsi calendar.');
+    }
+    const row={title,description:q('#f-d').value.trim()||null,status:q('#f-s').value,priority:q('#f-p').value,assignee_id:q('#f-a').value||null,due_date:due,updated_at:new Date().toISOString()};
     const r=ro?await supabaseClient.from(T).update({status:row.status,updated_at:row.updated_at}).eq('id',t.id)
       :isNew?await supabaseClient.from(T).insert(row):await supabaseClient.from(T).update(row).eq('id',t.id);
-    if(r.error)return fail('ذخیره نشد: '+r.error.message);
+    if(r.error)return fail('Save failed: '+r.error.message);
     close(); await refresh();
   };
   if(canDel)q('#f-del').onclick=async()=>{
-    if(!confirm('این تسک حذف شود؟'))return;
+    if(!confirm('Delete this task?'))return;
     const r=await supabaseClient.from(T).delete().eq('id',t.id);
-    if(r.error)return fail('حذف نشد: '+r.error.message); close(); await refresh();
+    if(r.error)return fail('Delete failed: '+r.error.message); close(); await refresh();
   };
 }
-async function refresh(){await load();shell();}
+async function refresh(){await load();shell();pulse();}
 window.kbOpen=async function(host){
   S.host=host; if(!host.innerHTML.trim())host.innerHTML='<div class="loading-state">در حال بارگذاری...</div>';
   await refresh();
+};
+
+/* ---------- Notifications: tasks assigned to me by someone else ---------- */
+const sk=()=>'kb_seen_'+S.me;
+function seenSet(){if(!S.seen){try{S.seen=new Set(JSON.parse(localStorage.getItem(sk())||'[]'))}catch(x){S.seen=new Set()}}return S.seen}
+const key=t=>t.id+':'+t.assignee_id;
+function newOnes(){return S.tasks.filter(t=>t.assignee_id&&t.assignee_id===S.me&&t.created_by!==S.me&&t.status!=='done'&&!seenSet().has(key(t)))}
+function seen(t){const s=seenSet();if(!s.has(key(t))){s.add(key(t));try{localStorage.setItem(sk(),JSON.stringify([...s].slice(-500)))}catch(x){}pulse(true)}}
+let lastCount=-1;
+function pulse(silent){
+  const n=newOnes(), bell=document.getElementById('kb-bell-n');
+  if(bell){bell.textContent=n.length>9?'9+':n.length;bell.style.display=n.length?'block':'none';}
+  document.querySelectorAll('.kb-dot').forEach(d=>d.style.display=n.length?'inline-block':'none');
+  if(!silent&&lastCount>=0&&n.length>lastCount){
+    const t=n[0], el=document.createElement('div'); el.className='kb-toast';
+    el.textContent='📌 تسک جدید برای شما: '+t.title; el.onclick=()=>{el.remove();openTasksTab();setTimeout(()=>modal(t),150)};
+    document.body.appendChild(el); setTimeout(()=>el.remove(),7000);
+  }
+  lastCount=n.length;
+  if(S.popOpen)renderPop();
+}
+function openTasksTab(){
+  const b=document.querySelector('#main-tabs [data-tab="agent-tasks"]')||document.querySelector('#team-tabs [data-team-tab="kanban"]')||document.querySelector('[data-sup-tab="kanban"]');
+  if(b&&b.offsetParent!==null)b.click();
+}
+function renderPop(){
+  let p=document.getElementById('kb-pop'); if(!p){p=document.createElement('div');p.id='kb-pop';p.className='kb-pop';document.body.appendChild(p)}
+  const n=newOnes();
+  p.innerHTML='<h4>اعلان‌ها</h4>'+(n.length?n.map(t=>`<button class="it" type="button" data-id="${e(t.id)}">${e(t.title)}<small>تسک جدید از طرف ${e(S.people[t.created_by]||'—')}${t.due_date?' · مهلت: '+faDigits(fd(t.due_date)):''}</small></button>`).join(''):'<div class="kb-empty">اعلان جدیدی وجود ندارد</div>');
+  p.querySelectorAll('.it').forEach(b=>b.onclick=()=>{const t=S.tasks.find(x=>x.id===b.dataset.id);S.popOpen=false;p.remove();openTasksTab();setTimeout(()=>{if(S.host&&S.host.isConnected)board();modal(t)},200)});
+}
+window.kbNotifyStart=async function(){
+  if(S.timer)return;
+  const who=document.querySelector('.who'); if(who&&!document.getElementById('kb-bell')){
+    const b=document.createElement('button'); b.id='kb-bell'; b.type='button'; b.className='kb-bell'; b.title='اعلان‌ها';
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><b id="kb-bell-n"></b>';
+    b.onclick=ev=>{ev.stopPropagation();S.popOpen=!S.popOpen;if(S.popOpen)renderPop();else{const p=document.getElementById('kb-pop');p&&p.remove()}};
+    who.insertBefore(b,who.firstChild);
+    document.addEventListener('click',ev=>{const p=document.getElementById('kb-pop');if(p&&!p.contains(ev.target)){S.popOpen=false;p.remove()}});
+  }
+  const tick=async()=>{try{await load();if(S.host&&S.host.isConnected&&S.host.offsetParent!==null&&!document.querySelector('.kb-ov'))shell();pulse();}catch(x){}};
+  await tick(); S.timer=setInterval(tick,30000);
 };
 })();
 </script>
