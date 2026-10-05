@@ -7864,6 +7864,13 @@ document.addEventListener('visibilitychange', () => {
 .kb-pop h4{margin:4px 8px 8px;font-size:13px}.kb-pop .it{display:block;width:100%;text-align:right;font:inherit;font-size:13px;background:transparent;border:0;border-bottom:1px solid var(--line);padding:9px 8px;cursor:pointer;color:var(--ink)}
 .kb-pop .it small{display:block;color:var(--ink-soft);margin-top:2px}.kb-pop .it:hover{background:var(--accent-soft)}
 .kb-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1002;background:var(--surface);color:var(--ink);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 18px;box-shadow:0 12px 30px rgba(0,0,0,.3);cursor:pointer;direction:rtl;font-size:14px}
+.kb-arch-bar{margin-top:14px;display:flex}
+.kb-arch-toggle{font:inherit;font-size:13px;cursor:pointer;background:transparent;border:1px dashed var(--line);border-radius:var(--radius-sm);color:var(--ink-soft);padding:7px 14px;opacity:.75}
+.kb-arch-toggle:hover{opacity:1;border-color:var(--accent);color:var(--ink)}
+.kb-arch{margin-top:10px;background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius);padding:10px;display:grid;gap:8px}
+.kb-arch-it{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;opacity:.9}
+.kb-arch-it .t{font-weight:600;font-size:13px;word-break:break-word}.kb-arch-it .kb-meta{margin-top:3px}
+.kb-arch-it .acts{display:flex;gap:6px}.kb-arch-it .kb-btn{padding:5px 12px;font-size:12px}
 @media(max-width:760px){.kb-board{grid-template-columns:repeat(4,80vw)}}
 </style>
 <script>
@@ -7871,7 +7878,7 @@ document.addEventListener('visibilitychange', () => {
 const T='kanban_tasks',COLS=[['todo','To Do','#7C5CE0'],['doing','In Progress','#17A9FF'],['review','In Review','#E08A17'],['done','Done','#1FA971']];
 const PRI={low:['Low','#1FA971'],medium:['Medium','#17A9FF'],high:['High','#E08A17'],urgent:['Urgent','#E0453F']};
 const JM=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
-const S={tasks:[],people:{},me:null,host:null,q:'',who:'',mine:false,err:'',seen:null,timer:null,popOpen:false};
+const S={tasks:[],people:{},me:null,host:null,q:'',who:'',mine:false,err:'',seen:null,timer:null,popOpen:false,arch:false};
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isSup=()=>currentUserRole==='supervisor';
 const p2=n=>String(n).padStart(2,'0');
@@ -7895,7 +7902,7 @@ function shell(){
   <select id="kb-who"><option value="">All assignees</option>${opts}</select>
   <label class="kb-mine"><input type="checkbox" id="kb-mine" ${S.mine?'checked':''}> My tasks only</label>
   <span id="kb-stats"></span><button class="kb-btn" id="kb-add" type="button">+ New task</button></div>
-  <div class="azki-error" style="display:${S.err?'block':'none'}">${e(S.err)}</div><div class="kb-board" id="kb-board"></div></div>`;
+  <div class="azki-error" style="display:${S.err?'block':'none'}">${e(S.err)}</div><div class="kb-board" id="kb-board"></div><div id="kb-arch-host"></div></div>`;
   const $=i=>S.host.querySelector(i);
   $('#kb-who').value=S.who;
   $('#kb-q').oninput=ev=>{S.q=ev.target.value.trim();board()};
@@ -7905,7 +7912,7 @@ function shell(){
   board();
 }
 function board(){
-  const list=S.tasks.filter(t=>(!S.q||((t.title||'')+' '+(t.description||'')).includes(S.q))&&(!S.who||t.assignee_id===S.who)&&(!S.mine||t.assignee_id===S.me));
+  const list=S.tasks.filter(t=>t.status!=='archived'&&(!S.q||((t.title||'')+' '+(t.description||'')).includes(S.q))&&(!S.who||t.assignee_id===S.who)&&(!S.mine||t.assignee_id===S.me));
   const lt=list.filter(late).length, fresh=newOnes();
   S.host.querySelector('#kb-stats').innerHTML=`<span class="kb-chip">${list.length} tasks</span> ${lt?`<span class="kb-chip bad">${lt} overdue</span>`:''}`;
   const b=S.host.querySelector('#kb-board');
@@ -7914,9 +7921,32 @@ function board(){
     <div class="kb-card${fresh.includes(t)?' new':''}" data-id="${e(t.id)}" style="--p:${(PRI[t.priority]||PRI.medium)[1]}">
       <div class="t">${e(t.title)}</div>${t.description?`<div class="d">${e(t.description)}</div>`:''}
       <div class="kb-meta"><span>${(PRI[t.priority]||PRI.medium)[0]}</span>${t.due_date?`<span class="${late(t)?'late':''}">📅 ${fd(t.due_date)}</span>`:''}${t.assignee_id?`<span class="kb-av" title="${e(S.people[t.assignee_id]||'')}">${e(ini(S.people[t.assignee_id]))}</span>`:''}</div></div>`).join('')||'<div class="kb-empty">No cards</div>'}
-    <div class="kb-quick-host"><button class="kb-add-card" type="button" data-col="${k}">+ Add a card</button></div></div>`}).join('');
+    <div class="kb-quick-host"><button class="kb-add-card" type="button" data-col="${k}">+ Add a card</button></div>${k==='done'&&items.length?'<button class="kb-add-card" type="button" data-arch-all="1">🗄 Archive all done</button>':''}</div>`}).join('');
+  b.querySelectorAll('[data-arch-all]').forEach(btn=>btn.onclick=()=>archiveMany(list.filter(t=>t.status==='done')));
+  archiveView();
   b.querySelectorAll('.kb-add-card').forEach(btn=>btn.onclick=()=>quick(btn));
   b.querySelectorAll('.kb-card').forEach(el=>el.addEventListener('pointerdown',ev=>dragStart(ev,el)));
+}
+async function archiveMany(items){
+  if(!items.length)return;
+  const ids=items.map(t=>t.id), now=new Date().toISOString();
+  const r=await supabaseClient.from(T).update({status:'archived',updated_at:now}).in('id',ids);
+  if(r.error){alert('Archive failed: '+r.error.message);return}
+  await refresh();
+}
+function archiveView(){
+  const host=S.host&&S.host.querySelector('#kb-arch-host'); if(!host)return;
+  const items=S.tasks.filter(t=>t.status==='archived'&&(!S.q||((t.title||'')+' '+(t.description||'')).includes(S.q))&&(!S.who||t.assignee_id===S.who)&&(!S.mine||t.assignee_id===S.me));
+  host.innerHTML=`<div class="kb-arch-bar"><button class="kb-arch-toggle" type="button">🗄 Archive (${items.length}) ${S.arch?'▴':'▾'}</button></div>`
+   +(S.arch?`<div class="kb-arch">${items.map(t=>`<div class="kb-arch-it" data-id="${e(t.id)}"><div><div class="t">${e(t.title)}</div><div class="kb-meta">${t.assignee_id?`<span>👤 ${e(S.people[t.assignee_id]||'—')}</span>`:''}${t.updated_at?`<span>🗄 ${fd(String(t.updated_at).slice(0,10))}</span>`:''}</div></div>
+     <div class="acts"><button class="kb-btn ghost" data-a="restore" type="button">Restore</button>${(isSup()||t.created_by===S.me)?'<button class="kb-btn del" data-a="del" type="button">Delete</button>':''}</div></div>`).join('')||'<div class="kb-empty">Archive is empty</div>'}</div>`:'');
+  host.querySelector('.kb-arch-toggle').onclick=()=>{S.arch=!S.arch;archiveView()};
+  host.querySelectorAll('.kb-arch-it').forEach(row=>{
+    const id=row.dataset.id;
+    const rb=row.querySelector('[data-a=restore]'), db=row.querySelector('[data-a=del]');
+    rb.onclick=async()=>{const r=await supabaseClient.from(T).update({status:'done',updated_at:new Date().toISOString()}).eq('id',id);if(r.error)return alert('Restore failed: '+r.error.message);await refresh()};
+    if(db)db.onclick=async()=>{if(!confirm('Permanently delete this task?'))return;const r=await supabaseClient.from(T).delete().eq('id',id);if(r.error)return alert('Delete failed: '+r.error.message);await refresh()};
+  });
 }
 function quick(btn){
   const host=btn.parentNode, col=btn.dataset.col;
@@ -7976,7 +8006,7 @@ function modal(t){
   <div class="row"><label>Assignee<select id="f-a" ${ro?'disabled':''}><option value="">Unassigned</option>${Object.entries(S.people).map(([i,n])=>`<option value="${e(i)}">${e(n)}</option>`).join('')}</select></label>
   <label>Due date (Shamsi)<div ${ro?'style="pointer-events:none;opacity:.6"':''}>${jDateFields(t.due_date)}</div></label></div>
   <div class="azki-error" id="f-err"></div>
-  <div class="acts">${canDel?'<button class="kb-btn del" id="f-del" type="button">Delete</button>':''}<button class="kb-btn ghost" id="f-x" type="button">Cancel</button><button class="kb-btn" id="f-ok" type="button">Save</button></div></div>`;
+  <div class="acts">${canDel?'<button class="kb-btn del" id="f-del" type="button">Delete</button>':''}${!isNew&&!ro?'<button class="kb-btn ghost" id="f-arc" type="button">🗄 Archive</button>':''}<button class="kb-btn ghost" id="f-x" type="button">Cancel</button><button class="kb-btn" id="f-ok" type="button">Save</button></div></div>`;
   document.body.appendChild(ov);
   const q=i=>ov.querySelector(i); q('#f-s').value=t.status; q('#f-p').value=t.priority; q('#f-a').value=t.assignee_id||'';
   const close=()=>ov.remove(); q('#f-x').onclick=close; ov.onmousedown=ev=>{if(ev.target===ov)close()};
@@ -7995,6 +8025,10 @@ function modal(t){
     if(r.error)return fail('Save failed: '+r.error.message);
     close(); await refresh();
   };
+  if(!isNew&&!ro)q('#f-arc').onclick=async()=>{
+    const r=await supabaseClient.from(T).update({status:'archived',updated_at:new Date().toISOString()}).eq('id',t.id);
+    if(r.error)return fail('Archive failed: '+r.error.message); close(); await refresh();
+  };
   if(canDel)q('#f-del').onclick=async()=>{
     if(!confirm('Delete this task?'))return;
     const r=await supabaseClient.from(T).delete().eq('id',t.id);
@@ -8011,7 +8045,7 @@ window.kbOpen=async function(host){
 const sk=()=>'kb_seen_'+S.me;
 function seenSet(){if(!S.seen){try{S.seen=new Set(JSON.parse(localStorage.getItem(sk())||'[]'))}catch(x){S.seen=new Set()}}return S.seen}
 const key=t=>t.id+':'+t.assignee_id;
-function newOnes(){return S.tasks.filter(t=>t.assignee_id&&t.assignee_id===S.me&&t.created_by!==S.me&&t.status!=='done'&&!seenSet().has(key(t)))}
+function newOnes(){return S.tasks.filter(t=>t.assignee_id&&t.assignee_id===S.me&&t.created_by!==S.me&&t.status!=='done'&&t.status!=='archived'&&!seenSet().has(key(t)))}
 function seen(t){const s=seenSet();if(!s.has(key(t))){s.add(key(t));try{localStorage.setItem(sk(),JSON.stringify([...s].slice(-500)))}catch(x){}pulse(true)}}
 let lastCount=-1;
 function pulse(silent){
