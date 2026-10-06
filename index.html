@@ -2391,6 +2391,7 @@ const TABLE_META = "app_meta";
 const TABLE_AZKI_PERIOD = "azki_center_period_report";
 const TABLE_AZKI_BREAKDOWN = "azki_center_breakdown_report";
 const TABLE_AZKI_SHIFT = "azki_center_shift_report";
+const TABLE_CENTER_OCT = "center_oct_report";
 const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "پارسیان", "پردیس", "تجارت نو", "تعاون", "حکمت", "دی", "رازی", "سامان", "سینا", "کوثر", "ما", "معلم", "نوین", "هوشمند فردا"];
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
@@ -3056,7 +3057,7 @@ const azkiState = {
   centers: { loaded: false, rows: [] },
   shifts:  { loaded: false, rows: [], mode: 'date' },
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
-  oct:     { loaded: false, period: [], breakdown: [], mode: 'date' },
+  oct:     { loaded: false, rows: [], mode: 'date' },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
   outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), dayOpen: true, dayMode: 'bar', allTags: null, companyMap: null, gen: 0 },
@@ -4420,7 +4421,7 @@ async function exportAzkiReportExcel() {
     'azki-centers': { st: azkiState.centers, has: () => azkiState.centers.rows.length, build: azkiBuildCentersExport },
     'azki-shifts':  { st: azkiState.shifts,  has: () => azkiState.shifts.rows.length,  build: azkiBuildShiftsExport },
     'azki-outage':  { st: azkiState.outage,  has: () => azkiState.outage.rows.length,  build: azkiBuildOutageExport },
-    'azki-oct':     { st: azkiState.oct,     has: () => azkiState.oct.period.length,    build: azkiBuildOctExport },
+    'azki-oct':     { st: azkiState.oct,     has: () => azkiState.oct.rows.length,    build: azkiBuildOctExport },
     'azki-compare': { st: azkiState.compare, has: () => azkiState.compare.list.some(c => (azkiState.compare.byScope[c] || []).length), build: azkiBuildCompareExport },
   }[tab];
   if (!cfg) return;
@@ -4467,43 +4468,90 @@ async function loadAzkiCompareView() {
 }
 
 // ============================================================
-// تب «OCT» (میانگین زمان صدور = زمان بستن − زمان خرید سفارش)
-// داده‌ها همون چیزی هستن که ورک‌فلوی n8n برای سنترها حساب می‌کنه و تو دو جدول
-// azki_center_period_report (oct_sum_hours / oct_n و ...) و azki_center_breakdown_report (به تفکیک مرکز)
-// ذخیره می‌شه. اینجا مجموع و تعداد روی بازه‌ی انتخابی جمع زده می‌شه و میانگین وزنی نشون داده می‌شه.
+// تب «OCT» (میانگین زمان صدور مراکز صدور = زمان بستن − زمان خرید سفارش)
+// فقط سفارش‌هایی که کاربر صدورشون «مرکز صدور» هست. داده از جدول center_oct_report میاد
+// که ورک‌فلوی جدای «OCT Center» در n8n پرش می‌کنه (مجموع ثانیه + تعداد؛ میانگین وزنی اینجا حساب می‌شه).
 // توجه: «محاسبه حقوق» هنوز از SLA اپراتورها استفاده می‌کنه و به این تب ربطی نداره.
 // ============================================================
-function azkiOctFmt(hours) {
-  if (hours === null || hours === undefined || !isFinite(hours)) return '—';
-  const min = hours * 60;
-  if (min < 60) return `${formatNumber(min)} دقیقه`;
+function azkiOctFmtSec(sec) {
+  if (sec === null || sec === undefined || !isFinite(sec)) return '—';
+  const min = sec / 60;
+  if (min < 60) return `${formatNumber(round2(min))} دقیقه`;
   const totalMin = Math.round(min);
   const h = Math.floor(totalMin / 60), m = totalMin % 60;
   return m ? `${faDigits(h)} ساعت و ${faDigits(m)} دقیقه` : `${faDigits(h)} ساعت`;
 }
-const azkiOctAvg = (sum, n) => (n > 0 ? sum / n : null);
-const azkiOctMin = (hours) => (hours === null ? '' : round2(hours * 60));
+const azkiOctAvgSec = (sum, n) => (n > 0 ? sum / n : null);
+const azkiOctMinFromSec = (sec) => (sec === null ? '' : round2(sec / 60));
+
+async function fetchAzkiOctRows(scopes, bounds) {
+  return fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_CENTER_OCT)
+      .select('*')
+      .in('company_scope', scopes)
+      .gte('report_date', bounds.startDate)
+      .lte('report_date', bounds.endDate)
+      .order('report_date', { ascending: true })
+      .range(from, to)
+  );
+}
+
+// گروه‌بندی بر اساس دوره (روزانه/هفتگی/ماهانه) — یا بر اساس مرکز (byCenter=true)
+function groupAzkiOctRows(rows, granularity) {
+  const groups = {};
+  for (const r of rows) {
+    const { jy, jm, jd } = parseJalaliParts(r.report_date_jalali);
+    const { key, label } = azkiPeriodGroupKey(jy, jm, jd, granularity);
+    if (!groups[key]) groups[key] = { key, label, sortKey: jy * 10000 + jm * 100 + jd, count: 0, octSum: 0, octN: 0, oct1N: 0, oct3N: 0 };
+    const g = groups[key];
+    g.count += r.orders_count || 0;
+    g.octSum += Number(r.oct_sum_seconds) || 0;
+    g.octN += r.oct_n || 0;
+    g.oct1N += r.oct_lt_1h_n || 0;
+    g.oct3N += r.oct_lt_3h_n || 0;
+  }
+  return Object.values(groups).sort((a, b) => a.sortKey - b.sortKey);
+}
+
+function groupAzkiOctByCenter(rows, granularity) {
+  const groups = {}; // key: periodKey|centerName
+  for (const r of rows) {
+    const { jy, jm, jd } = parseJalaliParts(r.report_date_jalali);
+    const { key, label } = azkiPeriodGroupKey(jy, jm, jd, granularity);
+    const gkey = `${key}|${r.center_name}`;
+    if (!groups[gkey]) groups[gkey] = { periodKey: key, label, centerName: r.center_name, sortKey: jy * 10000 + jm * 100 + jd, count: 0, octSum: 0, octN: 0, oct1N: 0, oct3N: 0 };
+    const g = groups[gkey];
+    g.count += r.orders_count || 0;
+    g.octSum += Number(r.oct_sum_seconds) || 0;
+    g.octN += r.oct_n || 0;
+    g.oct1N += r.oct_lt_1h_n || 0;
+    g.oct3N += r.oct_lt_3h_n || 0;
+  }
+  return Object.values(groups).sort((a, b) => a.sortKey - b.sortKey);
+}
 
 async function loadAzkiOctView() {
   if (!azkiAllowed()) return;
   const bounds = getAzkiBounds();
   document.getElementById('azki-oct-label').textContent = azkiRangeText(bounds);
-  const scopes = azkiActiveScopes();
-  const [periodRes, breakdownRes] = await Promise.all([
-    fetchAzkiPeriodRows(scopes, bounds),
-    fetchAzkiBreakdownRows(scopes, bounds),
-  ]);
+  const res = await fetchAzkiOctRows(azkiActiveScopes(), bounds);
   if (bounds !== azkiState.bounds) return;
-  const error = periodRes.error || breakdownRes.error;
-  if (error) {
+  if (res.error) {
     document.getElementById('azki-oct-cards').innerHTML = '';
-    document.getElementById('azki-oct-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${azkiShiftEsc(error.message)}</div>`;
+    document.getElementById('azki-oct-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${azkiShiftEsc(res.error.message)}</div>`;
     return;
   }
-  azkiState.oct.period = periodRes.data || [];
-  azkiState.oct.breakdown = breakdownRes.data || [];
+  azkiState.oct.rows = res.data || [];
   azkiState.oct.loaded = true;
   renderAzkiOctView();
+}
+
+function azkiOctTotals(groups) {
+  return groups.reduce((a, g) => ({
+    count: a.count + g.count, octSum: a.octSum + g.octSum, octN: a.octN + g.octN,
+    o1: a.o1 + g.oct1N, o3: a.o3 + g.oct3N,
+  }), { count: 0, octSum: 0, octN: 0, o1: 0, o3: 0 });
 }
 
 function renderAzkiOctView() {
@@ -4512,30 +4560,25 @@ function renderAzkiOctView() {
   const container = document.getElementById('azki-oct-list');
   document.querySelectorAll('#azki-oct-mode .sm-stab').forEach(b => b.classList.toggle('active', b.dataset.octMode === st.mode));
 
-  if (!st.period.length) {
+  if (!st.rows.length) {
     cardsEl.innerHTML = '';
     container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
     return;
   }
 
-  const groups = groupAzkiPeriodRows(st.period, azkiState.granularity);
-  const T = groups.reduce((a, g) => ({
-    octSum: a.octSum + g.octSum, octN: a.octN + g.octN,
-    cSum: a.cSum + g.centerOctSum, cN: a.cN + g.centerOctN,
-    o1: a.o1 + g.oct1N, o3: a.o3 + g.oct3N,
-  }), { octSum: 0, octN: 0, cSum: 0, cN: 0, o1: 0, o3: 0 });
+  const groups = groupAzkiOctRows(st.rows, azkiState.granularity);
+  const T = azkiOctTotals(groups);
   const pctOrDash = (part, whole) => (whole > 0 ? `${formatNumber(azkiPct(part, whole))}٪` : '—');
 
   cardsEl.innerHTML = [
-    ['میانگین OCT ازکی سنترها', azkiOctFmt(azkiOctAvg(T.cSum, T.cN))],
-    ['میانگین OCT کل صدور', azkiOctFmt(azkiOctAvg(T.octSum, T.octN))],
+    ['میانگین OCT مراکز صدور', azkiOctFmtSec(azkiOctAvgSec(T.octSum, T.octN))],
+    ['تعداد صدور مراکز', formatNumber(T.count)],
     ['صدور زیر ۱ ساعت', pctOrDash(T.o1, T.octN)],
     ['صدور زیر ۳ ساعت', pctOrDash(T.o3, T.octN)],
   ].map(([label, value]) => `<div class="summary-card"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
 
   if (st.mode === 'center') {
-    const bgroups = groupAzkiBreakdownRows(st.breakdown, azkiState.granularity);
-    if (!bgroups.length) { container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>'; return; }
+    const bgroups = groupAzkiOctByCenter(st.rows, azkiState.granularity);
     const tot = {};
     bgroups.forEach(g => {
       const t = tot[g.centerName] || (tot[g.centerName] = { count: 0, octSum: 0, octN: 0 });
@@ -4546,8 +4589,12 @@ function renderAzkiOctView() {
       const rowsHtml = bgroups.filter(g => g.centerName === name).sort((a, b) => a.sortKey - b.sortKey).map(g => `
         <div class="row-item">
           <div class="row-date">${g.label}</div>
-          <div class="row-main row-stats"><span class="mini-stat"><span class="k">تعداد صدور</span><b>${formatNumber(g.count)}</b></span></div>
-          <div class="row-badge pay-amount">${azkiOctFmt(azkiOctAvg(g.octSum, g.octN))}</div>
+          <div class="row-main row-stats">
+            <span class="mini-stat"><span class="k">تعداد صدور</span><b>${formatNumber(g.count)}</b></span>
+            <span class="mini-stat"><span class="k">زیر ۱ ساعت</span><b>${pctOrDash(g.oct1N, g.octN)}</b></span>
+            <span class="mini-stat"><span class="k">زیر ۳ ساعت</span><b>${pctOrDash(g.oct3N, g.octN)}</b></span>
+          </div>
+          <div class="row-badge pay-amount">${azkiOctFmtSec(azkiOctAvgSec(g.octSum, g.octN))}</div>
         </div>`).join('');
       return `
         <div class="leader-item">
@@ -4557,7 +4604,7 @@ function renderAzkiOctView() {
               <span class="leader-name">${fmtCenterName(name)}</span>
             </div>
             <div class="leader-right">
-              <span class="leader-total">${azkiOctFmt(azkiOctAvg(tot[name].octSum, tot[name].octN))}</span>
+              <span class="leader-total">${azkiOctFmtSec(azkiOctAvgSec(tot[name].octSum, tot[name].octN))}</span>
             </div>
           </button>
           <div class="leader-details"><div class="leader-details-inner">${rowsHtml}</div></div>
@@ -4571,11 +4618,11 @@ function renderAzkiOctView() {
     <div class="row-item">
       <div class="row-date">${g.label}</div>
       <div class="row-main row-stats">
-        <span class="mini-stat"><span class="k">OCT کل</span><b>${azkiOctFmt(azkiOctAvg(g.octSum, g.octN))}</b></span>
+        <span class="mini-stat"><span class="k">تعداد صدور</span><b>${formatNumber(g.count)}</b></span>
         <span class="mini-stat"><span class="k">زیر ۱ ساعت</span><b>${pctOrDash(g.oct1N, g.octN)}</b></span>
         <span class="mini-stat"><span class="k">زیر ۳ ساعت</span><b>${pctOrDash(g.oct3N, g.octN)}</b></span>
       </div>
-      <div class="row-badge pay-amount">${azkiOctFmt(azkiOctAvg(g.centerOctSum, g.centerOctN))}</div>
+      <div class="row-badge pay-amount">${azkiOctFmtSec(azkiOctAvgSec(g.octSum, g.octN))}</div>
     </div>`).join('');
 }
 
@@ -4588,20 +4635,16 @@ document.querySelectorAll('#azki-oct-mode .sm-stab').forEach(btn => {
 
 function azkiBuildOctExport() {
   const st = azkiState.oct;
-  const groups = groupAzkiPeriodRows(st.period, azkiState.granularity);
-  const T = groups.reduce((a, g) => ({
-    octSum: a.octSum + g.octSum, octN: a.octN + g.octN,
-    cSum: a.cSum + g.centerOctSum, cN: a.cN + g.centerOctN,
-    o1: a.o1 + g.oct1N, o3: a.o3 + g.oct3N,
-  }), { octSum: 0, octN: 0, cSum: 0, cN: 0, o1: 0, o3: 0 });
+  const groups = groupAzkiOctRows(st.rows, azkiState.granularity);
+  const T = azkiOctTotals(groups);
   const byPeriod = azkiXlsxSheet({
-    title: 'گزارش OCT (میانگین زمان صدور) — به تفکیک دوره',
-    headers: ['دوره', 'میانگین OCT ازکی سنتر (دقیقه)', 'میانگین OCT کل صدور (دقیقه)', 'صدور زیر ۱ ساعت (٪)', 'صدور زیر ۳ ساعت (٪)'],
-    rows: groups.map(g => [g.label, azkiOctMin(azkiOctAvg(g.centerOctSum, g.centerOctN)), azkiOctMin(azkiOctAvg(g.octSum, g.octN)), azkiPctNum(g.oct1N, g.octN), azkiPctNum(g.oct3N, g.octN)]),
-    total: ['کل بازه', azkiOctMin(azkiOctAvg(T.cSum, T.cN)), azkiOctMin(azkiOctAvg(T.octSum, T.octN)), azkiPctNum(T.o1, T.octN), azkiPctNum(T.o3, T.octN)],
-    widths: [26, 28, 28, 22, 22], fmts: ['text', 'pct', 'pct', 'pct', 'pct'],
+    title: 'گزارش OCT مراکز صدور — به تفکیک دوره',
+    headers: ['دوره', 'تعداد صدور', 'میانگین OCT (دقیقه)', 'صدور زیر ۱ ساعت (٪)', 'صدور زیر ۳ ساعت (٪)'],
+    rows: groups.map(g => [g.label, g.count, azkiOctMinFromSec(azkiOctAvgSec(g.octSum, g.octN)), azkiPctNum(g.oct1N, g.octN), azkiPctNum(g.oct3N, g.octN)]),
+    total: ['کل بازه', T.count, azkiOctMinFromSec(azkiOctAvgSec(T.octSum, T.octN)), azkiPctNum(T.o1, T.octN), azkiPctNum(T.o3, T.octN)],
+    widths: [26, 16, 24, 22, 22], fmts: ['text', 'int', 'pct', 'pct', 'pct'],
   });
-  const bgroups = groupAzkiBreakdownRows(st.breakdown, azkiState.granularity);
+  const bgroups = groupAzkiOctByCenter(st.rows, azkiState.granularity);
   const tot = {};
   bgroups.forEach(g => {
     const t = tot[g.centerName] || (tot[g.centerName] = { count: 0, octSum: 0, octN: 0 });
@@ -4611,7 +4654,7 @@ function azkiBuildOctExport() {
   const byCenter = azkiXlsxSheet({
     title: 'گزارش OCT — به تفکیک مرکز (کل بازه)',
     headers: ['ردیف', 'نام مرکز', 'تعداد صدور', 'میانگین OCT (دقیقه)'],
-    rows: names.map((n, i) => [i + 1, fmtCenterName(n), tot[n].count, azkiOctMin(azkiOctAvg(tot[n].octSum, tot[n].octN))]),
+    rows: names.map((n, i) => [i + 1, fmtCenterName(n), tot[n].count, azkiOctMinFromSec(azkiOctAvgSec(tot[n].octSum, tot[n].octN))]),
     widths: [8, 36, 16, 22], fmts: ['int', 'text', 'int', 'pct'],
   });
   return { sheets: [['OCT به تفکیک دوره', byPeriod], ['OCT به تفکیک مرکز', byCenter]], label: 'گزارش-OCT' };
@@ -8349,7 +8392,7 @@ const wstart=s=>add(s,-((new Date(s+'T00:00:00Z').getUTCDay()+1)%7));
 const todayI=()=>{const j=tehranTodayJalali();return jalaliToGregorian(j[0],j[1],j[2])};
 const fdate=s=>{const[y,m,d]=s.split('-').map(Number),j=gregorianToJalali(y,m,d);return faDigits(j[2])+' '+JMF[j[1]-1]};
 const fyear=s=>{const[y,m,d]=s.split('-').map(Number);return faDigits(gregorianToJalali(y,m,d)[0])};
-const A={host:null,me:null,role:null,week:null,centers:null,sel:null,agents:{},entries:[],unlock:null,pending:[],hol:{},locks:{},lkAll:false,view:'set',body:null,st:{mode:'day',day:null,open:{},data:null}};
+const A={names:{},host:null,me:null,role:null,week:null,centers:null,sel:null,agents:{},entries:[],unlock:null,pending:[],hol:{},locks:{},lkAll:false,view:'set',body:null,st:{mode:'day',day:null,open:{},data:null}};
 const isNext=()=>{const t=todayI();return A.week>t&&A.week<=add(t,7)};
 const isCur=()=>{const t=todayI();return A.week<=t&&t<=add(A.week,6)};
 const unlocked=()=>!!(A.unlock&&A.unlock.status==='approved');
@@ -8377,7 +8420,7 @@ async function setLock(days,locked,all){
   await loadWeek();
 }
 const ags=()=>A.agents[A.sel]||[];
-const aname=id=>(ags().find(a=>a.id===id)||{}).name||'—';
+const aname=id=>(ags().find(a=>a.id===id)||{}).name||A.names[id]||'—';
 const capped=d=>new Date(d+'T00:00:00Z').getUTCDay()===5||!!A.hol[d];
 const cap=()=>Math.max(1,Math.floor(ags().length*PCT));
 const dayEn=d=>A.entries.filter(x=>x.day===d);
@@ -8410,6 +8453,18 @@ async function loadWeek(){
     const er=await supabaseClient.from(TE).select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.entries=er.data||[];
     const ur=await supabaseClient.from(TU).select('*').eq('center_id',c).eq('week_start',A.week).maybeSingle(); A.unlock=ur.data||null;
     const lr=await supabaseClient.from('att_locks').select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.locks={}; (lr.data||[]).forEach(x=>A.locks[x.day]=x);
+    // اگه برای کسی ورودی ثبت شده ولی تو لیست نفرات سنتر نیست (مثلاً دسترسی/اساین)، اسمش رو جدا می‌گیریم تا همه‌ی نقش‌ها یکسان ببینن
+    const miss=[...new Set(A.entries.map(x=>x.agent_id))].filter(id=>!ags().some(a=>a.id===id)&&!A.names[id]);
+    if(miss.length){const pn=await supabaseClient.from('profiles').select('id, full_name').in('id',miss); (pn.data||[]).forEach(x=>A.names[x.id]=x.full_name||'—')}
+    // اعمال خودکار چیدمان هفته‌ی قبل (فقط یک بار برای هر سنتر/هفته، وقتی هفته کاملاً خالیه)
+    if(A.role==='center'&&!A.entries.length&&A.week>=wstart(todayI())){
+      const ck='att_carry|'+c+'|'+A.week; let done=false; try{done=!!localStorage.getItem(ck)}catch(_){}
+      if(!done){
+        try{localStorage.setItem(ck,'1')}catch(_){}
+        const n=await carryWeek(c,A.week,{});
+        if(n>0){const er2=await supabaseClient.from(TE).select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.entries=er2.data||[]; toast('چیدمان آخرین هفته‌ی ثبت‌شده برای این هفته اعمال شد؛ فقط موارد لازم را جابجا کنید')}
+      }
+    }
   }
   if(A.role!=='center'){const pr=await supabaseClient.from(TU).select('*').eq('status','pending').order('requested_at');A.pending=pr.data||[]}
   if(mgr()&&A.view==='status')await loadStatus();
@@ -8443,11 +8498,16 @@ function renderSet(){
   
   H.innerHTML=`<div class="att"><div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="a-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="a-next" type="button">هفته بعد</button></div>${badge}<span class="att-sp"></span>
   ${A.role!=='center'?`<select id="a-c">${A.centers.map(c=>`<option value="${e(c.id)}">${e(c.name)}</option>`).join('')}</select><button class="kb-btn ghost" id="a-sus" type="button">تعلیق کاربر</button>`:''}
-  ${sup()?'<button class="kb-btn ghost" id="a-hol" type="button">تعطیلات رسمی</button>':''}${mgr()?`<span class="att-lk"><button class="kb-btn ghost" id="a-lkw" type="button">🔒 قفل هفته</button><button class="kb-btn ghost" id="a-ukw" type="button">🔓 باز کردن هفته</button><label><input type="checkbox" id="a-lkall" ${A.lkAll?'checked':''}> اعمال روی همه سنترها</label></span>`:''}${canReq?'<button class="kb-btn" id="a-req" type="button">درخواست باز کردن قفل</button>':''}</div>${reqs}<div class="att-wrap${ed?'':' nopool'}">${pool}<div class="att-grid">${cols}</div></div></div>`;
+  ${sup()?'<button class="kb-btn ghost" id="a-hol" type="button">تعطیلات رسمی</button>':''}${mgr()?`<span class="att-lk"><button class="kb-btn ghost" id="a-lkw" type="button">🔒 قفل هفته</button><button class="kb-btn ghost" id="a-ukw" type="button">🔓 باز کردن هفته</button><label><input type="checkbox" id="a-lkall" ${A.lkAll?'checked':''}> اعمال روی همه سنترها</label></span>`:''}${ed?'<button class="kb-btn ghost" id="a-carry" type="button" title="چیدمان آخرین هفته‌ی ثبت‌شده را روی جاهای خالی این هفته اعمال می‌کند">📋 اعمال چیدمان هفته قبل</button>':''}${canReq?'<button class="kb-btn" id="a-req" type="button">درخواست باز کردن قفل</button>':''}</div>${reqs}<div class="att-wrap${ed?'':' nopool'}">${pool}<div class="att-grid">${cols}</div></div></div>`;
   const q=i=>H.querySelector(i);
   q('#a-prev').onclick=()=>{A.week=add(A.week,-7);loadWeek()}; q('#a-next').onclick=()=>{A.week=add(A.week,7);loadWeek()};
   if(q('#a-c')){q('#a-c').value=A.sel;q('#a-c').onchange=ev=>{A.sel=ev.target.value;loadWeek()};q('#a-sus').onclick=suspendModal}
   if(q('#a-hol'))q('#a-hol').onclick=holModal;
+  if(q('#a-carry'))q('#a-carry').onclick=async()=>{
+    if(mgr()&&A.lkAll){await carryAllCenters();return}
+    const n=await carryWeek(A.sel,A.week,{});
+    toast(n<0?'چیدمانی در ۴ هفته‌ی قبل برای کپی پیدا نشد':n===0?'مورد جدیدی برای اعمال نبود':`${faDigits(n)} ردیف از هفته‌ی قبل اعمال شد`);
+    await loadWeek()};
   if(q('#a-req'))q('#a-req').onclick=async()=>{const reason=prompt('دلیل درخواست باز کردن قفل را بنویسید:');if(reason===null)return;
     if(A.unlock)await supabaseClient.from(TU).delete().eq('id',A.unlock.id);
     const r=await supabaseClient.from(TU).insert({center_id:A.me,week_start:A.week,reason:reason.trim()||null});
@@ -8477,6 +8537,15 @@ async function loadStatus(){
   const ur=await supabaseClient.from(TU).select('center_id').in('center_id',ids).eq('week_start',A.week).eq('status','approved');
   const locks={},unl={}; (lr.data||[]).forEach(x=>locks[x.center_id+'|'+x.day]=x); (ur.data||[]).forEach(x=>unl[x.center_id]=true);
   A.st.data={entries:er.data||[],locks,unl};
+  // نفراتی که برای‌شون ورودی ثبت شده ولی تو لیست اساین اون سنتر نیستن هم نمایش داده می‌شن (مثل پنل خود سنتر)
+  const ent=er.data||[], have={}; ids.forEach(c=>{have[c]=new Set((A.agents[c]||[]).map(a=>a.id))});
+  const miss=[...new Set(ent.filter(x=>!have[x.center_id]||!have[x.center_id].has(x.agent_id)).map(x=>x.agent_id))];
+  if(miss.length){
+    const pn=await supabaseClient.from('profiles').select('id, full_name, status').in('id',miss).eq('role','agent');
+    const nm={}; (pn.data||[]).filter(x=>x.status!=='disabled').forEach(x=>nm[x.id]=x.full_name||'—');
+    ent.forEach(x=>{if(nm[x.agent_id]&&have[x.center_id]&&!have[x.center_id].has(x.agent_id)){have[x.center_id].add(x.agent_id);A.agents[x.center_id].push({id:x.agent_id,name:nm[x.agent_id]})}});
+    ids.forEach(c=>A.agents[c].sort((a,b)=>a.name.localeCompare(b.name,'fa')));
+  }
 }
 const SS={present:'حاضر',hourly:'ساعتی',leave:'مرخصی',weekly_off:'اف',suspended:'تعلیق'};
 function renderStatus(){
@@ -8512,15 +8581,51 @@ function renderStatus(){
   const head=!wk?'<th>سنتر</th><th>کل</th><th>حاضر</th><th>ساعتی</th><th>مرخصی</th><th>اف</th><th>تعلیق</th><th>ثبت‌نشده</th><th>شیفت</th><th>پوشش</th>':'<th>سنتر</th>'+days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('');
   H.innerHTML=`<div class="att"><div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="s-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="s-next" type="button">هفته بعد</button></div><span class="att-sp"></span>
     <div class="subtabs" style="margin:0"><button class="subtab-btn${wk?'':' active'}" data-sm="day" type="button">نمای روزانه</button><button class="subtab-btn${wk?' active':''}" data-sm="week" type="button">نمای هفتگی</button></div>
-    <button class="kb-btn ghost" id="s-all" type="button">باز/بسته کردن همه</button></div>${dayBar}${cards}
+    <button class="kb-btn ghost" id="s-carry" type="button" title="چیدمان آخرین هفته‌ی ثبت‌شده را روی جاهای خالی این هفته‌ی همه سنترها اعمال می‌کند">📋 اعمال چیدمان هفته قبل روی همه سنترها</button><button class="kb-btn ghost" id="s-all" type="button">باز/بسته کردن همه</button></div>${dayBar}${cards}
     <div class="as-w"><table class="as-tbl"><thead><tr>${head}</tr></thead><tbody>${rowsHtml}</tbody></table></div></div>`;
   const q=i=>H.querySelector(i);
   q('#s-prev').onclick=()=>{A.week=add(A.week,-7);loadWeek()}; q('#s-next').onclick=()=>{A.week=add(A.week,7);loadWeek()};
   H.querySelectorAll('[data-sm]').forEach(b=>b.onclick=()=>{A.st.mode=b.dataset.sm;renderStatus()});
   H.querySelectorAll('[data-sd]').forEach(b=>b.onclick=()=>{A.st.day=b.dataset.sd;renderStatus()});
   H.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{const c=b.dataset.ex;A.st.open[c]=!A.st.open[c];renderStatus()});
+  q('#s-carry').onclick=carryAllCenters;
   q('#s-all').onclick=()=>{const any=A.centers.some(c=>A.st.open[c.id]);A.centers.forEach(c=>A.st.open[c.id]=!any);renderStatus()};
   H.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{A.sel=b.dataset.ed;A.view='set';loadWeek()});
+}
+// کپی چیدمان آخرین هفته‌ی دارای ثبت (حداکثر ۴ هفته قبل) روی هفته‌ی داده‌شده، فقط برای جاهای خالی.
+// فقط «حضور» و «اف هفتگی» منتقل می‌شن؛ مرخصی، مرخصی ساعتی و تعلیق موردی‌ان و منتقل نمی‌شن.
+// سقف جمعه/تعطیل رعایت می‌شه و روزهای قفل (برای نقش سنتر) رد می‌شن. خروجی: تعداد ردیف ثبت‌شده، یا -1 اگه چیدمانی برای کپی نبود.
+async function carryWeek(c,week,opts){
+  const ag=A.agents[c]||[], ids=new Set(ag.map(a=>a.id)); if(!ids.size)return -1;
+  let src=null,srcEn=[];
+  for(let k=1;k<=4&&!srcEn.length;k++){
+    const sw=add(week,-7*k);
+    const r=await supabaseClient.from(TE).select('*').eq('center_id',c).gte('day',sw).lte('day',add(sw,6));
+    const list=(r.data||[]).filter(x=>(x.status==='present'||x.status==='weekly_off')&&ids.has(x.agent_id));
+    if(list.length){src=sw;srcEn=list}
+  }
+  if(!srcEn.length)return -1;
+  const cur=await supabaseClient.from(TE).select('agent_id, day, status').eq('center_id',c).gte('day',week).lte('day',add(week,6));
+  const taken=new Set((cur.data||[]).map(x=>x.agent_id+'|'+x.day)), actC={};
+  (cur.data||[]).forEach(x=>{if(ACT.includes(x.status))actC[x.day]=(actC[x.day]||0)+1});
+  const capN=Math.max(1,Math.floor(ids.size*PCT)), rows=[];
+  for(const x of srcEn){
+    const off=Math.round((new Date(x.day+'T00:00:00Z')-new Date(src+'T00:00:00Z'))/864e5), d=add(week,off);
+    if(taken.has(x.agent_id+'|'+d))continue;
+    if(!dayOpen(d))continue;
+    const isCap=new Date(d+'T00:00:00Z').getUTCDay()===5||!!A.hol[d];
+    if(isCap&&ACT.includes(x.status)){if((actC[d]||0)>=capN)continue;actC[d]=(actC[d]||0)+1}
+    rows.push({center_id:c,agent_id:x.agent_id,day:d,status:x.status,shift:x.shift||'morning',periods:x.status==='present'?(x.periods||null):null});
+  }
+  if(rows.length){const r=await supabaseClient.from(TE).upsert(rows,{onConflict:'center_id,agent_id,day',ignoreDuplicates:true}); if(r.error){toast('اعمال چیدمان انجام نشد: '+r.error.message);return 0}}
+  return rows.length;
+}
+async function carryAllCenters(){
+  if(!confirm('چیدمان آخرین هفته‌ی ثبت‌شده روی همه‌ی سنترها اعمال شود؟ (فقط جاهای خالیِ این هفته پر می‌شود)'))return;
+  await loadStatus(); let tot=0,cn=0;
+  for(const c of A.centers){const n=await carryWeek(c.id,A.week,{}); if(n>0){tot+=n;cn++}}
+  toast(tot?`چیدمان برای ${faDigits(cn)} سنتر اعمال شد (${faDigits(tot)} ردیف)`:'مورد جدیدی برای اعمال نبود');
+  await loadWeek();
 }
 async function run(p,okMsg){const r=await p;if(r.error)toast(r.error.message);else if(okMsg)toast(okMsg);await loadWeek()}
 async function addAll(d,sh){
