@@ -595,6 +595,9 @@
   .aod-tag.on { color: var(--ink); font-weight: 700; border-color: var(--c, var(--accent)); background: var(--surface-tint); }
   .aod-tag.on i { opacity: 1; }
   .aod-main { flex: 1; min-width: 0; }
+  .aod-mode { display: inline-flex; gap: 4px; margin-bottom: 10px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-tint); }
+  .aod-mode button { font: inherit; font-size: 12.5px; border: 0; background: transparent; color: var(--ink-soft); padding: 5px 16px; border-radius: 7px; cursor: pointer; }
+  .aod-mode button.on { background: var(--accent); color: #fff; font-weight: 700; }
   .aod-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
   .aod-legend span { display: inline-flex; align-items: center; gap: 6px; }
   .aod-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
@@ -1994,10 +1997,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
           وضعیت پنل کارشناسان
         </button>
-        <button class="tab-btn" data-sup-tab="users-monitor" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3c2.2.6 3.5 2.4 3.5 5.7"/></svg>
-          رصد کاربران
-        </button>
         <button class="tab-btn" data-sup-tab="azki-payroll" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
           محاسبه حقوق
@@ -2233,39 +2232,6 @@
       </div>
 
       <div id="sup-view-kanban" style="display:none;"></div>
-      <div id="sup-view-users-monitor" style="display:none;">
-        <div class="period-label">وضعیت هر ۲۰ ثانیه به‌صورت خودکار به‌روزرسانی می‌شود</div>
-        <div class="summary-row">
-          <div class="summary-card">
-            <div class="label">تعداد آنلاین</div>
-            <div class="value" id="um-online-count">—</div>
-          </div>
-          <div class="summary-card">
-            <div class="label">تعداد ورود امروز</div>
-            <div class="value" id="um-today-count">—</div>
-          </div>
-        </div>
-        <div class="admin-login-chart-card">
-          <div class="admin-group-header">
-            <span class="admin-group-title">تعداد کاربران وارد‌شده در ۳۰ روز گذشته (هر کاربر در هر روز یک بار)</span>
-          </div>
-          <div id="um-login-chart"><div class="loading-state">در حال بارگذاری...</div></div>
-        </div>
-        <div class="admin-groups-row">
-          <div class="admin-group-card">
-            <div class="admin-group-header"><span class="admin-group-title">سرگروه‌ها</span><span class="admin-group-count" id="um-count-leader">—</span></div>
-            <div class="admin-group-list" id="um-list-leader"><div class="loading-state">در حال بارگذاری...</div></div>
-          </div>
-          <div class="admin-group-card">
-            <div class="admin-group-header"><span class="admin-group-title">کارشناس‌های عادی</span><span class="admin-group-count" id="um-count-normal">—</span></div>
-            <div class="admin-group-list" id="um-list-normal"><div class="loading-state">در حال بارگذاری...</div></div>
-          </div>
-          <div class="admin-group-card">
-            <div class="admin-group-header"><span class="admin-group-title">سنترها</span><span class="admin-group-count" id="um-count-center">—</span></div>
-            <div class="admin-group-list" id="um-list-center"><div class="loading-state">در حال بارگذاری...</div></div>
-          </div>
-        </div>
-      </div>
 
       <div id="sup-view-azki-payroll" style="display:none;">
         <div class="period-label" id="azki-payroll-label"></div>
@@ -2859,7 +2825,6 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-azki-outage').style.display = which === 'azki-outage' ? '' : 'none';
     $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
     $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
-    $('sup-view-users-monitor').style.display = which === 'users-monitor' ? '' : 'none';
     $('sup-view-kanban').style.display = which === 'kanban' ? '' : 'none';
     // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
     $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
@@ -2874,7 +2839,6 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'azki-outage' && !azkiState.outage.loaded) loadAzkiOutageView();
     if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
     if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
-    if (which === 'users-monitor') startUsersMonitor(); else stopUsersMonitor();
     if (which === 'kanban') kbOpen($('sup-view-kanban'));
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   }
@@ -3058,7 +3022,7 @@ const azkiState = {
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
-  outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), dayOpen: false, allTags: null, companyMap: null, gen: 0 },
+  outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), dayOpen: true, dayMode: 'bar', allTags: null, companyMap: null, gen: 0 },
   chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']) }, gen: 0 },
 };
 
@@ -5133,13 +5097,52 @@ function azkiOutageDayChartHtml(tags, tagTotals, color) {
   const tagBtns = `<button type="button" class="aod-tag${allOn ? ' on' : ''}" data-dtag="__all"><i></i><span>همه تگ‌ها</span></button>`
     + allTagList.map(t => { const tt = tagTotals[t]; return `<button type="button" class="aod-tag${selSet.has(t) ? ' on' : ''}${tt ? '' : ' zero'}" data-dtag="${esc(t)}" style="--c:${colOf[t]}"><i></i><span>${esc(t)}</span>${tt ? `<small>${outageFmtDur(tt.h)}</small>` : ''}</button>`; }).join('');
   const side = `<div class="aod-tags"><div class="aod-tags-title">تگ قطعی</div>${tagBtns}</div>`;
-  const title = `<button type="button" class="aod-head" id="aod-toggle" aria-expanded="${st.dayOpen ? 'true' : 'false'}"><span class="azki-trend-title">نمودار</span><svg class="aod-arrow" viewBox="0 0 24 24" aria-hidden="true"><polygon points="17,4 17,20 5,12"/></svg></button>`;
+  const title = `<button type="button" class="aod-head" id="aod-toggle" aria-expanded="${st.dayOpen ? 'true' : 'false'}"><span class="azki-trend-title">نمودار ساعت قطعی روزانه</span><svg class="aod-arrow" viewBox="0 0 24 24" aria-hidden="true"><polygon points="17,4 17,20 5,12"/></svg></button>`;
   const n = d.points.length;
+  const mode = st.dayMode === 'line' ? 'line' : 'bar';
   let plot;
   if (!d.series.length) {
     plot = '<div class="azki-trend-note">برای این تگ و شرکت‌ها قطعی‌ای در این بازه ثبت نشده است</div>';
-  } else if (n < 2) {
+  } else if (mode === 'line' && n < 2) {
     plot = '<div class="azki-trend-note">برای رسم نمودار روزانه، بازه را حداقل دو روز انتخاب کنید.</div>';
+  } else if (mode === 'bar') {
+    const W = 900, H = 300, L = 52, R = 14, T = 16, B = 34;
+    const pw = W - L - R, ph = H - T - B;
+    const slot = pw / n, bw = Math.max(3, Math.min(34, slot * 0.68));
+    const X = i => L + slot * (i + 0.5);
+    const tot = d.points.map((_, i) => d.series.reduce((a, x) => a + x.vals[i], 0));
+    const top = azcNiceTop(Math.max(...tot, 0) || 1, false);
+    const Y = v => T + ph * (1 - v / top);
+    let grid = '';
+    for (let k = 0; k <= 4; k++) {
+      const v = top * k / 4, y = Y(v);
+      grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/><text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${faDigits(round2(v))}</text>`;
+    }
+    const step = Math.ceil(n / 10);
+    let xl = '', bars = '', labels = '';
+    d.points.forEach((p, i) => {
+      if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${p.short}</text>`;
+      let acc = 0;
+      d.series.forEach(x => {
+        const v = x.vals[i]; if (!(v > 0)) return;
+        const y1 = Y(acc + v), y0 = Y(acc);
+        bars += `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y0 - y1).toFixed(1)}" rx="2" style="fill:${x.color}"/>`;
+        acc += v;
+      });
+      if (n <= 31 && tot[i] > 0) labels += `<text class="azc-lbl" x="${X(i).toFixed(1)}" y="${(Y(tot[i]) - 6).toFixed(1)}" text-anchor="middle" style="fill:var(--ink)">${faDigits(round2(tot[i]))}</text>`;
+    });
+    plot = `<div class="azki-trend-plot azc" id="aod-plot">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="نمودار میله‌ای ساعت قطعی به تفکیک روز">
+          ${grid}${xl}${bars}${labels}
+          <line class="azki-trend-guide" id="aod-guide" y1="${T}" y2="${T + ph}" style="display:none"/>
+          <g id="aod-hover"></g>
+          <rect id="aod-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
+        </svg>
+        <div class="azki-trend-tip" id="aod-tip"></div>
+      </div>
+      <div class="aod-legend">${d.series.map(x => `<span style="--c:${x.color}"><i></i>${esc(x.name)}</span>`).join('')}<span style="color:var(--ink-faint)">واحد: ساعت (هر میله = مجموع قطعی همان روز)</span></div>
+      ${d.trimmed ? `<div class="aog-foot">فقط ۸ شرکت با بیشترین قطعی نمایش داده شد (${faDigits(d.trimmed)} شرکت دیگر مخفی است)؛ برای دیدن بقیه از فیلتر شرکت بیمه استفاده کنید.</div>` : ''}`;
+    azkiState.outage._dayModel = { mode: 'bar', W, L, pw, n, X, Y, d, T, ph, slot, tot };
   } else {
     const W = 900, H = 300, L = 52, R = 14, T = 16, B = 34;
     const pw = W - L - R, ph = H - T - B;
@@ -5180,9 +5183,9 @@ function azkiOutageDayChartHtml(tags, tagTotals, color) {
       </div>
       <div class="aod-legend">${d.series.map(x => `<span style="--c:${x.color}"><i></i>${esc(x.name)}</span>`).join('')}<span style="color:var(--ink-faint)">واحد: ساعت</span></div>
       ${d.trimmed ? `<div class="aog-foot">فقط ۸ شرکت با بیشترین قطعی نمایش داده شد (${faDigits(d.trimmed)} شرکت دیگر مخفی است)؛ برای دیدن بقیه از فیلتر شرکت بیمه استفاده کنید.</div>` : ''}`;
-    azkiState.outage._dayModel = { W, L, pw, n, X, Y, d, T, ph };
+    azkiState.outage._dayModel = { mode: 'line', W, L, pw, n, X, Y, d, T, ph };
   }
-  return `<div class="azki-trend aod-card${st.dayOpen ? ' open' : ''}" id="aod-card">${title}<div class="aod-body"><div class="aod-wrap">${side}<div class="aod-main">${plot}</div></div></div></div>`;
+  return `<div class="azki-trend aod-card${st.dayOpen ? ' open' : ''}" id="aod-card">${title}<div class="aod-body"><div class="aod-wrap">${side}<div class="aod-main">${d.series.length ? `<div class="aod-mode"><button type="button" data-mode="bar" class="${mode === 'bar' ? 'on' : ''}">میله‌ای</button><button type="button" data-mode="line" class="${mode === 'line' ? 'on' : ''}">خطی</button></div>` : ''}${plot}</div></div></div></div>`;
 }
 
 function azkiOutageDayChartBind(root, tags) {
@@ -5193,6 +5196,10 @@ function azkiOutageDayChartBind(root, tags) {
     card.classList.toggle('open', st.dayOpen);
     tgl.setAttribute('aria-expanded', st.dayOpen ? 'true' : 'false');
   });
+  root.querySelectorAll('.aod-mode button').forEach(btn => btn.addEventListener('click', () => {
+    st.dayMode = btn.dataset.mode === 'line' ? 'line' : 'bar';
+    renderAzkiOutageView();
+  }));
   root.querySelectorAll('.aod-tag').forEach(btn => btn.addEventListener('click', () => {
     const t = btn.dataset.dtag;
     if (t === '__all') st.dayTags = new Set();
@@ -5207,8 +5214,20 @@ function azkiOutageDayChartBind(root, tags) {
   function show(clientX) {
     const r = svg.getBoundingClientRect(); if (!r.width) return;
     const vx = (clientX - r.left) * (g.W / r.width);
-    const i = Math.max(0, Math.min(g.n - 1, Math.round((vx - g.L) / g.pw * (g.n - 1))));
+    const isBar = g.mode === 'bar';
+    const i = isBar ? Math.max(0, Math.min(g.n - 1, Math.floor((vx - g.L) / g.slot)))
+                    : Math.max(0, Math.min(g.n - 1, Math.round((vx - g.L) / g.pw * (g.n - 1))));
     const x = g.X(i);
+    if (isBar) {
+      hov.innerHTML = `<rect x="${(x - g.slot / 2).toFixed(1)}" y="${g.T}" width="${g.slot.toFixed(1)}" height="${g.ph}" rx="3" style="fill:var(--accent)" opacity=".12"/>`;
+      const rowsB = g.d.series.filter(sr => sr.vals[i] > 0).map(sr => `<div class="t-r"><i style="background:${sr.color}"></i><span>${azkiShiftEsc(sr.name)}</span><b>${outageFmtDur(sr.vals[i])}</b></div>`).join('');
+      tip.innerHTML = `<div class="t-h">${g.d.points[i].label}</div>${rowsB || '<div class="t-r"><span>بدون قطعی</span></div>'}${g.tot[i] > 0 ? `<div class="t-r" style="border-top:1px solid var(--line);margin-top:4px;padding-top:5px"><i style="background:transparent"></i><span>مجموع</span><b>${outageFmtDur(g.tot[i])}</b></div>` : ''}`;
+      tip.style.display = 'block';
+      const pxb = x / g.W * r.width;
+      if (pxb > r.width / 2) { tip.style.left = 'auto'; tip.style.right = (r.width - pxb + 12) + 'px'; }
+      else { tip.style.right = 'auto'; tip.style.left = (pxb + 12) + 'px'; }
+      return;
+    }
     guide.setAttribute('x1', x.toFixed(1)); guide.setAttribute('x2', x.toFixed(1)); guide.style.display = '';
     let dots = '', rows = '';
     g.d.series.forEach(sr => {
@@ -5728,143 +5747,6 @@ async function loadAdminLoginChart() {
     <div class="admin-login-chart-total">مجموع ۳۰ روز: ${formatNumber(totalCount)} ورود</div>
     <div class="admin-login-chart-bars">${bars}</div>
   `;
-}
-
-// تب «رصد کاربران» سرپرست: وضعیت آنلاین/آفلاین بر اساس profiles.last_seen_at (هر ۲۰ ثانیه تازه می‌شود، فقط وقتی تب باز و صفحه دیده می‌شود)
-let umTimer = null;
-let umChartAt = 0;
-function startUsersMonitor() {
-  loadUsersMonitor();
-  loadUsersLoginChart();
-  if (umTimer) return;
-  umTimer = setInterval(() => {
-    if (window.supCurrentTab === 'users-monitor' && document.visibilityState === 'visible') {
-      loadUsersMonitor();
-      if (Date.now() - umChartAt > 5 * 60000) loadUsersLoginChart();
-    }
-  }, 20000);
-}
-function stopUsersMonitor() {
-  if (umTimer) { clearInterval(umTimer); umTimer = null; }
-}
-
-// نمودار ۳۰ روز اخیر: تعداد کاربران یکتا در هر روز (چند بار ورود یک نفر در یک روز یک بار شمرده می‌شود)
-async function loadUsersLoginChart() {
-  const container = document.getElementById('um-login-chart');
-  if (!container) return;
-  umChartAt = Date.now();
-
-  const DAYS = 30;
-  const now = new Date();
-  const dayKeys = [];
-  for (let i = DAYS - 1; i >= 0; i--) dayKeys.push(tehranJalaliKey(new Date(now.getTime() - i * 24 * 60 * 60 * 1000)));
-  const rangeStart = new Date(now.getTime() - (DAYS - 1) * 24 * 60 * 60 * 1000);
-  rangeStart.setHours(0, 0, 0, 0);
-
-  const [evRes, profRes] = await Promise.all([
-    fetchAllRows((from, to) => supabaseClient.from('login_events').select('user_id, logged_in_at').gte('logged_in_at', rangeStart.toISOString()).range(from, to)),
-    fetchAllRows((from, to) => supabaseClient.from(TABLE_PROFILES).select('id, role').range(from, to)),
-  ]);
-  if (evRes.error || profRes.error) {
-    container.innerHTML = '<div class="admin-group-empty">خطا در دریافت آمار ورود</div>';
-    return;
-  }
-
-  // سرپرست‌ها (مثل لیست‌ها) در نمودار حساب نمی‌شوند
-  const skip = new Set((profRes.data || []).filter(p => p.role === 'supervisor').map(p => p.id));
-  const usersByDay = Object.fromEntries(dayKeys.map(k => [k, new Set()]));
-  (evRes.data || []).forEach(row => {
-    if (skip.has(row.user_id)) return;
-    const key = tehranJalaliKey(new Date(row.logged_in_at));
-    if (usersByDay[key]) usersByDay[key].add(row.user_id);
-  });
-
-  const counts = dayKeys.map(k => usersByDay[k].size);
-  const maxCount = Math.max(1, ...counts);
-  const bars = dayKeys.map((key, i) => {
-    const count = counts[i];
-    const [, m, d] = key.split('/');
-    return `
-      <div class="admin-login-bar-wrap ${count > 0 ? 'has-logins' : ''}" title="${key} — ${formatNumber(count)} کاربر">
-        <span class="admin-login-bar-count">${formatNumber(count)}</span>
-        <div class="admin-login-bar" style="height:${count > 0 ? (count / maxCount) * 100 : 0}%;"></div>
-        <span class="admin-login-bar-label">${m}/${d}</span>
-      </div>`;
-  }).join('');
-
-  container.innerHTML = `
-    <div class="admin-login-chart-total">امروز: ${formatNumber(counts[counts.length - 1])} کاربر یکتا</div>
-    <div class="admin-login-chart-bars">${bars}</div>
-  `;
-}
-
-async function loadUsersMonitor() {
-  const groupIds = ['leader', 'normal', 'center'];
-  const lists = Object.fromEntries(groupIds.map(g => [g, document.getElementById('um-list-' + g)]));
-  const counts = Object.fromEntries(groupIds.map(g => [g, document.getElementById('um-count-' + g)]));
-  const onlineEl = document.getElementById('um-online-count');
-  const todayEl = document.getElementById('um-today-count');
-
-  const { data, error } = await fetchAllRows((from, to) =>
-    supabaseClient
-      .from(TABLE_PROFILES)
-      .select('backoffice_id, full_name, last_seen_at, role')
-      .order('full_name', { ascending: true })
-      .range(from, to)
-  );
-
-  if (error) {
-    groupIds.forEach(g => { lists[g].innerHTML = '<div class="admin-group-empty">خطا در دریافت لیست کاربران</div>'; counts[g].textContent = '—'; });
-    onlineEl.textContent = '—'; todayEl.textContent = '—';
-    return;
-  }
-
-  const now = Date.now();
-  const users = (data || [])
-    .filter(u => u.role !== 'supervisor')
-    .map(u => {
-      const ms = u.last_seen_at ? new Date(u.last_seen_at).getTime() : null;
-      return { ...u, isOnline: ms != null && (now - ms) < ONLINE_THRESHOLD_MS };
-    });
-
-  users.sort((a, b) => {
-    if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
-    const at = a.last_seen_at ? new Date(a.last_seen_at).getTime() : -Infinity;
-    const bt = b.last_seen_at ? new Date(b.last_seen_at).getTime() : -Infinity;
-    return bt - at;
-  });
-
-  const todayKey = tehranDateKey(new Date());
-  onlineEl.textContent = formatNumber(users.filter(u => u.isOnline).length);
-  todayEl.textContent = formatNumber(users.filter(u => u.last_seen_at && tehranDateKey(new Date(u.last_seen_at)) === todayKey).length);
-
-  const groups = { leader: [], normal: [], center: [] };
-  users.forEach(u => {
-    if (u.role === 'leader') groups.leader.push(u);
-    else if (u.role === 'center') groups.center.push(u);
-    else groups.normal.push(u);
-  });
-
-  const renderRow = u => `
-    <div class="row-item">
-      <div class="admin-row-name-wrap">
-        <span class="admin-status-dot ${u.isOnline ? 'online' : ''}"></span>
-        <div class="admin-row-info">
-          <span class="admin-row-name">${u.full_name || '—'}</span>
-          <span class="admin-row-username">${u.backoffice_id || '—'}</span>
-        </div>
-      </div>
-      <div style="text-align:left;">
-        <span class="admin-status-badge ${u.isOnline ? 'online' : ''}">${u.isOnline ? 'آنلاین' : 'آفلاین'}</span>
-        <div class="admin-last-seen">${relativeTimeFa(u.last_seen_at)}</div>
-      </div>
-    </div>`;
-
-  groupIds.forEach(g => {
-    counts[g].textContent = formatNumber(groups[g].length);
-    lists[g].innerHTML = groups[g].length ? groups[g].map(renderRow).join('') : '<div class="admin-group-empty">کسی در این گروه نیست</div>';
-  });
-  if (window.refreshGlassReveals) window.refreshGlassReveals();
 }
 
 async function loadAdminView() {
@@ -7846,6 +7728,9 @@ document.addEventListener('visibilitychange', () => {
 .kb-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px;color:var(--ink-soft)}
 .kb-meta span{background:var(--accent-soft);border-radius:99px;padding:2px 8px}.kb-meta .late{background:var(--danger-soft);color:var(--danger)}
 .kb-av{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex!important;align-items:center;justify-content:center;font-size:10px;font-weight:700;padding:0!important;margin-left:auto}
+.kb-av svg{width:13px;height:13px;display:block}
+.kb-av.multi{width:auto;border-radius:99px;gap:3px;padding:0 8px 0 6px!important}
+.kb-av em{font-style:normal;font-size:10.5px;line-height:1}
 .kb-empty{text-align:center;color:var(--ink-faint);font-size:12px;padding:14px 0}
 .kb-add-card{width:100%;text-align:left;font:inherit;font-size:13px;cursor:pointer;background:transparent;border:0;color:var(--ink-soft);padding:8px;border-radius:var(--radius-sm)}
 .kb-add-card:hover{background:var(--accent-soft)}
@@ -7853,7 +7738,7 @@ document.addEventListener('visibilitychange', () => {
 .kb-ghost{position:fixed;z-index:1001;pointer-events:none;opacity:.9;transform:rotate(3deg);margin:0;box-shadow:0 12px 30px rgba(0,0,0,.3)}
 .kb-card.drag{opacity:.35}
 .kb-ov{position:fixed;inset:0;background:rgba(10,20,40,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:14px}
-.kb-m{direction:ltr;text-align:left;background:var(--surface);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;width:min(480px,100%);max-height:92vh;overflow:auto;display:grid;gap:10px;color:var(--ink)}
+.kb-m{direction:rtl;text-align:right;background:var(--surface);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;width:min(480px,100%);max-height:92vh;overflow:auto;display:grid;gap:10px;color:var(--ink)}
 .kb-m label{font-size:12px;color:var(--ink-soft);display:grid;gap:4px}.kb-m .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .kb-m .row3{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:6px}
 .kb-m .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
@@ -7871,14 +7756,29 @@ document.addEventListener('visibilitychange', () => {
 .kb-arch-it{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;opacity:.9}
 .kb-arch-it .t{font-weight:600;font-size:13px;word-break:break-word}.kb-arch-it .kb-meta{margin-top:3px}
 .kb-arch-it .acts{display:flex;gap:6px}.kb-arch-it .kb-btn{padding:5px 12px;font-size:12px}
+.kb-m .acts{justify-content:flex-start}
+.kb-m .fld{display:grid;gap:5px;font-size:12px;color:var(--ink-soft)}
+.kb-m .fld small{color:var(--accent-strong);font-weight:700;margin-inline-start:6px}
+.kb-m input[type=checkbox]{width:16px;height:16px;padding:0;margin:0;accent-color:var(--accent);flex:none}
+.kb-ppl{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-tint);padding:6px;display:grid;gap:6px}
+.kb-ppl-top{display:flex;gap:6px;align-items:center}
+.kb-ppl-top input{flex:1;padding:6px 10px}
+.kb-ppl-top .kb-btn{padding:6px 10px;font-size:12px;white-space:nowrap}
+.kb-ppl-list{max-height:168px;overflow:auto;display:grid;gap:1px}
+.kb-m .kb-ppl-list label{display:flex;flex-direction:row;align-items:center;gap:9px;font-size:13px;color:var(--ink);margin:0;padding:6px 8px;border-radius:7px;cursor:pointer;text-align:right}
+.kb-m .kb-ppl-list label:hover{background:var(--accent-soft)}
+.kb-ppl-empty{text-align:center;color:var(--ink-faint);font-size:12px;padding:12px 0}
 @media(max-width:760px){.kb-board{grid-template-columns:repeat(4,80vw)}}
 </style>
 <script>
 (function(){
 const T='kanban_tasks',COLS=[['todo','To Do','#7C5CE0'],['doing','In Progress','#17A9FF'],['review','In Review','#E08A17'],['done','Done','#1FA971']];
 const PRI={low:['Low','#1FA971'],medium:['Medium','#17A9FF'],high:['High','#E08A17'],urgent:['Urgent','#E0453F']};
+const FA_ST={todo:'برای انجام',doing:'در حال انجام',review:'در حال بررسی',done:'انجام‌شده'};
+const FA_PRI={low:'کم',medium:'متوسط',high:'زیاد',urgent:'فوری'};
+const JMFA=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 const JM=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
-const S={tasks:[],people:{},me:null,host:null,q:'',who:'',mine:false,err:'',seen:null,timer:null,popOpen:false,arch:false};
+const S={tasks:[],people:{},opts:[],me:null,host:null,q:'',who:'',mine:false,err:'',seen:null,timer:null,popOpen:false,arch:false};
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isSup=()=>currentUserRole==='supervisor';
 const p2=n=>String(n).padStart(2,'0');
@@ -7886,14 +7786,22 @@ const toJ=d=>{if(!d)return null;const[y,m,x]=d.split('-').map(Number);return gre
 const fd=d=>{const j=toJ(d);return j?`${j[2]} ${JM[j[1]-1]} ${j[0]}`:''};
 const today=()=>{const j=tehranTodayJalali();return jalaliToGregorian(j[0],j[1],j[2])};
 const late=t=>t.due_date&&t.status!=='done'&&t.due_date<today();
-const ini=n=>(n||'?').trim().slice(0,2);
+// ---- multi-assignee helpers (assignee_ids = uuid[]; assignee_id stays as the first assignee for backward compatibility)
+const ids=t=>Array.isArray(t.assignee_ids)&&t.assignee_ids.length?t.assignee_ids:(t.assignee_id?[t.assignee_id]:[]);
+const names=t=>ids(t).map(i=>S.people[i]||'—');
+// supervisor sees everything; everyone else only tasks assigned to them or created by them
+const visible=t=>isSup()||t.created_by===S.me||ids(t).includes(S.me);
+const match=t=>(!S.q||((t.title||'')+' '+(t.description||'')).includes(S.q))&&(!S.who||ids(t).includes(S.who))&&(!S.mine||ids(t).includes(S.me));
+const USER_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+const av=t=>{const a=ids(t);if(!a.length)return '';return `<span class="kb-av${a.length>1?' multi':''}" title="${e(names(t).join('، '))}">${USER_SVG}${a.length>1?'<em>'+a.length+'</em>':''}</span>`};
 async function load(){
   S.me=(await supabaseClient.auth.getUser()).data.user?.id;
   const r=await supabaseClient.from(T).select('*').order('created_at',{ascending:false});
-  S.err=r.error?('Failed to load tasks: '+r.error.message):''; S.tasks=r.data||[];
+  S.err=r.error?('Failed to load tasks: '+r.error.message):'';
+  S.tasks=(r.data||[]).filter(visible);
   const p=await supabaseClient.from('profiles').select('id, full_name').in('role',isSup()?['leader']:['agent']).limit(500);
-  S.people={}; (p.data||[]).forEach(x=>S.people[x.id]=x.full_name||'—');
-  const miss=[...new Set(S.tasks.flatMap(t=>[t.assignee_id,t.created_by]).concat(S.me).filter(i=>i&&!S.people[i]))];
+  S.people={}; S.opts=[]; (p.data||[]).forEach(x=>{S.people[x.id]=x.full_name||'—';S.opts.push(x.id)});
+  const miss=[...new Set(S.tasks.flatMap(t=>ids(t).concat(t.created_by)).concat(S.me).filter(i=>i&&!S.people[i]))];
   if(miss.length){const n=await supabaseClient.from('profiles').select('id, full_name').in('id',miss);(n.data||[]).forEach(x=>S.people[x.id]=x.full_name||'—');}
 }
 function shell(){
@@ -7912,7 +7820,7 @@ function shell(){
   board();
 }
 function board(){
-  const list=S.tasks.filter(t=>t.status!=='archived'&&(!S.q||((t.title||'')+' '+(t.description||'')).includes(S.q))&&(!S.who||t.assignee_id===S.who)&&(!S.mine||t.assignee_id===S.me));
+  const list=S.tasks.filter(t=>t.status!=='archived'&&match(t));
   const lt=list.filter(late).length, fresh=newOnes();
   S.host.querySelector('#kb-stats').innerHTML=`<span class="kb-chip">${list.length} tasks</span> ${lt?`<span class="kb-chip bad">${lt} overdue</span>`:''}`;
   const b=S.host.querySelector('#kb-board');
@@ -7920,7 +7828,7 @@ function board(){
     return `<div class="kb-col" data-col="${k}" style="--c:${c}"><div class="kb-h">${n}<b>${items.length}</b></div>${items.map(t=>`
     <div class="kb-card${fresh.includes(t)?' new':''}" data-id="${e(t.id)}" style="--p:${(PRI[t.priority]||PRI.medium)[1]}">
       <div class="t">${e(t.title)}</div>${t.description?`<div class="d">${e(t.description)}</div>`:''}
-      <div class="kb-meta"><span>${(PRI[t.priority]||PRI.medium)[0]}</span>${t.due_date?`<span class="${late(t)?'late':''}">📅 ${fd(t.due_date)}</span>`:''}${t.assignee_id?`<span class="kb-av" title="${e(S.people[t.assignee_id]||'')}">${e(ini(S.people[t.assignee_id]))}</span>`:''}</div></div>`).join('')||'<div class="kb-empty">No cards</div>'}
+      <div class="kb-meta"><span>${(PRI[t.priority]||PRI.medium)[0]}</span>${t.due_date?`<span class="${late(t)?'late':''}">📅 ${fd(t.due_date)}</span>`:''}${av(t)}</div></div>`).join('')||'<div class="kb-empty">No cards</div>'}
     <div class="kb-quick-host"><button class="kb-add-card" type="button" data-col="${k}">+ Add a card</button></div>${k==='done'&&items.length?'<button class="kb-add-card" type="button" data-arch-all="1">🗄 Archive all done</button>':''}</div>`}).join('');
   b.querySelectorAll('[data-arch-all]').forEach(btn=>btn.onclick=()=>archiveMany(list.filter(t=>t.status==='done')));
   archiveView();
@@ -7936,9 +7844,9 @@ async function archiveMany(items){
 }
 function archiveView(){
   const host=S.host&&S.host.querySelector('#kb-arch-host'); if(!host)return;
-  const items=S.tasks.filter(t=>t.status==='archived'&&(!S.q||((t.title||'')+' '+(t.description||'')).includes(S.q))&&(!S.who||t.assignee_id===S.who)&&(!S.mine||t.assignee_id===S.me));
+  const items=S.tasks.filter(t=>t.status==='archived'&&match(t));
   host.innerHTML=`<div class="kb-arch-bar"><button class="kb-arch-toggle" type="button">🗄 Archive (${items.length}) ${S.arch?'▴':'▾'}</button></div>`
-   +(S.arch?`<div class="kb-arch">${items.map(t=>`<div class="kb-arch-it" data-id="${e(t.id)}"><div><div class="t">${e(t.title)}</div><div class="kb-meta">${t.assignee_id?`<span>👤 ${e(S.people[t.assignee_id]||'—')}</span>`:''}${t.updated_at?`<span>🗄 ${fd(String(t.updated_at).slice(0,10))}</span>`:''}</div></div>
+   +(S.arch?`<div class="kb-arch">${items.map(t=>`<div class="kb-arch-it" data-id="${e(t.id)}"><div><div class="t">${e(t.title)}</div><div class="kb-meta">${ids(t).length?`<span>👤 ${e(names(t).join('، '))}</span>`:''}${t.updated_at?`<span>🗄 ${fd(String(t.updated_at).slice(0,10))}</span>`:''}</div></div>
      <div class="acts"><button class="kb-btn ghost" data-a="restore" type="button">Restore</button>${(isSup()||t.created_by===S.me)?'<button class="kb-btn del" data-a="del" type="button">Delete</button>':''}</div></div>`).join('')||'<div class="kb-empty">Archive is empty</div>'}</div>`:'');
   host.querySelector('.kb-arch-toggle').onclick=()=>{S.arch=!S.arch;archiveView()};
   host.querySelectorAll('.kb-arch-it').forEach(row=>{
@@ -7955,7 +7863,7 @@ function quick(btn){
   const [ok,x]=host.querySelectorAll('button');
   x.onclick=board;
   const go=async()=>{const title=ta.value.trim(); if(!title)return board();
-    const r=await supabaseClient.from(T).insert({title,status:col,priority:'medium',assignee_id:isSup()?null:S.me,updated_at:new Date().toISOString()});
+    const r=await supabaseClient.from(T).insert({title,status:col,priority:'medium',assignee_id:isSup()?null:S.me,assignee_ids:isSup()?[]:[S.me],created_by:S.me,updated_at:new Date().toISOString()});
     if(r.error){S.err='Could not add: '+r.error.message;} await refresh();};
   ok.onclick=go; ta.onkeydown=ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();go()}if(ev.key==='Escape')board()};
 }
@@ -7988,51 +7896,69 @@ async function move(id,st){
 }
 function jDateFields(due){
   const j=toJ(due), cy=tehranTodayJalali()[0];
-  const ys=[''].concat(Array.from({length:7},(_,i)=>cy-1+i)).map(y=>`<option value="${y}" ${j&&j[0]===y?'selected':''}>${y||'Year'}</option>`).join('');
-  const ms=['<option value="">Month</option>'].concat(JM.map((n,i)=>`<option value="${i+1}" ${j&&j[1]===i+1?'selected':''}>${n}</option>`)).join('');
-  const ds=['<option value="">Day</option>'].concat(Array.from({length:31},(_,i)=>`<option value="${i+1}" ${j&&j[2]===i+1?'selected':''}>${i+1}</option>`)).join('');
+  const yrs=[...new Set(Array.from({length:7},(_,i)=>cy-1+i).concat(j?[j[0]]:[]))].sort((a,b)=>a-b);
+  const ys=['<option value="">سال</option>'].concat(yrs.map(y=>`<option value="${y}" ${j&&j[0]===y?'selected':''}>${faDigits(y)}</option>`)).join('');
+  const ms=['<option value="">ماه</option>'].concat(JMFA.map((n,i)=>`<option value="${i+1}" ${j&&j[1]===i+1?'selected':''}>${n}</option>`)).join('');
+  const ds=['<option value="">روز</option>'].concat(Array.from({length:31},(_,i)=>`<option value="${i+1}" ${j&&j[2]===i+1?'selected':''}>${faDigits(i+1)}</option>`)).join('');
   return `<div class="row3"><select id="f-jd">${ds}</select><select id="f-jm">${ms}</select><select id="f-jy">${ys}</select></div>`;
 }
+function peopleList(t){
+  const set=new Set([...S.opts,S.me,...ids(t)].filter(Boolean));
+  return [...set].sort((a,b)=>(S.people[a]||'').localeCompare(S.people[b]||'','fa'));
+}
 function modal(t){
-  const isNew=!t, ro=!isNew&&!isSup()&&t.created_by!==S.me&&t.assignee_id!==S.me, canDel=!isNew&&(isSup()||t.created_by===S.me);
+  const isNew=!t, ro=!isNew&&!isSup()&&t.created_by!==S.me&&!ids(t).includes(S.me), canDel=!isNew&&(isSup()||t.created_by===S.me);
   if(!isNew)seen(t);
-  t=t||{title:'',description:'',status:'todo',priority:'medium',due_date:'',assignee_id:isSup()?'':S.me};
+  t=t||{title:'',description:'',status:'todo',priority:'medium',due_date:'',assignee_ids:isSup()?[]:[S.me]};
+  const cur=new Set(ids(t)), dis=ro?'disabled':'';
+  const ppl=peopleList(t).map(i=>`<label class="kb-pr" data-n="${e(S.people[i]||'')}"><input type="checkbox" value="${e(i)}" ${cur.has(i)?'checked':''} ${dis}><span>${e(S.people[i]||'—')}${i===S.me?' (من)':''}</span></label>`).join('');
   const ov=document.createElement('div'); ov.className='kb-ov';
-  ov.innerHTML=`<div class="kb-m"><b>${isNew?'New task':'Edit task'}</b>
-  <label>Title<input id="f-t" value="${e(t.title)}" ${ro?'disabled':''}></label>
-  <label>Description<textarea id="f-d" rows="4" ${ro?'disabled':''}>${e(t.description)}</textarea></label>
-  <div class="row"><label>Status<select id="f-s">${COLS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label>
-  <label>Priority<select id="f-p" ${ro?'disabled':''}>${Object.entries(PRI).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join('')}</select></label></div>
-  <div class="row"><label>Assignee<select id="f-a" ${ro?'disabled':''}><option value="">Unassigned</option>${Object.entries(S.people).map(([i,n])=>`<option value="${e(i)}">${e(n)}</option>`).join('')}</select></label>
-  <label>Due date (Shamsi)<div ${ro?'style="pointer-events:none;opacity:.6"':''}>${jDateFields(t.due_date)}</div></label></div>
+  ov.innerHTML=`<div class="kb-m"><b>${isNew?'ثبت تسک جدید':'ویرایش تسک'}</b>
+  <label>عنوان<input id="f-t" value="${e(t.title)}" ${dis}></label>
+  <label>توضیحات<textarea id="f-d" rows="4" ${dis}>${e(t.description)}</textarea></label>
+  <div class="row"><label>وضعیت<select id="f-s">${COLS.map(c=>`<option value="${c[0]}">${FA_ST[c[0]]}</option>`).join('')}</select></label>
+  <label>اولویت<select id="f-p" ${dis}>${Object.keys(PRI).map(k=>`<option value="${k}">${FA_PRI[k]}</option>`).join('')}</select></label></div>
+  <div class="fld"><span>مسئول‌ها<small id="f-cnt"></small></span>
+    <div class="kb-ppl">
+      <div class="kb-ppl-top"><input type="search" id="f-ps" placeholder="جستجوی نام..." ${dis}><button class="kb-btn ghost" id="f-all" type="button" ${dis}>انتخاب همه</button><button class="kb-btn ghost" id="f-none" type="button" ${dis}>هیچ‌کدام</button></div>
+      <div class="kb-ppl-list" id="f-pl">${ppl||'<div class="kb-ppl-empty">فردی برای انتساب وجود ندارد</div>'}</div>
+    </div></div>
+  <div class="fld"><span>مهلت انجام (تاریخ شمسی)</span><div ${ro?'style="pointer-events:none;opacity:.6"':''}>${jDateFields(t.due_date)}</div></div>
   <div class="azki-error" id="f-err"></div>
-  <div class="acts">${canDel?'<button class="kb-btn del" id="f-del" type="button">Delete</button>':''}${!isNew&&!ro?'<button class="kb-btn ghost" id="f-arc" type="button">🗄 Archive</button>':''}<button class="kb-btn ghost" id="f-x" type="button">Cancel</button><button class="kb-btn" id="f-ok" type="button">Save</button></div></div>`;
+  <div class="acts"><button class="kb-btn" id="f-ok" type="button">ذخیره</button><button class="kb-btn ghost" id="f-x" type="button">انصراف</button>${!isNew&&!ro?'<button class="kb-btn ghost" id="f-arc" type="button">🗄 بایگانی</button>':''}${canDel?'<button class="kb-btn del" id="f-del" type="button">حذف</button>':''}</div></div>`;
   document.body.appendChild(ov);
-  const q=i=>ov.querySelector(i); q('#f-s').value=t.status; q('#f-p').value=t.priority; q('#f-a').value=t.assignee_id||'';
+  const q=i=>ov.querySelector(i); q('#f-s').value=t.status; q('#f-p').value=t.priority;
   const close=()=>ov.remove(); q('#f-x').onclick=close; ov.onmousedown=ev=>{if(ev.target===ov)close()};
   const fail=m=>{q('#f-err').textContent=m;q('#f-err').style.display='block'};
+  const rows=()=>[...ov.querySelectorAll('.kb-pr')];
+  const upd=()=>{const n=ov.querySelectorAll('#f-pl input:checked').length;q('#f-cnt').textContent=n?`(${faDigits(n)} نفر انتخاب شده)`:''};
+  const setVisible=v=>rows().forEach(r=>{if(r.style.display!=='none')r.querySelector('input').checked=v});
+  q('#f-pl').onchange=upd; q('#f-all').onclick=()=>{setVisible(true);upd()}; q('#f-none').onclick=()=>{setVisible(false);upd()};
+  q('#f-ps').oninput=ev=>{const v=ev.target.value.trim();rows().forEach(r=>r.style.display=(!v||r.dataset.n.includes(v))?'':'none')};
+  upd();
   q('#f-ok').onclick=async()=>{
-    const title=q('#f-t').value.trim(); if(!title)return fail('Please enter a title.');
+    const title=q('#f-t').value.trim(); if(!title)return fail('لطفاً عنوان تسک را وارد کنید.');
     let due=null; const jy=+q('#f-jy').value, jm=+q('#f-jm').value, jd=+q('#f-jd').value;
     if(jy||jm||jd){
-      if(!(jy&&jm&&jd))return fail('Please complete the due date (day, month, year).');
+      if(!(jy&&jm&&jd))return fail('لطفاً تاریخ مهلت را کامل کنید (روز، ماه و سال).');
       due=jalaliToGregorian(jy,jm,jd); const[gy,gm,gd]=due.split('-').map(Number), back=gregorianToJalali(gy,gm,gd);
-      if(back[0]!==jy||back[1]!==jm||back[2]!==jd)return fail('This date does not exist in the Shamsi calendar.');
+      if(back[0]!==jy||back[1]!==jm||back[2]!==jd)return fail('این تاریخ در تقویم شمسی وجود ندارد.');
     }
-    const row={title,description:q('#f-d').value.trim()||null,status:q('#f-s').value,priority:q('#f-p').value,assignee_id:q('#f-a').value||null,due_date:due,updated_at:new Date().toISOString()};
+    const picked=[...ov.querySelectorAll('#f-pl input:checked')].map(i=>i.value);
+    const row={title,description:q('#f-d').value.trim()||null,status:q('#f-s').value,priority:q('#f-p').value,assignee_ids:picked,assignee_id:picked[0]||null,due_date:due,updated_at:new Date().toISOString()};
     const r=ro?await supabaseClient.from(T).update({status:row.status,updated_at:row.updated_at}).eq('id',t.id)
-      :isNew?await supabaseClient.from(T).insert(row):await supabaseClient.from(T).update(row).eq('id',t.id);
-    if(r.error)return fail('Save failed: '+r.error.message);
+      :isNew?await supabaseClient.from(T).insert(Object.assign({created_by:S.me},row)):await supabaseClient.from(T).update(row).eq('id',t.id);
+    if(r.error)return fail('ذخیره انجام نشد: '+r.error.message);
     close(); await refresh();
   };
   if(!isNew&&!ro)q('#f-arc').onclick=async()=>{
     const r=await supabaseClient.from(T).update({status:'archived',updated_at:new Date().toISOString()}).eq('id',t.id);
-    if(r.error)return fail('Archive failed: '+r.error.message); close(); await refresh();
+    if(r.error)return fail('بایگانی انجام نشد: '+r.error.message); close(); await refresh();
   };
   if(canDel)q('#f-del').onclick=async()=>{
-    if(!confirm('Delete this task?'))return;
+    if(!confirm('این تسک حذف شود؟'))return;
     const r=await supabaseClient.from(T).delete().eq('id',t.id);
-    if(r.error)return fail('Delete failed: '+r.error.message); close(); await refresh();
+    if(r.error)return fail('حذف انجام نشد: '+r.error.message); close(); await refresh();
   };
 }
 async function refresh(){await load();shell();pulse();}
@@ -8044,8 +7970,8 @@ window.kbOpen=async function(host){
 /* ---------- Notifications: tasks assigned to me by someone else ---------- */
 const sk=()=>'kb_seen_'+S.me;
 function seenSet(){if(!S.seen){try{S.seen=new Set(JSON.parse(localStorage.getItem(sk())||'[]'))}catch(x){S.seen=new Set()}}return S.seen}
-const key=t=>t.id+':'+t.assignee_id;
-function newOnes(){return S.tasks.filter(t=>t.assignee_id&&t.assignee_id===S.me&&t.created_by!==S.me&&t.status!=='done'&&t.status!=='archived'&&!seenSet().has(key(t)))}
+const key=t=>t.id+':'+S.me;
+function newOnes(){return S.tasks.filter(t=>ids(t).includes(S.me)&&t.created_by!==S.me&&t.status!=='done'&&t.status!=='archived'&&!seenSet().has(key(t)))}
 function seen(t){const s=seenSet();if(!s.has(key(t))){s.add(key(t));try{localStorage.setItem(sk(),JSON.stringify([...s].slice(-500)))}catch(x){}pulse(true)}}
 let lastCount=-1;
 function pulse(silent){
