@@ -7729,6 +7729,22 @@ document.addEventListener('visibilitychange', () => {
 .kb-meta span{background:var(--accent-soft);border-radius:99px;padding:2px 8px}.kb-meta .late{background:var(--danger-soft);color:var(--danger)}
 .kb-av{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex!important;align-items:center;justify-content:center;font-size:10px;font-weight:700;padding:0!important;margin-left:auto}
 .kb-av svg{width:13px;height:13px;display:block}
+.kb-cm{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-tint);padding:8px;display:grid;gap:8px}
+.kb-cm-list{max-height:210px;overflow:auto;display:grid;gap:8px;align-content:start}
+.kb-c{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px}
+.kb-c.mine{border-color:var(--accent)}
+.kb-c-h{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px}
+.kb-c-h b{color:var(--ink);font-size:12.5px}
+.kb-c-h span{color:var(--ink-faint);font-size:11px}
+.kb-c-h button{margin-inline-start:auto;background:transparent;border:0;color:var(--ink-faint);cursor:pointer;font-size:13px;padding:0 4px}
+.kb-c-h button:hover{color:var(--danger)}
+.kb-c-b{font-size:13px;color:var(--ink);white-space:pre-wrap;word-break:break-word;line-height:1.8}
+.kb-cm-new{display:grid;gap:6px}
+.kb-cm-new textarea{resize:vertical;width:100%;box-sizing:border-box}
+.kb-cm-new .kb-btn{justify-self:start;padding:6px 16px;font-size:13px}
+.kb-tip{position:fixed;z-index:1003;pointer-events:none;direction:rtl;text-align:right;background:#0F1B33;color:#fff;font-size:12px;line-height:1.7;padding:6px 11px;border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.35);white-space:nowrap;max-width:min(260px,90vw)}
+.kb-tip b{display:block;font-size:11px;opacity:.65;font-weight:600}
+.kb-tip div{overflow:hidden;text-overflow:ellipsis}
 .kb-av.multi{width:auto;border-radius:99px;gap:3px;padding:0 8px 0 6px!important}
 .kb-av em{font-style:normal;font-size:10.5px;line-height:1}
 .kb-empty{text-align:center;color:var(--ink-faint);font-size:12px;padding:14px 0}
@@ -7778,7 +7794,8 @@ const FA_ST={todo:'برای انجام',doing:'در حال انجام',review:'�
 const FA_PRI={low:'کم',medium:'متوسط',high:'زیاد',urgent:'فوری'};
 const JMFA=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 const JM=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
-const S={tasks:[],people:{},opts:[],me:null,host:null,q:'',who:'',mine:false,err:'',seen:null,timer:null,popOpen:false,arch:false};
+const C='kanban_comments';
+const S={tasks:[],comments:{},people:{},opts:[],me:null,host:null,q:'',who:'',mine:false,err:'',seen:null,timer:null,popOpen:false,arch:false};
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isSup=()=>currentUserRole==='supervisor';
 const p2=n=>String(n).padStart(2,'0');
@@ -7791,17 +7808,22 @@ const ids=t=>Array.isArray(t.assignee_ids)&&t.assignee_ids.length?t.assignee_ids
 const names=t=>ids(t).map(i=>S.people[i]||'—');
 // supervisor sees everything; everyone else only tasks assigned to them or created by them
 const visible=t=>isSup()||t.created_by===S.me||ids(t).includes(S.me);
-const match=t=>(!S.q||((t.title||'')+' '+(t.description||'')).includes(S.q))&&(!S.who||ids(t).includes(S.who))&&(!S.mine||ids(t).includes(S.me));
+const cms=t=>S.comments[t.id]||[];
+const match=t=>(!S.q||((t.title||'')+' '+cms(t).map(c=>c.body).join(' ')).includes(S.q))&&(!S.who||ids(t).includes(S.who))&&(!S.mine||ids(t).includes(S.me));
 const USER_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
-const av=t=>{const a=ids(t);if(!a.length)return '';return `<span class="kb-av${a.length>1?' multi':''}" title="${e(names(t).join('، '))}">${USER_SVG}${a.length>1?'<em>'+a.length+'</em>':''}</span>`};
+const av=t=>{const a=ids(t);if(!a.length)return '';return `<span class="kb-av${a.length>1?' multi':''}" data-tid="${e(t.id)}">${USER_SVG}${a.length>1?'<em>'+a.length+'</em>':''}</span>`};
 async function load(){
   S.me=(await supabaseClient.auth.getUser()).data.user?.id;
   const r=await supabaseClient.from(T).select('*').order('created_at',{ascending:false});
   S.err=r.error?('Failed to load tasks: '+r.error.message):'';
   S.tasks=(r.data||[]).filter(visible);
+  S.comments={};
+  const cr=await supabaseClient.from(C).select('*').order('created_at',{ascending:true}).limit(5000);
+  if(cr.error){S.err=S.err||('Failed to load comments: '+cr.error.message)}
+  else{const vis=new Set(S.tasks.map(t=>t.id));(cr.data||[]).forEach(c=>{if(vis.has(c.task_id))(S.comments[c.task_id]=S.comments[c.task_id]||[]).push(c)})}
   const p=await supabaseClient.from('profiles').select('id, full_name').in('role',isSup()?['leader']:['agent']).limit(500);
   S.people={}; S.opts=[]; (p.data||[]).forEach(x=>{S.people[x.id]=x.full_name||'—';S.opts.push(x.id)});
-  const miss=[...new Set(S.tasks.flatMap(t=>ids(t).concat(t.created_by)).concat(S.me).filter(i=>i&&!S.people[i]))];
+  const miss=[...new Set(S.tasks.flatMap(t=>ids(t).concat(t.created_by,cms(t).map(c=>c.author_id))).concat(S.me).filter(i=>i&&!S.people[i]))];
   if(miss.length){const n=await supabaseClient.from('profiles').select('id, full_name').in('id',miss);(n.data||[]).forEach(x=>S.people[x.id]=x.full_name||'—');}
 }
 function shell(){
@@ -7827,13 +7849,30 @@ function board(){
   b.innerHTML=COLS.map(([k,n,c])=>{const items=list.filter(t=>t.status===k);
     return `<div class="kb-col" data-col="${k}" style="--c:${c}"><div class="kb-h">${n}<b>${items.length}</b></div>${items.map(t=>`
     <div class="kb-card${fresh.includes(t)?' new':''}" data-id="${e(t.id)}" style="--p:${(PRI[t.priority]||PRI.medium)[1]}">
-      <div class="t">${e(t.title)}</div>${t.description?`<div class="d">${e(t.description)}</div>`:''}
-      <div class="kb-meta"><span>${(PRI[t.priority]||PRI.medium)[0]}</span>${t.due_date?`<span class="${late(t)?'late':''}">📅 ${fd(t.due_date)}</span>`:''}${av(t)}</div></div>`).join('')||'<div class="kb-empty">No cards</div>'}
+      <div class="t">${e(t.title)}</div>
+      <div class="kb-meta"><span>${(PRI[t.priority]||PRI.medium)[0]}</span>${cms(t).length?`<span>💬 ${cms(t).length}</span>`:''}${t.due_date?`<span class="${late(t)?'late':''}">📅 ${fd(t.due_date)}</span>`:''}${av(t)}</div></div>`).join('')||'<div class="kb-empty">No cards</div>'}
     <div class="kb-quick-host"><button class="kb-add-card" type="button" data-col="${k}">+ Add a card</button></div>${k==='done'&&items.length?'<button class="kb-add-card" type="button" data-arch-all="1">🗄 Archive all done</button>':''}</div>`}).join('');
   b.querySelectorAll('[data-arch-all]').forEach(btn=>btn.onclick=()=>archiveMany(list.filter(t=>t.status==='done')));
   archiveView();
   b.querySelectorAll('.kb-add-card').forEach(btn=>btn.onclick=()=>quick(btn));
   b.querySelectorAll('.kb-card').forEach(el=>el.addEventListener('pointerdown',ev=>dragStart(ev,el)));
+  b.querySelectorAll('.kb-av').forEach(el=>{
+    el.addEventListener('mouseenter',()=>tipShow(el));
+    el.addEventListener('mouseleave',tipHide);
+    el.addEventListener('pointerdown',tipHide);
+  });
+}
+function tipHide(){const x=document.getElementById('kb-tip');if(x)x.remove()}
+function tipShow(el){
+  tipHide();
+  const t=S.tasks.find(x=>x.id===el.dataset.tid); if(!t)return;
+  const tp=document.createElement('div'); tp.id='kb-tip'; tp.className='kb-tip';
+  tp.innerHTML='<b>مسئول'+(ids(t).length>1?'‌ها':'')+'</b>'+names(t).map(n=>'<div>'+e(n)+'</div>').join('');
+  document.body.appendChild(tp);
+  const r=el.getBoundingClientRect(), w=tp.offsetWidth, h=tp.offsetHeight;
+  let left=Math.min(Math.max(8,r.left+r.width/2-w/2),window.innerWidth-w-8);
+  let top=r.top-h-8; if(top<8)top=r.bottom+8;
+  tp.style.left=left+'px'; tp.style.top=top+'px';
 }
 async function archiveMany(items){
   if(!items.length)return;
@@ -7915,7 +7954,6 @@ function modal(t){
   const ov=document.createElement('div'); ov.className='kb-ov';
   ov.innerHTML=`<div class="kb-m"><b>${isNew?'ثبت تسک جدید':'ویرایش تسک'}</b>
   <label>عنوان<input id="f-t" value="${e(t.title)}" ${dis}></label>
-  <label>توضیحات<textarea id="f-d" rows="4" ${dis}>${e(t.description)}</textarea></label>
   <div class="row"><label>وضعیت<select id="f-s">${COLS.map(c=>`<option value="${c[0]}">${FA_ST[c[0]]}</option>`).join('')}</select></label>
   <label>اولویت<select id="f-p" ${dis}>${Object.keys(PRI).map(k=>`<option value="${k}">${FA_PRI[k]}</option>`).join('')}</select></label></div>
   <div class="fld"><span>مسئول‌ها<small id="f-cnt"></small></span>
@@ -7924,6 +7962,10 @@ function modal(t){
       <div class="kb-ppl-list" id="f-pl">${ppl||'<div class="kb-ppl-empty">فردی برای انتساب وجود ندارد</div>'}</div>
     </div></div>
   <div class="fld"><span>مهلت انجام (تاریخ شمسی)</span><div ${ro?'style="pointer-events:none;opacity:.6"':''}>${jDateFields(t.due_date)}</div></div>
+  <div class="fld"><span>کامنت‌ها<small id="f-ccnt"></small></span>
+    <div class="kb-cm"><div class="kb-cm-list" id="f-cl"></div>
+      <div class="kb-cm-new"><textarea id="f-cn" rows="2" placeholder="${isNew?'کامنت اول (اختیاری؛ همراه تسک ذخیره می‌شود)':'کامنت بنویسید... (Ctrl+Enter برای ارسال)'}"></textarea>${isNew?'':'<button class="kb-btn" id="f-cs" type="button">ارسال کامنت</button>'}</div>
+    </div></div>
   <div class="azki-error" id="f-err"></div>
   <div class="acts"><button class="kb-btn" id="f-ok" type="button">ذخیره</button><button class="kb-btn ghost" id="f-x" type="button">انصراف</button>${!isNew&&!ro?'<button class="kb-btn ghost" id="f-arc" type="button">🗄 بایگانی</button>':''}${canDel?'<button class="kb-btn del" id="f-del" type="button">حذف</button>':''}</div></div>`;
   document.body.appendChild(ov);
@@ -7936,6 +7978,30 @@ function modal(t){
   q('#f-pl').onchange=upd; q('#f-all').onclick=()=>{setVisible(true);upd()}; q('#f-none').onclick=()=>{setVisible(false);upd()};
   q('#f-ps').oninput=ev=>{const v=ev.target.value.trim();rows().forEach(r=>r.style.display=(!v||r.dataset.n.includes(v))?'':'none')};
   upd();
+  const fmtC=c=>{const d=new Date(c.created_at);return faDigits(tehranJalaliKey(d))+' — '+d.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tehran'})};
+  const renderC=()=>{
+    const list=isNew?[]:cms(t), box=q('#f-cl');
+    box.innerHTML=list.map(c=>`<div class="kb-c${c.author_id===S.me?' mine':''}"><div class="kb-c-h"><b>${e(S.people[c.author_id]||'—')}${c.author_id===S.me?' (من)':''}</b><span>${e(fmtC(c))}</span>${(c.author_id===S.me||isSup())?`<button type="button" data-cid="${e(c.id)}" title="حذف کامنت">✕</button>`:''}</div><div class="kb-c-b">${e(c.body)}</div></div>`).join('')||(isNew?'':'<div class="kb-ppl-empty">هنوز کامنتی ثبت نشده است</div>');
+    if(isNew)box.style.display='none';
+    q('#f-ccnt').textContent=list.length?`(${faDigits(list.length)})`:'';
+    box.scrollTop=box.scrollHeight;
+    box.querySelectorAll('[data-cid]').forEach(b=>b.onclick=async()=>{
+      if(!confirm('این کامنت حذف شود؟'))return;
+      const r=await supabaseClient.from(C).delete().eq('id',b.dataset.cid);
+      if(r.error)return fail('حذف کامنت انجام نشد: '+r.error.message);
+      S.comments[t.id]=cms(t).filter(c=>c.id!==b.dataset.cid); renderC(); rerenderBoard();
+    });
+  };
+  const rerenderBoard=()=>{if(S.host&&S.host.isConnected&&S.host.querySelector('#kb-board'))board()};
+  const sendC=async()=>{
+    const body=q('#f-cn').value.trim(); if(!body||isNew)return true;
+    const r=await supabaseClient.from(C).insert({task_id:t.id,author_id:S.me,body}).select('*').single();
+    if(r.error){fail('ارسال کامنت انجام نشد: '+r.error.message);return false}
+    S.people[S.me]=S.people[S.me]||'—';
+    (S.comments[t.id]=S.comments[t.id]||[]).push(r.data); q('#f-cn').value=''; renderC(); rerenderBoard(); return true;
+  };
+  renderC();
+  if(!isNew){q('#f-cs').onclick=sendC; q('#f-cn').onkeydown=ev=>{if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)){ev.preventDefault();sendC()}}}
   q('#f-ok').onclick=async()=>{
     const title=q('#f-t').value.trim(); if(!title)return fail('لطفاً عنوان تسک را وارد کنید.');
     let due=null; const jy=+q('#f-jy').value, jm=+q('#f-jm').value, jd=+q('#f-jd').value;
@@ -7945,10 +8011,15 @@ function modal(t){
       if(back[0]!==jy||back[1]!==jm||back[2]!==jd)return fail('این تاریخ در تقویم شمسی وجود ندارد.');
     }
     const picked=[...ov.querySelectorAll('#f-pl input:checked')].map(i=>i.value);
-    const row={title,description:q('#f-d').value.trim()||null,status:q('#f-s').value,priority:q('#f-p').value,assignee_ids:picked,assignee_id:picked[0]||null,due_date:due,updated_at:new Date().toISOString()};
+    const row={title,status:q('#f-s').value,priority:q('#f-p').value,assignee_ids:picked,assignee_id:picked[0]||null,due_date:due,updated_at:new Date().toISOString()};
     const r=ro?await supabaseClient.from(T).update({status:row.status,updated_at:row.updated_at}).eq('id',t.id)
-      :isNew?await supabaseClient.from(T).insert(Object.assign({created_by:S.me},row)):await supabaseClient.from(T).update(row).eq('id',t.id);
+      :isNew?await supabaseClient.from(T).insert(Object.assign({created_by:S.me},row)).select('id').single():await supabaseClient.from(T).update(row).eq('id',t.id);
     if(r.error)return fail('ذخیره انجام نشد: '+r.error.message);
+    const body=q('#f-cn').value.trim();
+    if(body){
+      const cr=await supabaseClient.from(C).insert({task_id:isNew?r.data.id:t.id,author_id:S.me,body});
+      if(cr.error)return fail('تسک ذخیره شد ولی کامنت ثبت نشد: '+cr.error.message);
+    }
     close(); await refresh();
   };
   if(!isNew&&!ro)q('#f-arc').onclick=async()=>{
