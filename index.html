@@ -2516,6 +2516,8 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     document.getElementById('panel-attendance').classList.remove('active');
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.centerTab).classList.add('active');
+    // تب حضور و غیاب فیلتر تاریخ نمی‌خواد (خودش ناوبری هفته داره)
+    document.getElementById('center-filter').style.display = btn.dataset.centerTab === 'attendance' ? 'none' : '';
     if (btn.dataset.centerTab === 'center-payroll' && !centerPayrollState.loaded) loadCenterPayroll();
     if (btn.dataset.centerTab === 'attendance') attOpen(document.getElementById('panel-attendance'));
     if (window.refreshGlassReveals) window.refreshGlassReveals();
@@ -5615,6 +5617,8 @@ async function enterApp(user) {
     document.getElementById('center-tabs').style.display = 'flex';
     document.getElementById('panel-center').classList.add('active');
     document.getElementById('center-filter').style.display = '';
+    // پنل حضور و غیاب باید بعد از تب‌ها و فیلتر بیاد، نه بالاشون
+    document.getElementById('center-filter').after(document.getElementById('panel-attendance'));
     document.getElementById('panel-center-bugs').classList.remove('active');
     document.getElementById('panel-supervisor').classList.remove('active');
     loadCenterView(user.id);
@@ -8109,17 +8113,21 @@ window.kbNotifyStart=async function(){
 .att-badge{padding:4px 11px;border-radius:99px;font-size:12px;font-weight:700}
 .att-badge.lock{background:var(--danger-soft);color:var(--danger)}.att-badge.open{background:var(--success-soft);color:var(--success)}.att-badge.wait{background:var(--amber-soft);color:var(--amber)}
 .att-sp{flex:1}
-.att-pool{display:flex;flex-wrap:wrap;gap:6px;padding:10px;margin-bottom:12px;background:var(--surface-tint);border:1px dashed var(--line);border-radius:var(--radius)}
+.att-pool{display:flex;flex-direction:column;gap:6px;padding:10px;position:sticky;top:12px;max-height:80vh;overflow-y:auto;background:var(--surface-tint);border:1px dashed var(--line);border-radius:var(--radius)}
 .att-pool>b{width:100%;font-size:12px;color:var(--ink-soft)}
-.att-grid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px;overflow-x:auto;padding-bottom:8px;align-items:start}
-.att-col{background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius);padding:8px;min-height:180px}
+.att-wrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:12px;align-items:start}.att-wrap.nopool{grid-template-columns:minmax(0,1fr)}
+.att-grid{display:flex;flex-direction:column;gap:8px;padding-bottom:8px}
+.att-col{display:grid;grid-template-columns:140px minmax(0,1fr);gap:12px;align-items:start;background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius);padding:8px 10px;min-height:64px}
+.att-chs{display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;min-height:40px}
+.att-chs>.att-ch{margin:0;min-width:130px}
 .att-col.hol{border-color:var(--amber);background:var(--amber-soft)}.att-col.over{outline:2px dashed var(--accent)}
-.att-h{display:grid;gap:2px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-soft)}
+.att-h{display:grid;gap:2px;margin:0;padding:0 0 0 12px;border-left:1px solid var(--line);font-size:12px;color:var(--ink-soft);align-content:start}
 .att-h b{font-size:13.5px;color:var(--ink)}.att-h em{font-style:normal;color:var(--amber);font-weight:700}.att-h small{font-weight:700;color:var(--accent-strong)}.att-h small.full{color:var(--danger)}
 .att-h button{justify-self:start;font:inherit;font-size:11px;cursor:pointer;background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink-soft);padding:1px 8px}
 .att-ch{display:block;background:var(--surface);border:1px solid var(--line);border-right:4px solid var(--c,var(--line));border-radius:var(--radius-sm);padding:6px 9px;margin-bottom:6px;font-size:12.5px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .att-ch small{display:block;color:var(--ink-soft);font-size:11px;margin-top:2px}
-.att-ch.pool{display:inline-block;margin:0}.att-ch.nodrag{cursor:pointer}.att-ch.drag{opacity:.35}
+.att-ch.pool{display:block;margin:0}
+@media(max-width:700px){.att-wrap{grid-template-columns:minmax(0,1fr)}.att-pool{position:static;max-height:none;flex-direction:row;flex-wrap:wrap}.att-col{grid-template-columns:1fr}.att-h{border-left:0;padding:0 0 6px;border-bottom:1px solid var(--line)}}.att-ch.nodrag{cursor:pointer}.att-ch.drag{opacity:.35}
 .att-ghost{position:fixed;z-index:1001;pointer-events:none;opacity:.92;margin:0;box-shadow:0 12px 30px rgba(0,0,0,.3)}
 .att-req{padding:10px 12px;margin-bottom:8px;background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
 .att-m{direction:rtl;text-align:right;background:var(--surface);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;width:min(460px,100%);max-height:92vh;overflow:auto;display:grid;gap:10px;color:var(--ink)}
@@ -8195,10 +8203,10 @@ function render(){
   const reqs=A.pending.map(r=>`<div class="att-req"><span>درخواست باز کردن قفل از <b>${e(nm(r.center_id))}</b> — هفته ${fdate(r.week_start)} تا ${fdate(add(r.week_start,6))}${r.reason?' — '+e(r.reason):''}</span><span class="att-sp"></span><button class="kb-btn" data-ap="${e(r.id)}" type="button">تأیید</button><button class="kb-btn ghost" data-rj="${e(r.id)}" type="button">رد</button></div>`).join('');
   const pool=ed?`<div class="att-pool"><b>نفرات را بکشید و در روز مورد نظر رها کنید</b>${ags().map(a=>`<span class="att-ch pool" data-ag="${e(a.id)}">${e(a.name)}</span>`).join('')||'<span class="kb-empty">نیرویی به این سنتر اساین نشده</span>'}</div>`:'';
   const cols=DN.map((n,i)=>{const d=add(A.week,i),list=dayEn(d).sort((a,b)=>aname(a.agent_id).localeCompare(aname(b.agent_id),'fa')),cp=capped(d),act=actN(d);
-    return `<div class="att-col${A.hol[d]?' hol':''}" data-day="${d}"><div class="att-h"><b>${n}</b><span>${fdate(d)}</span>${A.hol[d]?`<em>${e(A.hol[d])}</em>`:i===6?'<em>جمعه</em>':''}${cp?`<small class="${act>=cap()?'full':''}">${faDigits(act)} از ${faDigits(cap())} فعال</small>`:''}${ed&&A.role==='center'?`<button type="button" data-all="${d}">+ همه</button>`:''}</div>${list.map(x=>`<div class="att-ch${(A.role==='center'&&x.status==='suspended')||!ed?' nodrag':''}" data-en="${e(x.id)}" style="--c:${ST[x.status][1]}">${e(aname(x.agent_id))}<small>${ST[x.status][0]}${x.status==='hourly'?' · '+fmtP(x.periods):''}</small></div>`).join('')}</div>`}).join('');
+    return `<div class="att-col${A.hol[d]?' hol':''}" data-day="${d}"><div class="att-h"><b>${n}</b><span>${fdate(d)}</span>${A.hol[d]?`<em>${e(A.hol[d])}</em>`:i===6?'<em>جمعه</em>':''}${cp?`<small class="${act>=cap()?'full':''}">${faDigits(act)} از ${faDigits(cap())} فعال</small>`:''}${ed&&A.role==='center'?`<button type="button" data-all="${d}">+ همه</button>`:''}</div><div class="att-chs">${list.map(x=>`<div class="att-ch${(A.role==='center'&&x.status==='suspended')||!ed?' nodrag':''}" data-en="${e(x.id)}" style="--c:${ST[x.status][1]}">${e(aname(x.agent_id))}<small>${ST[x.status][0]}${x.status==='hourly'?' · '+fmtP(x.periods):''}</small></div>`).join('')}</div></div>`}).join('');
   H.innerHTML=`<div class="att"><div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="a-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="a-next" type="button">هفته بعد</button></div>${badge}<span class="att-sp"></span>
   ${A.role!=='center'?`<select id="a-c">${A.centers.map(c=>`<option value="${e(c.id)}">${e(c.name)}</option>`).join('')}</select><button class="kb-btn ghost" id="a-sus" type="button">تعلیق کاربر</button>`:''}
-  ${sup()?'<button class="kb-btn ghost" id="a-hol" type="button">تعطیلات رسمی</button>':''}${canReq?'<button class="kb-btn" id="a-req" type="button">درخواست باز کردن قفل</button>':''}</div>${reqs}${pool}<div class="att-grid">${cols}</div></div>`;
+  ${sup()?'<button class="kb-btn ghost" id="a-hol" type="button">تعطیلات رسمی</button>':''}${canReq?'<button class="kb-btn" id="a-req" type="button">درخواست باز کردن قفل</button>':''}</div>${reqs}<div class="att-wrap${ed?'':' nopool'}">${pool}<div class="att-grid">${cols}</div></div></div>`;
   const q=i=>H.querySelector(i);
   q('#a-prev').onclick=()=>{A.week=add(A.week,-7);loadWeek()}; q('#a-next').onclick=()=>{A.week=add(A.week,7);loadWeek()};
   if(q('#a-c')){q('#a-c').value=A.sel;q('#a-c').onchange=ev=>{A.sel=ev.target.value;loadWeek()};q('#a-sus').onclick=suspendModal}
