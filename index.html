@@ -1851,7 +1851,7 @@
           <div class="value" id="team-period-total">—</div>
         </div>
         <div class="summary-card">
-          <div class="label">مجموع کارشناس‌ها</div>
+          <div class="label">مجموع کارشناسان فعال</div>
           <div class="value" id="team-agent-count">—</div>
         </div>
         <div class="summary-card">
@@ -1925,7 +1925,7 @@
           <div class="value" id="center-period-total">—</div>
         </div>
         <div class="summary-card">
-          <div class="label">مجموع کارشناس‌ها</div>
+          <div class="label">مجموع کارشناسان فعال</div>
           <div class="value" id="center-agent-count">—</div>
         </div>
         <div class="summary-card" title="منبع: گزارش SLA اپراتورها — میانگین کل دوره‌ی ۲۱ تا ۲۰">
@@ -2068,7 +2068,7 @@
           <div class="value" id="supervisor-total">—</div>
         </div>
         <div class="summary-card">
-          <div class="label">مجموع کارشناس‌ها</div>
+          <div class="label">مجموع کارشناسان فعال</div>
           <div class="value" id="supervisor-agent-count">—</div>
         </div>
         <div class="summary-card">
@@ -6235,7 +6235,7 @@ async function loadTeamView(leaderId) {
 
   // کارشناس غیرفعال فقط وقتی نمایش داده می‌شه که تو بازه‌ی انتخابی صدور داشته باشه
   members = allMembers.filter(m => m.status !== 'disabled' || (rowsByUser[m.id] || []).length > 0);
-  document.getElementById('team-agent-count').textContent = formatNumber(members.filter(m => m.status !== 'disabled').length);
+  document.getElementById('team-agent-count').textContent = formatNumber(members.filter(m => m.status !== 'disabled' && !isTrainingPanel(m)).length);
 
   let teamTotal = 0;
   const membersWithTotals = members.map(m => {
@@ -6637,7 +6637,7 @@ async function loadSupervisorView() {
   publishSupTargetCenters([...targetCenterIds].map(id => ({ id, name: centerNameById[id] })));
 
   const grandTotal = items.reduce((sum, it) => sum + it.myTotal, 0);
-  const grandAgentCount = items.filter(it => it.m.status !== 'disabled').length;
+  const grandAgentCount = items.filter(it => it.m.status !== 'disabled' && !isTrainingPanel(it.m)).length;
   const grandAgentWithTargetCount = items.filter(it => it.myRows.length > 0).length;
 
   agentSlaMap = buildSlaMapFromRows(rows, period.startSort);
@@ -6927,7 +6927,7 @@ function renderCenterTargets() {
   items.sort((a, b) => b.myTotal - a.myTotal || centerAgentDisplayName(a.m).localeCompare(centerAgentDisplayName(b.m), 'fa'));
 
   document.getElementById('center-period-total').textContent = formatNumber(total);
-  document.getElementById('center-agent-count').textContent = formatNumber(agents.filter(m => m.status !== 'disabled').length);
+  document.getElementById('center-agent-count').textContent = formatNumber(agents.filter(m => m.status !== 'disabled' && !isTrainingPanel(m)).length);
 
   listEl.innerHTML = items.length
     ? buildMemberItemsHtml(items)
@@ -8116,7 +8116,7 @@ window.kbNotifyStart=async function(){
 .att-badge{padding:4px 11px;border-radius:99px;font-size:12px;font-weight:700}
 .att-badge.lock{background:var(--danger-soft);color:var(--danger)}.att-badge.open{background:var(--success-soft);color:var(--success)}.att-badge.wait{background:var(--amber-soft);color:var(--amber)}
 .att-sp{flex:1}
-.att-pool{display:flex;flex-direction:column;gap:6px;padding:10px;position:sticky;top:12px;max-height:80vh;overflow-y:auto;background:var(--surface-tint);border:1px dashed var(--line);border-radius:var(--radius)}
+.att-pool{display:flex;flex-direction:column;gap:6px;padding:10px;position:sticky;top:calc(var(--topbar-h,84px) + 12px);max-height:calc(100vh - var(--topbar-h,84px) - 36px);z-index:1;overflow-y:auto;background:var(--surface-tint);border:1px dashed var(--line);border-radius:var(--radius)}
 .att-pool>b{width:100%;font-size:12px;color:var(--ink-soft)}
 .att-wrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:12px;align-items:start}.att-wrap.nopool{grid-template-columns:minmax(0,1fr)}
 .att-grid{display:flex;flex-direction:column;gap:8px;padding-bottom:8px}
@@ -8193,7 +8193,7 @@ async function setLock(days,locked,all){
   const ids=all?A.centers.map(c=>c.id):[A.sel], at=new Date().toISOString(), rows=[];
   ids.forEach(c=>days.forEach(d=>rows.push({center_id:c,day:d,locked,set_by:A.me,set_at:at})));
   const r=await supabaseClient.from('att_locks').upsert(rows,{onConflict:'center_id,day'});
-  if(r.error)toast('ثبت قفل انجام نشد: '+r.error.message);else toast(locked?'قفل شد':'باز شد');
+  if(r.error)toast(/att_locks/.test(r.error.message||'')?'جدول قفل (att_locks) هنوز در دیتابیس ساخته نشده؛ SQL مربوطه را در Supabase اجرا کنید.':'ثبت قفل انجام نشد: '+r.error.message);else toast(locked?'قفل شد':'باز شد');
   await loadWeek();
 }
 const ags=()=>A.agents[A.sel]||[];
@@ -8245,6 +8245,7 @@ function render(){
 }
 function renderSet(){
   const H=A.body; if(!H)return;
+  const tw=document.querySelector('.topbar-wrap'); if(tw)document.documentElement.style.setProperty('--topbar-h',tw.offsetHeight+'px');
   if(!A.centers.length){H.innerHTML='<div class="att"><div class="empty-state">سنتری برای نمایش وجود ندارد</div></div>';return}
   const ed=canEdit(), w1=add(A.week,6), nm=id=>(A.centers.find(c=>c.id===id)||{}).name||'—';
   let badge='';
