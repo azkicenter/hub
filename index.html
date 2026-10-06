@@ -8126,6 +8126,16 @@ window.kbNotifyStart=async function(){
 .att-lc{display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;min-height:30px}
 .att-lc>.att-ch{margin:0;min-width:130px}
 .att-ghost.out{outline:2px solid var(--danger)}
+.as-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
+.as-card{--c:var(--ink);background:var(--surface-tint);border:1px solid var(--line);border-right:4px solid var(--c);border-radius:var(--radius-sm);padding:8px 10px;display:grid;gap:2px}.as-card span{font-size:12px;color:var(--ink-soft)}.as-card b{font-size:20px;color:var(--c)}
+.as-days{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.as-w{overflow-x:auto}
+.as-tbl{width:100%;border-collapse:collapse;font-size:13px;direction:rtl}.as-tbl th,.as-tbl td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}.as-tbl th{font-size:12px;color:var(--ink-soft);background:var(--surface-tint);white-space:nowrap}.as-tbl td.as-n{text-align:right;white-space:nowrap}.as-tbl small{display:block;color:var(--ink-soft);font-size:11px;font-weight:400}
+.as-ex{font:inherit;cursor:pointer;background:transparent;border:0;color:var(--ink-soft);padding:0 4px}
+.as-bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;min-width:70px}.as-bar i{display:block;height:100%;background:var(--success)}
+.as-pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+.as-cell{display:inline-block;min-width:54px;padding:3px 8px;border-radius:8px;font-weight:700;background:var(--surface-tint);color:var(--ink-soft)}.as-cell.ok{background:var(--success-soft);color:var(--success)}.as-cell.warn{background:var(--amber-soft);color:var(--amber)}.as-cell.bad{background:var(--danger-soft);color:var(--danger)}.as-cell.none{background:var(--surface-tint);color:var(--ink-soft)}
+.as-d>td{background:var(--surface-tint);text-align:right!important}.as-ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-bottom:8px}.as-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px 9px;font-size:12.5px}.as-a small{display:inline;margin:0}
 .tp{display:inline-flex;gap:3px;align-items:center;direction:ltr}.tp select{padding:5px 6px}
 .att-lk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px}.att-lk label{display:flex;gap:4px;align-items:center}
 .att-col.hol{border-color:var(--amber);background:var(--amber-soft)}.att-col.over{outline:none}
@@ -8156,7 +8166,7 @@ const wstart=s=>add(s,-((new Date(s+'T00:00:00Z').getUTCDay()+1)%7));
 const todayI=()=>{const j=tehranTodayJalali();return jalaliToGregorian(j[0],j[1],j[2])};
 const fdate=s=>{const[y,m,d]=s.split('-').map(Number),j=gregorianToJalali(y,m,d);return faDigits(j[2])+' '+JMF[j[1]-1]};
 const fyear=s=>{const[y,m,d]=s.split('-').map(Number);return faDigits(gregorianToJalali(y,m,d)[0])};
-const A={host:null,me:null,role:null,week:null,centers:null,sel:null,agents:{},entries:[],unlock:null,pending:[],hol:{},locks:{},lkAll:false};
+const A={host:null,me:null,role:null,week:null,centers:null,sel:null,agents:{},entries:[],unlock:null,pending:[],hol:{},locks:{},lkAll:false,view:'set',body:null,st:{mode:'day',day:null,open:{},data:null}};
 const isNext=()=>{const t=todayI();return A.week>t&&A.week<=add(t,7)};
 const isCur=()=>{const t=todayI();return A.week<=t&&t<=add(A.week,6)};
 const unlocked=()=>!!(A.unlock&&A.unlock.status==='approved');
@@ -8219,10 +8229,19 @@ async function loadWeek(){
     const lr=await supabaseClient.from('att_locks').select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.locks={}; (lr.data||[]).forEach(x=>A.locks[x.day]=x);
   }
   if(A.role!=='center'){const pr=await supabaseClient.from(TU).select('*').eq('status','pending').order('requested_at');A.pending=pr.data||[]}
+  if(mgr()&&A.view==='status')await loadStatus();
   render();
 }
 function render(){
   const H=A.host; if(!H)return;
+  if(!mgr()){A.body=H;renderSet();return}
+  H.innerHTML=`<div class="subtabs" style="margin-bottom:14px"><button class="subtab-btn${A.view==='set'?' active':''}" data-av="set" type="button">⚙ تنظیمات حضور و غیاب</button><button class="subtab-btn${A.view==='status'?' active':''}" data-av="status" type="button">📊 نمایش وضعیت حضور</button></div><div id="att-body"></div>`;
+  A.body=H.querySelector('#att-body');
+  H.querySelectorAll('[data-av]').forEach(b=>b.onclick=async()=>{A.view=b.dataset.av;if(A.view==='status')await loadStatus();render()});
+  if(A.view==='status')renderStatus();else renderSet();
+}
+function renderSet(){
+  const H=A.body; if(!H)return;
   if(!A.centers.length){H.innerHTML='<div class="att"><div class="empty-state">سنتری برای نمایش وجود ندارد</div></div>';return}
   const ed=canEdit(), w1=add(A.week,6), nm=id=>(A.centers.find(c=>c.id===id)||{}).name||'—';
   let badge='';
@@ -8231,7 +8250,7 @@ function render(){
     if(!ed&&A.unlock&&A.unlock.status==='rejected')badge+=' <span class="att-badge lock">درخواست رد شد</span>'}
   const canReq=A.role==='center'&&!ed&&isCur()&&(!A.unlock||A.unlock.status==='rejected');
   const reqs=A.pending.map(r=>`<div class="att-req"><span>درخواست باز کردن قفل از <b>${e(nm(r.center_id))}</b> — هفته ${fdate(r.week_start)} تا ${fdate(add(r.week_start,6))}${r.reason?' — '+e(r.reason):''}</span><span class="att-sp"></span><button class="kb-btn" data-ap="${e(r.id)}" type="button">تأیید</button><button class="kb-btn ghost" data-rj="${e(r.id)}" type="button">رد</button></div>`).join('');
-  const pool=ed?`<div class="att-pool"><b>نفرات را بکشید و در روز مورد نظر رها کنید</b>${ags().map(a=>`<span class="att-ch pool" data-ag="${e(a.id)}">${e(a.name)}</span>`).join('')||'<span class="kb-empty">نیرویی به این سنتر اساین نشده</span>'}</div>`:'';
+  const pool=ed?`<div class="att-pool"><b>${A.role!=='center'?`نیروهای «${e(nm(A.sel))}» (${faDigits(ags().length)} نفر)`:'نیروها'}<br>بکشید و در روز مورد نظر رها کنید</b>${ags().map(a=>`<span class="att-ch pool" data-ag="${e(a.id)}">${e(a.name)}</span>`).join('')||'<span class="kb-empty">نیرویی به این سنتر اساین نشده</span>'}</div>`:'';
   const chip=x=>`<div class="att-ch${(A.role==='center'&&x.status==='suspended')||!dayOpen(x.day)?' nodrag':''}" data-en="${e(x.id)}" style="--c:${ST[x.status][1]}">${e(aname(x.agent_id))}<small>${chipSub(x)}</small></div>`;
   const SH={morning:'☀ صبح',night:'🌙 شب'};
   const lane=(d,sh,list)=>`<div class="att-lane" data-shift="${sh}"><div class="att-ln"><span>${SH[sh]}</span>${dayOpen(d)?`<button type="button" data-all="${d}|${sh}">+ همه</button>`:''}</div><div class="att-lc">${list.filter(x=>(x.shift||'morning')===sh).map(chip).join('')}</div></div>`;
@@ -8258,6 +8277,66 @@ function render(){
   if(q('#a-ukw'))q('#a-ukw').onclick=()=>setLock(wdays(),false,A.lkAll);
   H.querySelectorAll('[data-all]').forEach(b=>b.onclick=()=>{const[d,sh]=b.dataset.all.split('|');addAll(d,sh)});
   H.querySelectorAll('.att-ch').forEach(el=>el.addEventListener('pointerdown',ev=>dragStart(ev,el)));
+}
+
+async function loadStatus(){
+  const ids=(A.centers||[]).map(c=>c.id), w1=add(A.week,6);
+  if(!ids.length){A.st.data={entries:[],locks:{},unl:{}};return}
+  const h=await supabaseClient.from(TH).select('*'); A.hol={}; (h.data||[]).forEach(x=>A.hol[x.day]=x.title||'تعطیل رسمی');
+  const ca=await fetchAllRows((f,t)=>supabaseClient.from('center_agents').select('center_id, agent_id').in('center_id',ids).order('agent_id').range(f,t));
+  const aids=[...new Set((ca.data||[]).map(x=>x.agent_id).filter(Boolean))];
+  const pr=aids.length?await fetchAllRows((f,t)=>supabaseClient.from('profiles').select('id, full_name, status').in('id',aids).eq('role','agent').order('id').range(f,t)):{data:[]};
+  const pm={}; (pr.data||[]).filter(x=>x.status!=='disabled').forEach(x=>pm[x.id]={id:x.id,name:x.full_name||'—'});
+  ids.forEach(c=>{A.agents[c]=(ca.data||[]).filter(x=>x.center_id===c&&pm[x.agent_id]).map(x=>pm[x.agent_id]).sort((a,b)=>a.name.localeCompare(b.name,'fa'))});
+  const er=await fetchAllRows((f,t)=>supabaseClient.from(TE).select('*').in('center_id',ids).gte('day',A.week).lte('day',w1).order('id').range(f,t));
+  const lr=await supabaseClient.from('att_locks').select('*').in('center_id',ids).gte('day',A.week).lte('day',w1);
+  const ur=await supabaseClient.from(TU).select('center_id').in('center_id',ids).eq('week_start',A.week).eq('status','approved');
+  const locks={},unl={}; (lr.data||[]).forEach(x=>locks[x.center_id+'|'+x.day]=x); (ur.data||[]).forEach(x=>unl[x.center_id]=true);
+  A.st.data={entries:er.data||[],locks,unl};
+}
+const SS={present:'حاضر',hourly:'ساعتی',leave:'مرخصی',weekly_off:'اف',suspended:'تعلیق'};
+function renderStatus(){
+  const H=A.body; if(!H)return;
+  if(!A.centers.length){H.innerHTML='<div class="att"><div class="empty-state">سنتری برای نمایش وجود ندارد</div></div>';return}
+  const D=A.st.data||{entries:[],locks:{},unl:{}}, w1=add(A.week,6), days=wdays(), t=todayI();
+  if(!(A.st.day>=A.week&&A.st.day<=w1))A.st.day=(t>=A.week&&t<=w1)?t:A.week;
+  const day=A.st.day, wk=A.st.mode==='week';
+  const idx={}; D.entries.forEach(x=>{(idx[x.center_id+'|'+x.day]=idx[x.center_id+'|'+x.day]||{})[x.agent_id]=x});
+  const stOpen=(c,d)=>{const L=D.locks[c+'|'+d];return L?!L.locked:(isNext()||!!D.unl[c])};
+  const calc=(c,d)=>{const list=A.agents[c]||[],m=idx[c+'|'+d]||{},r={total:list.length,present:0,hourly:0,leave:0,weekly_off:0,suspended:0,none:0,mo:0,ni:0,reg:0};
+    list.forEach(a=>{const x=m[a.id]; if(!x){r.none++;return} r.reg++; r[x.status]++; if(ACT.includes(x.status)){if((x.shift||'morning')==='night')r.ni++;else r.mo++}});
+    r.act=r.present+r.hourly; r.cap=Math.max(1,Math.floor(r.total*PCT)); r.over=r.total>0&&(new Date(d+'T00:00:00Z').getUTCDay()===5||!!A.hol[d])&&r.act>r.cap; return r};
+  const tot={total:0,present:0,hourly:0,leave:0,weekly_off:0,suspended:0,none:0};
+  if(!wk)A.centers.forEach(c=>{const r=calc(c.id,day);Object.keys(tot).forEach(k=>tot[k]+=r[k])});
+  const cards=!wk?`<div class="as-cards">${[['کل نیروها',tot.total,''],['حاضر',tot.present,'#1FA971'],['مرخصی ساعتی',tot.hourly,'#E08A17'],['مرخصی',tot.leave,'#7C5CE0'],['اف هفتگی',tot.weekly_off,'#8A94A6'],['تعلیق',tot.suspended,'#E0453F'],['ثبت‌نشده',tot.none,'#B0892B']].map(c=>`<div class="as-card" style="${c[2]?'--c:'+c[2]:''}"><span>${c[0]}</span><b>${faDigits(c[1])}</b></div>`).join('')}</div>`:'';
+  const dayBar=!wk?`<div class="as-days">${days.map((d,i)=>`<button type="button" class="subtab-btn${d===day?' active':''}" data-sd="${d}">${DN[i]} ${fdate(d)}${A.hol[d]?' 🎌':''}</button>`).join('')}</div>`:'';
+  const pill=(st,x)=>`<span class="as-pill" style="--c:${ST[st][1]}" title="${e(ST[st][0])}${x&&x.periods&&x.periods.length?' · '+fmtP(x.periods):''}">${SS[st]}</span>`;
+  const rowsHtml=A.centers.map(c=>{
+    const open=!!A.st.open[c.id], ag=A.agents[c.id]||[];
+    let main='',detail='';
+    if(!wk){
+      const r=calc(c.id,day), pct=r.total?Math.round(r.act*100/r.total):0, lock=!stOpen(c.id,day);
+      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b>${e(c.name)}</b> ${lock?'<span title="قفل">🔒</span>':''}${r.over?`<span class="att-badge lock" title="سقف روز تعطیل/جمعه ${faDigits(r.cap)} نفر">بیش از سقف</span>`:''}${r.total&&!r.reg?'<span class="att-badge wait">ثبت نشده</span>':''}</td>
+        <td>${faDigits(r.total)}</td><td style="color:#1FA971;font-weight:700">${faDigits(r.present)}</td><td>${faDigits(r.hourly)}</td><td>${faDigits(r.leave)}</td><td>${faDigits(r.weekly_off)}</td><td>${faDigits(r.suspended)}</td><td>${faDigits(r.none)}</td>
+        <td>☀ ${faDigits(r.mo)} · 🌙 ${faDigits(r.ni)}</td><td><div class="as-bar"><i style="width:${pct}%"></i></div><small>${faDigits(r.act)} از ${faDigits(r.total)}</small></td>`;
+      if(open)detail=`<tr class="as-d"><td colspan="10"><div class="as-ag">${ag.map(a=>{const x=(idx[c.id+'|'+day]||{})[a.id];return `<div class="as-a"><b>${e(a.name)}</b>${x?`${pill(x.status,x)}<small>${x.shift==='night'?'🌙 شب':'☀ صبح'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' · '+(x.status==='hourly'?'حضور ':'')+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">ثبت‌نشده</span>'}</div>`}).join('')||'<span class="kb-empty">نیرویی اساین نشده</span>'}</div><button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button></td></tr>`;
+    }else{
+      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b>${e(c.name)}</b> <small>(${faDigits(ag.length)} نفر)</small></td>`+days.map(d=>{const r=calc(c.id,d);const cls=!r.total?'':r.over?'bad':!r.reg?'none':r.act===0?'warn':'ok';return `<td><span class="as-cell ${cls}" title="${DN[days.indexOf(d)]} ${fdate(d)}">${r.total?faDigits(r.act)+'/'+faDigits(r.total):'—'}${!stOpen(c.id,d)?' 🔒':''}</span></td>`}).join('');
+      if(open)detail=`<tr class="as-d"><td colspan="8"><div class="as-w"><table class="as-tbl"><thead><tr><th>کارشناس</th>${days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('')}</tr></thead><tbody>${ag.map(a=>`<tr><td class="as-n"><b>${e(a.name)}</b></td>${days.map(d=>{const x=(idx[c.id+'|'+d]||{})[a.id];return `<td>${x?pill(x.status,x)+`<small>${x.shift==='night'?'🌙':'☀'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' '+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">—</span>'}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="8" class="kb-empty">نیرویی اساین نشده</td></tr>`}</tbody></table></div><button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button></td></tr>`;
+    }
+    return `<tr>${main}</tr>${detail}`}).join('');
+  const head=!wk?'<th>سنتر</th><th>کل</th><th>حاضر</th><th>ساعتی</th><th>مرخصی</th><th>اف</th><th>تعلیق</th><th>ثبت‌نشده</th><th>شیفت</th><th>پوشش</th>':'<th>سنتر</th>'+days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('');
+  H.innerHTML=`<div class="att"><div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="s-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="s-next" type="button">هفته بعد</button></div><span class="att-sp"></span>
+    <div class="subtabs" style="margin:0"><button class="subtab-btn${wk?'':' active'}" data-sm="day" type="button">نمای روزانه</button><button class="subtab-btn${wk?' active':''}" data-sm="week" type="button">نمای هفتگی</button></div>
+    <button class="kb-btn ghost" id="s-all" type="button">باز/بسته کردن همه</button></div>${dayBar}${cards}
+    <div class="as-w"><table class="as-tbl"><thead><tr>${head}</tr></thead><tbody>${rowsHtml}</tbody></table></div></div>`;
+  const q=i=>H.querySelector(i);
+  q('#s-prev').onclick=()=>{A.week=add(A.week,-7);loadWeek()}; q('#s-next').onclick=()=>{A.week=add(A.week,7);loadWeek()};
+  H.querySelectorAll('[data-sm]').forEach(b=>b.onclick=()=>{A.st.mode=b.dataset.sm;renderStatus()});
+  H.querySelectorAll('[data-sd]').forEach(b=>b.onclick=()=>{A.st.day=b.dataset.sd;renderStatus()});
+  H.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{const c=b.dataset.ex;A.st.open[c]=!A.st.open[c];renderStatus()});
+  q('#s-all').onclick=()=>{const any=A.centers.some(c=>A.st.open[c.id]);A.centers.forEach(c=>A.st.open[c.id]=!any);renderStatus()};
+  H.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{A.sel=b.dataset.ed;A.view='set';loadWeek()});
 }
 async function run(p,okMsg){const r=await p;if(r.error)toast(r.error.message);else if(okMsg)toast(okMsg);await loadWeek()}
 async function addAll(d,sh){
