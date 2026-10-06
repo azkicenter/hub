@@ -159,7 +159,6 @@
       radial-gradient(640px 520px at 4% 104%, rgba(31,169,113,.3), transparent 62%),
       linear-gradient(160deg, #CDE8FF 0%, #EAF4FE 45%, #FFFFFF 100%);
     background-attachment: fixed;
-    animation: glow-shift 24s ease-in-out infinite;
   }
   html[data-theme="dark"] .bg-glow {
     background:
@@ -241,8 +240,6 @@
     border-radius: var(--radius-sm);
     border: 1.5px solid var(--line);
     background: var(--surface-tint);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-    backdrop-filter: blur(12px) saturate(160%);
     box-shadow: inset 0 1px 4px rgba(15,72,150,.10);
     font-family: var(--font);
     font-size: 14px;
@@ -285,8 +282,6 @@
     border: 1px solid rgba(255,255,255,.45);
     border-radius: var(--radius-sm);
     background: linear-gradient(135deg, rgba(23,169,255,.65) 0%, rgba(22,86,245,.65) 100%);
-    -webkit-backdrop-filter: blur(14px) saturate(180%);
-    backdrop-filter: blur(14px) saturate(180%);
     color: #fff;
     font-size: 14.5px;
     font-weight: 700;
@@ -318,8 +313,6 @@
   }
   header.topbar {
     background: var(--topbar-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid var(--line);
     padding: 14px 28px;
     display: flex;
@@ -341,6 +334,7 @@
     border-radius: 999px;
     font-size: 12.5px;
   }
+  .who .user-chip:empty { display: none; }
   .logout-link {
     background: none; border: none; color: var(--ink-soft);
     font-size: 13px; padding: 0;
@@ -424,11 +418,11 @@
     margin: 8px 18px 0;
     border-radius: 999px;
     background: linear-gradient(90deg, var(--accent-deep) 0%, var(--accent) 100%);
-    transition: height .28s cubic-bezier(.2,.8,.2,1), margin .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease;
+    transform-origin: 50% 0;
+    transition: transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease;
   }
   .header-accent-bar.is-compact {
-    height: 4px;
-    margin: 4px 18px 0;
+    transform: scaleY(.4);
     opacity: .85;
   }
   .last-update-bar {
@@ -1279,8 +1273,6 @@
   .team-total,
   .team-bug-total,
   .leader-bug-total {
-    -webkit-backdrop-filter: blur(8px) saturate(160%);
-    backdrop-filter: blur(8px) saturate(160%);
   }
   
   .glass-reveal:not(.glass-in) .row-badge,
@@ -1308,7 +1300,6 @@
     opacity: 0;
     transform: translateY(var(--reveal-offset, 18px)) scale(.99);
     transition: opacity .38s cubic-bezier(.2,.8,.2,1), transform .38s cubic-bezier(.2,.8,.2,1);
-    will-change: opacity, transform;
   }
   .glass-reveal.glass-in {
     opacity: 1;
@@ -5567,11 +5558,11 @@ async function loadLastUpdate() {
 async function enterApp(user) {
   loginScreen.style.display = 'none';
   appScreen.style.display = 'block';
-  document.getElementById('user-label').textContent = user.email.split('@')[0];
+  document.getElementById('user-label').textContent = '';
 
   currentUserId = user.id;
   loadLastUpdate();
-  setInterval(loadLastUpdate, 2 * 60000);
+  if (!window.__lastUpdateTimer) window.__lastUpdateTimer = setInterval(() => { if (document.visibilityState === 'visible') loadLastUpdate(); }, 2 * 60000);
 
   const { data: profile, error: profileError } = await supabaseClient
     .from(TABLE_PROFILES)
@@ -5584,6 +5575,7 @@ async function enterApp(user) {
   const isLeader = !profileError && profile && profile.role === 'leader';
   const isSupervisor = !profileError && profile && profile.role === 'supervisor';
   currentUserRole = (!profileError && profile) ? profile.role : null;
+  document.getElementById('user-label').textContent = (profile && profile.full_name && profile.full_name.trim()) || user.email.split('@')[0];
   document.documentElement.classList.toggle('allow-select', currentUserRole === 'supervisor');
   // فونت IRANSansX فقط برای سرپرست و اپراتور (اپراتور = نقش agent یا هر نقش ناشناخته‌ای که به پنل تارگت روزانه می‌ره)
   const knownOtherRoles = ['admin', 'center', 'leader'];
@@ -5604,9 +5596,9 @@ async function enterApp(user) {
     document.getElementById('panel-supervisor').classList.remove('active');
     document.getElementById('panel-admin').classList.add('active');
     loadAdminView();
-    setInterval(loadAdminView, 20000);
+    setInterval(() => { if (document.visibilityState === 'visible') loadAdminView(); }, 20000);
     loadAdminLoginChart();
-    setInterval(loadAdminLoginChart, 5 * 60000);
+    setInterval(() => { if (document.visibilityState === 'visible') loadAdminLoginChart(); }, 5 * 60000);
   } else if (isCenter) {
     document.getElementById('main-tabs').style.display = 'none';
     document.getElementById('panel-targets').classList.remove('active');
@@ -5682,7 +5674,8 @@ async function sendPresenceHeartbeat() {
 
 function startPresenceHeartbeat() {
   sendPresenceHeartbeat();
-  setInterval(() => {
+  if (window.__presenceTimer) return;
+  window.__presenceTimer = setInterval(() => {
     if (document.visibilityState === 'visible') sendPresenceHeartbeat();
   }, 25000);
 }
@@ -5854,9 +5847,10 @@ async function loadAdminView() {
   groupIds.forEach(g => {
     const list = groups[g];
     groupCounts[g].textContent = formatNumber(list.length);
-    groupContainers[g].innerHTML = list.length
+    const html = list.length
       ? list.map(renderRow).join('')
       : '<div class="admin-group-empty">کسی در این گروه نیست</div>';
+    if (groupContainers[g]._h !== html) { groupContainers[g]._h = html; groupContainers[g].innerHTML = html; }
   });
 }
 
@@ -7664,9 +7658,9 @@ document.addEventListener('visibilitychange', () => {
         requestAnimationFrame(function () {
           el.classList.add('glass-in');
         });
-      } else {
-        el.style.transitionDelay = '0ms';
-        el.classList.remove('glass-in');
+        // یک‌بار نمایش؛ دیگه با هر اسکرول کلاس برداشته/گذاشته نشه (باعث کندی و پرش می‌شد)
+        io.unobserve(el);
+      } else if (!el.classList.contains('glass-in')) {
         var exitedAbove = entry.boundingClientRect.top < 0;
         el.style.setProperty('--reveal-offset', exitedAbove ? '-26px' : '26px');
       }
@@ -7691,13 +7685,21 @@ document.addEventListener('visibilitychange', () => {
 
   scan(document);
 
+  var moQueued = false, moRoots = [];
   var mo = new MutationObserver(function (mutations) {
     mutations.forEach(function (m) {
       m.addedNodes.forEach(function (node) {
-        if (node.nodeType === 1) scan(node);
+        if (node.nodeType === 1) moRoots.push(node);
       });
     });
-    requestAnimationFrame(function () { forceCheck(document); });
+    if (moQueued) return;
+    moQueued = true;
+    requestAnimationFrame(function () {
+      moQueued = false;
+      var roots = moRoots; moRoots = [];
+      roots.forEach(function (n) { if (n.isConnected) scan(n); });
+      forceCheck(document);
+    });
   });
   mo.observe(document.body, { childList: true, subtree: true });
 })();
@@ -7711,9 +7713,10 @@ document.addEventListener('visibilitychange', () => {
   function onScroll() {
     var currentY = window.scrollY || window.pageYOffset || 0;
 
+    // هیسترزیس: اینجوری نزدیک مرز تند تند باز و بسته نمیشه
     if (currentY <= 4) {
       accentBar.classList.remove('is-compact');
-    } else {
+    } else if (currentY > 24) {
       accentBar.classList.add('is-compact');
     }
 
@@ -8100,7 +8103,7 @@ window.kbNotifyStart=async function(){
     document.addEventListener('click',ev=>{const p=document.getElementById('kb-pop');if(p&&!p.contains(ev.target)){S.popOpen=false;p.remove()}});
   }
   const tick=async()=>{try{await load();if(S.host&&S.host.isConnected&&S.host.offsetParent!==null&&!document.querySelector('.kb-ov'))shell();pulse();}catch(x){}};
-  await tick(); S.timer=setInterval(tick,30000);
+  await tick(); S.timer=setInterval(()=>{if(document.visibilityState==='visible')tick()},30000);
 };
 })();
 </script>
