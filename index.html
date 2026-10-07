@@ -8789,6 +8789,8 @@ function usersOpen(host) {
         .um-btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);
           box-shadow:var(--shadow-card)}
         .um-btn.sm{padding:6px 12px;font-size:12px}
+        .um-btn.danger{color:#dc2626;border-color:rgba(220,38,38,.45)}
+        .um-btn.danger:hover{background:rgba(220,38,38,.1)}
         .um-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
         .um-btns{display:flex;gap:8px;flex-wrap:wrap}
         .um-title{font-weight:800;font-size:15px}
@@ -8887,6 +8889,7 @@ function umRender() {
         <span class="um-badge">${off ? 'غیرفعال' : 'فعال'}</span>
         ${UM.centers.length > 1 ? `<button class="um-btn ghost sm" type="button" data-um-move="${a.id}">انتقال سنتر</button>` : ''}
         <button class="um-btn sm ${off ? '' : 'ghost'}" type="button" data-um-toggle="${a.id}" data-um-to="${off ? 'active' : 'disabled'}">${off ? 'فعال کردن' : 'غیرفعال کردن'}</button>
+        ${umIsSup() ? `<button class="um-btn ghost sm danger" type="button" data-um-del="${a.id}">حذف کامل</button>` : ''}
       </div>`;
     }).join('') || '<div class="empty-state">نیرویی در این سنتر نیست</div>';
     const lead = lnames.length ? `<div class="um-lead">سرگروه: ${lnames.map(umEsc).join('، ')}</div>` : `<div class="um-lead none">سرگروه: تعیین نشده</div>`;
@@ -8899,6 +8902,7 @@ function umRender() {
   list.innerHTML = html || '<div class="empty-state">موردی پیدا نشد</div>';
   list.querySelectorAll('[data-um-toggle]').forEach(b => b.onclick = () => umToggle(b.dataset.umToggle, b.dataset.umTo, b));
   list.querySelectorAll('[data-um-move]').forEach(b => b.onclick = () => umMoveModal(b.dataset.umMove));
+  list.querySelectorAll('[data-um-del]').forEach(b => b.onclick = () => umDelete(b.dataset.umDel, b));
   list.querySelectorAll('[data-um-lead]').forEach(b => b.onclick = () => umLeadersModal(b.dataset.umLead));
 }
 
@@ -8908,6 +8912,14 @@ async function umToggle(id, to, btn) {
   btn.disabled = true;
   try { await umCall({ action: 'set_status', agent_id: id, status: to }); umToast(to === 'disabled' ? 'کاربر غیرفعال شد' : 'کاربر فعال شد'); await umLoad(); }
   catch (e) { btn.disabled = false; umToast('انجام نشد: ' + e.message); }
+}
+
+async function umDelete(id, btn) {
+  const a = UM.agents.find(x => x.id === id) || {};
+  if (!confirm(`«${a.full_name || ''}» برای همیشه حذف شود؟\n\nاکانت، پروفایل و داده‌های تارگت/خطا/لاگین این کاربر از سوپابیس پاک می‌شود و قابل بازگشت نیست.`)) return;
+  btn.disabled = true;
+  try { await umCall({ action: 'delete_agent', agent_id: id }); umToast('کاربر کامل حذف شد'); await umLoad(); }
+  catch (e) { btn.disabled = false; umToast('حذف نشد: ' + e.message); }
 }
 
 function umModal(inner) {
