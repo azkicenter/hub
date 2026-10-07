@@ -2483,7 +2483,9 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
 window.teamCurrentTab = 'team';
 const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare', 'azki-oct', 'azki-chart', 'azki-outage'];
 let teamLastReportTab = 'azki-shifts';
+window.leaderHiddenTabs = new Set(); // تب‌هایی که سرپرست برای سرگروه‌ها مخفی کرده
 function teamShowTab(tab) {
+  if (window.leaderHiddenTabs.has(tab)) return;
   window.teamCurrentTab = tab;
   const isReport = TEAM_REPORT_TABS.includes(tab);
   if (isReport) teamLastReportTab = tab;
@@ -5876,6 +5878,7 @@ async function enterApp(user) {
       if (filterEl && compareHost && !compareHost.contains(filterEl)) compareHost.insertBefore(filterEl, compareHost.firstChild);
     })();
     loadTeamView(user.id);
+    loadLeaderHiddenTabs();
   } else if (isSupervisor) {
     document.getElementById('main-tabs').style.display = 'none';
     document.getElementById('panel-targets').classList.remove('active');
@@ -8808,6 +8811,10 @@ function usersOpen(host) {
         .um-box input,.um-box select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-tint,transparent);color:var(--ink);outline:none}
         .um-box input:focus,.um-box select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
         .um-box input.ltr{direction:ltr;text-align:left}
+        .um-uwrap{display:flex;direction:ltr;align-items:stretch;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-tint,transparent)}
+        .um-uwrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+        .um-uwrap input{flex:1;min-width:0;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+        .um-dom{display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:700;color:var(--ink-faint);background:rgba(128,128,128,.12);white-space:nowrap}
         .um-checks{display:grid;gap:6px;max-height:240px;overflow:auto;padding:4px 2px}
         .um-checks label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 8px;border-radius:8px;background:var(--surface-tint)}
         .um-checks input{width:auto;padding:0}
@@ -8818,12 +8825,14 @@ function usersOpen(host) {
         <div class="um-btns">
           <button class="um-btn" id="um-add" type="button">➕ افزودن کاربر</button>
           <button class="um-btn ghost" id="um-add-center" type="button">🏢 تعریف سنتر</button>
+          ${umIsSup() ? '<button class="um-btn ghost" id="um-tabs" type="button">👁 تب‌های سرگروه</button>' : ''}
         </div>
       </div>
       <input class="um-search" id="um-search" placeholder="جستجوی نام کارشناس / نام کاربری / سنتر / سرگروه" autocomplete="off">
       <div id="um-list"></div>`;
     host.querySelector('#um-add').onclick = umAddModal;
     host.querySelector('#um-add-center').onclick = umCenterModal;
+    const tabsBtn = host.querySelector('#um-tabs'); if (tabsBtn) tabsBtn.onclick = umLeaderTabsModal;
     host.querySelector('#um-search').addEventListener('input', e => { UM.q = e.target.value.trim(); umRender(); });
   }
   umLoad();
@@ -8918,11 +8927,11 @@ function umAddModal() {
     <div class="um-title">افزودن کاربر جدید</div>
     <label>سنتر<select id="um-c">${umCenterOpts()}</select></label>
     <label>نام و نام خانوادگی<input id="um-n" autocomplete="off"></label>
-    <label>نام کاربری (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
+    <label>نام کاربری (انگلیسی)<span class="um-uwrap"><input id="um-u" class="ltr" autocomplete="off" placeholder="username"><span class="um-dom">@${USERNAME_EMAIL_DOMAIN}</span></span></label>
     <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
     <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت کاربر</button></div>`);
   const q = s => m.querySelector(s);
-  q('#um-u').addEventListener('input', e => { e.target.value = e.target.value.replace(/[^A-Za-z0-9._-]/g, ''); });
+  q('#um-u').addEventListener('input', e => { e.target.value = e.target.value.split('@')[0].replace(/[^A-Za-z0-9._-]/g, ''); });
   q('#um-ok').onclick = async () => {
     const body = { action: 'create', center_id: q('#um-c').value, full_name: q('#um-n').value.trim(), username: q('#um-u').value.trim(), password: q('#um-p').value };
     if (!body.full_name || !body.username || body.password.length < 6) { umToast('نام، نام کاربری و رمز (حداقل ۶ کاراکتر) را کامل وارد کنید'); return; }
@@ -8937,13 +8946,13 @@ function umCenterModal() {
   const m = umModal(`
     <div class="um-title">تعریف سنتر جدید</div>
     <label>نام سنتر<input id="um-n" autocomplete="off"></label>
-    <label>نام کاربری سنتر (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
+    <label>نام کاربری سنتر (انگلیسی)<span class="um-uwrap"><input id="um-u" class="ltr" autocomplete="off" placeholder="username"><span class="um-dom">@${USERNAME_EMAIL_DOMAIN}</span></span></label>
     <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
     ${sup ? `<label>اساین به سرگروه (اختیاری)<select id="um-l"><option value="">— بدون سرگروه —</option>${UM.leaders.map(l => `<option value="${l.id}">${umEsc(l.name)}</option>`).join('')}</select></label>`
           : `<div style="font-size:12px;color:var(--ink-soft)">این سنتر خودکار به شما اساین می‌شود.</div>`}
     <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت سنتر</button></div>`);
   const q = s => m.querySelector(s);
-  q('#um-u').addEventListener('input', e => { e.target.value = e.target.value.replace(/[^A-Za-z0-9._-]/g, ''); });
+  q('#um-u').addEventListener('input', e => { e.target.value = e.target.value.split('@')[0].replace(/[^A-Za-z0-9._-]/g, ''); });
   q('#um-ok').onclick = async () => {
     const body = { action: 'create_center', full_name: q('#um-n').value.trim(), username: q('#um-u').value.trim(), password: q('#um-p').value, leader_id: sup ? q('#um-l').value : '' };
     if (!body.full_name || !body.username || body.password.length < 6) { umToast('نام، نام کاربری و رمز (حداقل ۶ کاراکتر) را کامل وارد کنید'); return; }
@@ -8979,6 +8988,65 @@ function umMoveModal(agentId) {
     m.querySelector('#um-ok').disabled = true;
     try { await umCall({ action: 'move_agent', agent_id: agentId, center_id: to }); m.remove(); umToast('کاربر منتقل شد'); await umLoad(); }
     catch (e) { m.querySelector('#um-ok').disabled = false; umToast('انجام نشد: ' + e.message); }
+  };
+}
+
+// ============================================================
+// تب‌های قابل مخفی‌سازی برای سرگروه‌ها (تنظیم توسط سرپرست، ذخیره در Supabase: جدول app_settings)
+// کلیدها همان data-team-tab تب‌های پنل سرگروه هستند؛ «report» یعنی کل گروه گزارش
+// ============================================================
+const LEADER_TAB_DEFS = [
+  ['team', 'تعداد صدور تیم'], ['team-bugs', 'خطای تیم'], ['report', 'گزارش (کل گروه)'],
+  ['azki-shifts', 'گزارش ← تفکیک شیفت', 1], ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1],
+  ['azki-chart', 'گزارش ← نمودار', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1],
+  ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
+  ['attendance', 'حضور و غیاب'], ['users', 'افزودن کاربر']
+];
+
+function applyLeaderHiddenTabs(hiddenList) {
+  const hidden = new Set(hiddenList || []);
+  window.leaderHiddenTabs = hidden;
+  const subs = [...document.querySelectorAll('#team-subtabs .subtab-btn')];
+  subs.forEach(b => { b.style.display = hidden.has(b.dataset.teamTab) ? 'none' : ''; });
+  const visibleSubs = subs.filter(b => !hidden.has(b.dataset.teamTab));
+  if (!visibleSubs.length) hidden.add('report');
+  if (visibleSubs.length && hidden.has(teamLastReportTab)) teamLastReportTab = visibleSubs[0].dataset.teamTab;
+  const tabBtns = [...document.querySelectorAll('#team-tabs .tab-btn')];
+  tabBtns.forEach(b => { b.style.display = hidden.has(b.dataset.teamGroup || b.dataset.teamTab) ? 'none' : ''; });
+  // اگه تب فعلی مخفی شده، برو اولین تب قابل‌نمایش
+  const cur = window.teamCurrentTab;
+  const curKey = TEAM_REPORT_TABS.includes(cur) ? (hidden.has('report') ? 'report' : cur) : cur;
+  if (hidden.has(curKey)) {
+    const first = tabBtns.find(b => b.style.display !== 'none');
+    if (first) teamShowTab(first.dataset.teamGroup === 'report' ? teamLastReportTab : first.dataset.teamTab);
+    else {
+      ['panel-team', 'panel-team-bugs'].forEach(id => document.getElementById(id).classList.remove('active'));
+    }
+  }
+}
+
+async function loadLeaderHiddenTabs() {
+  try {
+    const d = await umCall({ action: 'get_tab_settings' });
+    applyLeaderHiddenTabs(d.hidden || []);
+  } catch (e) { console.warn('خواندن تنظیمات تب‌های سرگروه ناموفق بود:', e.message); }
+}
+
+async function umLeaderTabsModal() {
+  let hidden = [];
+  try { hidden = (await umCall({ action: 'get_tab_settings' })).hidden || []; }
+  catch (e) { umToast('خواندن تنظیمات انجام نشد: ' + e.message); return; }
+  const hs = new Set(hidden);
+  const m = umModal(`
+    <div class="um-title">تب‌های قابل‌نمایش برای سرگروه‌ها</div>
+    <div style="font-size:12px;color:var(--ink-soft)">تیک = نمایش داده شود. تب‌های بدون تیک برای همه‌ی سرگروه‌ها مخفی می‌شود.</div>
+    <div class="um-checks">${LEADER_TAB_DEFS.map(([k, n, sub]) => `<label style="${sub ? 'margin-right:18px' : ''}"><input type="checkbox" value="${k}"${hs.has(k) ? '' : ' checked'}>${umEsc(n)}</label>`).join('')}</div>
+    <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ذخیره</button></div>`);
+  m.querySelector('#um-ok').onclick = async () => {
+    const off = [...m.querySelectorAll('.um-checks input:not(:checked)')].map(i => i.value);
+    m.querySelector('#um-ok').disabled = true;
+    try { await umCall({ action: 'set_tab_settings', hidden: off }); m.remove(); umToast('تنظیمات ذخیره شد؛ سرگروه‌ها با ورود/رفرش بعدی تغییر را می‌بینند'); }
+    catch (e) { m.querySelector('#um-ok').disabled = false; umToast('ذخیره نشد: ' + e.message); }
   };
 }
 </script>
