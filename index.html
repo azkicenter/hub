@@ -1465,6 +1465,7 @@
     transition: color .25s ease, background .25s ease, border-color .25s ease, transform .35s cubic-bezier(.34,1.3,.5,1), box-shadow .35s ease;
     transform: scale(1);
   }
+  .subtab-break { flex-basis: 100%; height: 0; margin: -8px 0 0; padding: 0; }
   .subtab-btn svg { width: 15px; height: 15px; opacity: .75; }
   .subtab-btn:hover { background: var(--accent-soft); }
   .subtab-btn.active { color: var(--accent-deep); border-color: var(--accent); background: var(--accent-soft); font-weight: 700; transform: scale(1.08); box-shadow: 0 4px 14px rgba(26,109,255,.18); }
@@ -1819,13 +1820,14 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
         OCT
       </button>
-      <button class="subtab-btn" data-team-tab="azki-chart" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
-        نمودار
-      </button>
       <button class="subtab-btn" data-team-tab="azki-outage" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
         گزارش قطعی
+      </button>
+      <span class="subtab-break"></span>
+      <button class="subtab-btn" data-team-tab="azki-chart" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+        نمودار
       </button>
     </div>
 
@@ -2046,15 +2048,16 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
           OCT
         </button>
-          <button class="subtab-btn" data-sup-tab="azki-chart" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
-          نمودار
-        </button>
           <button class="subtab-btn" data-sup-tab="azki-outage" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
           گزارش قطعی
         </button>
-      </div>
+      <span class="subtab-break"></span>
+          <button class="subtab-btn" data-sup-tab="azki-chart" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+          نمودار
+        </button>
+    </div>
 
       <div id="sup-view-targets">
       <div id="sup-filter" class="azki-filter">
@@ -8811,10 +8814,6 @@ function usersOpen(host) {
         .um-box input,.um-box select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-tint,transparent);color:var(--ink);outline:none}
         .um-box input:focus,.um-box select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
         .um-box input.ltr{direction:ltr;text-align:left}
-        .um-uwrap{display:flex;direction:ltr;align-items:stretch;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-tint,transparent)}
-        .um-uwrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-        .um-uwrap input{flex:1;min-width:0;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
-        .um-dom{display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:700;color:var(--ink-faint);background:rgba(128,128,128,.12);white-space:nowrap}
         .um-checks{display:grid;gap:6px;max-height:240px;overflow:auto;padding:4px 2px}
         .um-checks label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 8px;border-radius:8px;background:var(--surface-tint)}
         .um-checks input{width:auto;padding:0}
@@ -8927,7 +8926,7 @@ function umAddModal() {
     <div class="um-title">افزودن کاربر جدید</div>
     <label>سنتر<select id="um-c">${umCenterOpts()}</select></label>
     <label>نام و نام خانوادگی<input id="um-n" autocomplete="off"></label>
-    <label>نام کاربری (انگلیسی)<span class="um-uwrap"><input id="um-u" class="ltr" autocomplete="off" placeholder="username"><span class="um-dom">@${USERNAME_EMAIL_DOMAIN}</span></span></label>
+    <label>نام کاربری (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
     <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
     <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت کاربر</button></div>`);
   const q = s => m.querySelector(s);
@@ -8946,7 +8945,7 @@ function umCenterModal() {
   const m = umModal(`
     <div class="um-title">تعریف سنتر جدید</div>
     <label>نام سنتر<input id="um-n" autocomplete="off"></label>
-    <label>نام کاربری سنتر (انگلیسی)<span class="um-uwrap"><input id="um-u" class="ltr" autocomplete="off" placeholder="username"><span class="um-dom">@${USERNAME_EMAIL_DOMAIN}</span></span></label>
+    <label>نام کاربری سنتر (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
     <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
     ${sup ? `<label>اساین به سرگروه (اختیاری)<select id="um-l"><option value="">— بدون سرگروه —</option>${UM.leaders.map(l => `<option value="${l.id}">${umEsc(l.name)}</option>`).join('')}</select></label>`
           : `<div style="font-size:12px;color:var(--ink-soft)">این سنتر خودکار به شما اساین می‌شود.</div>`}
@@ -9008,6 +9007,7 @@ function applyLeaderHiddenTabs(hiddenList) {
   window.leaderHiddenTabs = hidden;
   const subs = [...document.querySelectorAll('#team-subtabs .subtab-btn')];
   subs.forEach(b => { b.style.display = hidden.has(b.dataset.teamTab) ? 'none' : ''; });
+  const brk = document.querySelector('#team-subtabs .subtab-break'); if (brk) brk.style.display = hidden.has('azki-chart') ? 'none' : '';
   const visibleSubs = subs.filter(b => !hidden.has(b.dataset.teamTab));
   if (!visibleSubs.length) hidden.add('report');
   if (visibleSubs.length && hidden.has(teamLastReportTab)) teamLastReportTab = visibleSubs[0].dataset.teamTab;
@@ -9052,4 +9052,3 @@ async function umLeaderTabsModal() {
 </script>
 </body>
 </html>
- 
