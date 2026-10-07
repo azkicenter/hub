@@ -1676,6 +1676,28 @@
     .azki-stat { min-width: 0; }
     .team-sla { min-width: 0; }
   }
+  /* ===== یکدست‌سازی فونت همه‌ی تب‌ها: هم‌اندازه‌ی تب «تعداد صدور» ولی کوچک‌تر از قبل =====
+     برای تنظیم سریع فقط این چهار متغیر را عوض کنید. */
+  :root { --fs-kpi-label: 13px; --fs-kpi-value: 21px; --fs-stat-value: 16px; --fs-title: 14px; }
+  .summary-card .label, .ticket-primary-card .label { font-size: var(--fs-kpi-label); }
+  .summary-card .value, .ticket-primary-card .value,
+  .team-details-inner .ticket-primary-card .value { font-size: var(--fs-kpi-value); }
+  .summary-card .value.is-text { font-size: 16px; white-space: normal; line-height: 1.5; }
+  .summary-card .sub { font-size: 11px; }
+  .ticket-hero-card .value, .team-details-inner .ticket-hero-card .value { font-size: 18px; }
+  .ticket-report-cell .v { font-size: 15px; }
+  .azki-stat .v { font-size: var(--fs-stat-value); }
+  .shift-card-count { font-size: 22px; }
+  .sm-sum b { font-size: 17px; }
+  .pay-metric .v { font-size: 14px; }
+  .azki-trend-title, .shift-card-title, .leader-name { font-size: var(--fs-title); }
+  @media (max-width: 640px) {
+    .summary-card .label, .ticket-primary-card .label { font-size: 12px; }
+    .summary-card .value, .ticket-primary-card .value { font-size: 18px; }
+    .summary-card .value.is-text { font-size: 14px; }
+    .azki-stat .v, .azki-trend-title { font-size: 15px; }
+    .shift-card-count { font-size: 20px; }
+  }
 </style>
 </head>
 <body>
@@ -2256,8 +2278,9 @@
       <div id="sup-view-azki-oct" style="display:none;">
         <div class="period-label" id="azki-oct-label"></div>
         <div class="period-label" id="azki-oct-note"></div>
-        <div style="text-align:center; margin:-4px 0 10px;"><button type="button" class="sm-btn" id="azki-oct-to-chart">مشاهده‌ی روند OCT روی نمودار و مقایسه با SLA</button></div>
         <div class="summary-row" id="azki-oct-cards"></div>
+        <div id="azki-oct-compare" style="margin:14px 0;"></div>
+        <div style="text-align:center; margin:0 0 10px;"><button type="button" class="sm-btn" id="azki-oct-to-chart">مشاهده‌ی نمودار کامل OCT (با P50 و P95)</button></div>
         <div class="list-card" id="azki-oct-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
@@ -3087,7 +3110,8 @@ const azkiState = {
   activeStatus: { loaded: false, rows: [] },
   outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), dayOpen: true, dayMode: 'bar', allTags: null, companyMap: null, gen: 0 },
   chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']), oct: new Set(['avg', 'sla']) }, gen: 0 },
-  octSla: { loaded: false, byPeriod: {} },
+  octSla: { loaded: false, loading: false, byPeriod: {} },
+  octCmp: { sel: new Set(['avg', 'all', 'sla']) },
 };
 
 function faDigits(v) { return String(v).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
@@ -4589,6 +4613,64 @@ async function loadAzkiOctView() {
 }
 
 function renderAzkiOctView() {
+  renderAzkiOctViewCore();
+  renderAzkiOctCompare();
+}
+
+// نمودار مقایسه‌ی «OCT» و «SLA کل» داخل خود تب OCT (هر دو بر حسب ساعت، روی یک محور)
+function renderAzkiOctCompare() {
+  const el = document.getElementById('azki-oct-compare');
+  if (!el) return;
+  const st = azkiState.oct, sla = azkiState.octSla;
+  if (!st.rows.length) { el.innerHTML = ''; return; }
+  if (!sla.loaded && !sla.loading) {
+    sla.loading = true;
+    loadAzkiOctSla().catch(e => console.warn('SLA:', e)).finally(() => { sla.loading = false; if (sla.loaded) renderAzkiOctCompare(); });
+  }
+
+  // کارت SLA کل (میانگین دوره‌ها در بازه‌ی انتخابی)
+  const cardsEl = document.getElementById('azki-oct-cards');
+  if (cardsEl && !document.getElementById('azki-oct-sla-card')) {
+    cardsEl.insertAdjacentHTML('beforeend', '<div class="summary-card" id="azki-oct-sla-card" title="میانگین زمان صدور کارشناس‌ها از گزارش SLA (کارت ۲۰۵۱۶) — کل دوره‌ی ۲۱ تا ۲۰"><div class="label">SLA کل کارشناسان</div><div class="value is-text" id="azki-oct-sla-val">—</div><div class="sub" id="azki-oct-sla-sub"></div></div>');
+  }
+  const periodsData = Object.values(sla.byPeriod || {});
+  const valEl = document.getElementById('azki-oct-sla-val'), subEl = document.getElementById('azki-oct-sla-sub');
+  if (valEl && subEl) {
+    if (periodsData.length) {
+      const avgMin = periodsData.reduce((t, x) => t + x.minutes, 0) / periodsData.length;
+      valEl.textContent = azkiOctFmtSec(avgMin * 60);
+      const last = periodsData[periodsData.length - 1];
+      subEl.textContent = `${faDigits(last.centers)} ${last.unit === 'agents' ? 'کارشناس' : 'مرکز'} • وزن‌دار`;
+    } else {
+      valEl.textContent = '—';
+      subEl.textContent = sla.loaded ? 'برای این بازه ثبت نشده' : 'در حال بارگذاری...';
+    }
+  }
+
+  const m0 = azcBuildOctModel();
+  const ids = ['avg', 'all', 'sla'];
+  const all = ids.map(id => m0.all.find(d => d.id === id)).filter(Boolean);
+  const sel = azkiState.octCmp.sel;
+  const defs = all.filter(d => sel.has(d.id));
+  const m = Object.assign({}, m0, { all, areaId: 'avg' });
+  const n = m.points.length;
+  const chips = `<div class="azki-trend-chips">${all.map(d => `<button type="button" class="azki-trend-chip${sel.has(d.id) ? ' on' : ''}" data-id="${d.id}" style="--c:${d.color}"><i></i>${d.name}</button>`).join('')}</div>`;
+  const head = `<div class="azki-trend-head"><div class="azki-trend-title">مقایسه‌ی OCT و SLA کل (ساعت)</div></div>`;
+  let body, pb = null;
+  if (n < 2) body = '<div class="azki-trend-note">برای رسم نمودار حداقل دو روز لازم است؛ بازه را بزرگ‌تر کنید.</div>';
+  else if (!defs.length) body = '<div class="azki-trend-note">حداقل یک مورد را برای نمایش انتخاب کنید.</div>';
+  else { pb = azcPlotBuild(m, defs, 'azo-'); body = pb.html; }
+  const hint = '<div class="azki-trend-note" style="margin-top:8px;">SLA برای کل دوره‌ی ۲۱ تا ۲۰ محاسبه می‌شود و به‌صورت خط ثابت روی روزهای همان دوره نمایش داده می‌شود.</div>';
+  el.innerHTML = `<div class="azki-trend">${head}${chips}${body}${hint}</div>`;
+  el.querySelectorAll('.azki-trend-chip').forEach(btn => btn.addEventListener('click', () => {
+    const id = btn.dataset.id;
+    if (sel.has(id)) sel.delete(id); else sel.add(id);
+    renderAzkiOctCompare();
+  }));
+  if (pb) azcBindHover(pb.g);
+}
+
+function renderAzkiOctViewCore() {
   const st = azkiState.oct;
   const cardsEl = document.getElementById('azki-oct-cards');
   const noteEl = document.getElementById('azki-oct-note');
@@ -4622,7 +4704,7 @@ function renderAzkiOctView() {
     ['میانه OCT (P50)', azkiOctFmtHours(azkiOctMean(rows, 'p50_hours')), 'میانگینِ P50 روزانه در بازه'],
     ['P95 OCT', azkiOctFmtHours(azkiOctMean(rows, 'p95_hours')), 'میانگینِ P95 روزانه در بازه'],
     ['بیشترین OCT', azkiOctFmtHours(azkiOctMax(rows, 'max_hours')), 'بیشترین OCT ثبت‌شده در بازه'],
-  ].map(([label, value, tip]) => `<div class="summary-card" title="${tip}"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
+  ].map(([label, value, tip]) => `<div class="summary-card" title="${tip}"><div class="label">${label}</div><div class="value is-text">${value}</div></div>`).join('');
 
   container.innerHTML = rows.map(r => `
     <div class="row-item">
@@ -4845,7 +4927,7 @@ function azcBuildOctModel() {
     {
       id: 'sla', name: 'SLA کارشناسان (میانگین زمان صدور)', color: '#F59E0B',
       vals: rows.map(r => { const s = slaOf(r); return s ? s.minutes / 60 : null; }),
-      sub: rows.map(r => { const s = slaOf(r); return s ? `دوره ${periodLabelFromStartSort(s.periodStart)} • ${faDigits(s.centers)} مرکز` : ''; }),
+      sub: rows.map(r => { const s = slaOf(r); return s ? `دوره ${periodLabelFromStartSort(s.periodStart)} • ${faDigits(s.centers)} ${s.unit === 'agents' ? 'کارشناس' : 'مرکز'}` : ''; }),
     },
   ];
   const f = azkiState.oct;
@@ -4896,8 +4978,117 @@ async function loadAzkiOctSla() {
     const minutes = wSum > 0 ? items.reduce((a, x) => a + x.v * x.w, 0) / wSum : items.reduce((a, x) => a + x.v, 0) / items.length;
     byPeriod[ps] = { minutes, centers: items.length, periodStart: ps };
   });
+  // اگر جدول center_sla_report برای دوره‌ای خالی بود، SLA کل را از daily_targets می‌سازیم
+  // (n8n میانگین زمان صدور هر کارشناس را از کارت ۲۰۵۱۶ آنجا می‌نویسد). وزن هر کارشناس = مجموع صدورش در همان دوره.
+  const missing = periods.filter(ps => !byPeriod[ps]);
+  if (missing.length) {
+    const pEndOf = ps => { const y = Math.floor(ps / 10000), mo = Math.floor(ps / 100) % 100; return mo < 12 ? y * 10000 + (mo + 1) * 100 + 20 : (y + 1) * 10000 + 100 + 20; };
+    const tRes = await fetchAllRows((from, to) =>
+      supabaseClient.from(TABLE_TARGETS)
+        .select('agent_id, report_date_sort, avg_issuance_minutes, target_count')
+        .not('avg_issuance_minutes', 'is', null)
+        .gte('report_date_sort', Math.min(...missing))
+        .lte('report_date_sort', pEndOf(Math.max(...missing)))
+        .order('report_date_sort', { ascending: true })
+        .range(from, to)
+    );
+    if (bounds !== azkiState.bounds) return;
+    if (tRes.error) console.warn('خطا در دریافت SLA کارشناسان:', tRes.error.message);
+    else missing.forEach(ps => {
+      const lo = ps, hi = pEndOf(ps), per = {};
+      (tRes.data || []).forEach(r => {
+        const sk = Number(r.report_date_sort) || 0;
+        if (sk < lo || sk > hi) return;
+        const v = Number(r.avg_issuance_minutes);
+        if (!isFinite(v)) return;
+        const a = per[r.agent_id] || (per[r.agent_id] = { v, sk, w: 0 });
+        if (sk >= a.sk) { a.v = v; a.sk = sk; }
+        a.w += Number(r.target_count) || 0;
+      });
+      const items = Object.values(per);
+      if (!items.length) return;
+      const wSum = items.reduce((t, x) => t + x.w, 0);
+      const minutes = wSum > 0 ? items.reduce((t, x) => t + x.v * x.w, 0) / wSum : items.reduce((t, x) => t + x.v, 0) / items.length;
+      byPeriod[ps] = { minutes, centers: items.length, unit: 'agents', periodStart: ps };
+    });
+  }
   st.byPeriod = byPeriod;
   st.loaded = true;
+}
+
+function azcPlotBuild(m, defs, pfx) {
+  const n = m.points.length;
+  const W = 900, H = 300, L = m.pct ? 46 : 58, R = 14, T = 14, B = 34;
+  const pw = W - L - R, ph = H - T - B;
+  const X = i => L + pw * i / (n - 1);
+  let mx = 0;
+  defs.forEach(d => d.vals.forEach(v => { if (v !== null && v > mx) mx = v; }));
+  const top = azcNiceTop(mx, m.pct);
+  const Y = v => T + ph * (1 - v / top);
+
+  let grid = '';
+  const ticks = [];
+  if (m.pct && top >= 10) { const stp = azcPctStep(top); for (let v = 0; v <= top + 1e-9; v += stp) ticks.push(v); }
+  else { for (let k = 0; k <= 4; k++) ticks.push(top * k / 4); }
+  ticks.forEach(v => {
+    const y = Y(v);
+    grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`
+          + `<text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${m.pct ? faDigits(round2(v)) + '٪' : (m.short ? m.short(v) : formatNumber(Math.round(v)))}</text>`;
+  });
+  const step = Math.ceil(n / 8);
+  let xl = '';
+  m.points.forEach((p, i) => { if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${azcXLabel(p)}</text>`; });
+
+  let paths = '';
+  defs.forEach(d => {
+    const segs = []; let cur = null;
+    d.vals.forEach((v, i) => {
+      if (v === null) { cur = null; return; }
+      if (!cur) { cur = []; segs.push(cur); }
+      cur.push([X(i), Y(v)]);
+    });
+    const line = segs.map(sg => 'M' + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L')).join(' ');
+    if (d.id === m.areaId) {
+      const base = (T + ph).toFixed(1);
+      const area = segs.filter(sg => sg.length > 1).map(sg =>
+        `M${sg[0][0].toFixed(1)} ${base} L` + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') + ` L${sg[sg.length - 1][0].toFixed(1)} ${base} Z`).join(' ');
+      paths += `<path d="${area}" style="fill:${d.color}" opacity=".10"/>`;
+    }
+    paths += `<path d="${line}" fill="none" style="stroke:${d.color}" stroke-width="${d.id === m.areaId ? 2.8 : 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (n <= 45) d.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${d.color}"/>`; });
+  });
+
+  // مقدار هر نقطه بالای آن نوشته می‌شود (درصد یا تعداد، بسته به گزارش).
+  // اگر نقاط شلوغ باشند، برچسب‌هایی که روی هم می‌افتند حذف می‌شوند (مقدار دقیق همه‌ی نقاط در هاور/لمس هست).
+  // سری اصلی (ناحیه‌دار) اولویت دارد.
+  const placed = [];
+  let labels = '';
+  const ordered = defs.slice().sort((a, b) => (b.id === m.areaId) - (a.id === m.areaId));
+  ordered.forEach(d => d.vals.forEach((v, i) => {
+    if (v === null) return;
+    const txt = m.short ? m.short(v) : azcFmtVal(v, m.pct);
+    const w = txt.length * 6.8 + 6;
+    const px = X(i), py = Y(v);
+    let ly = py - 9;                       // خط‌پایه‌ی متن، بالای نقطه
+    if (ly - 10 < 2) ly = py + 19;         // اگر نقطه به سقف نمودار چسبیده، زیر نقطه بنویس
+    const cx = Math.min(Math.max(px, L + w / 2 + 1), W - R - w / 2 + 2);
+    const r = { x1: cx - w / 2 - 3, x2: cx + w / 2 + 3, y1: ly - 11, y2: ly + 3 };
+    if (placed.some(q => r.x1 < q.x2 && r.x2 > q.x1 && r.y1 < q.y2 && r.y2 > q.y1)) return;
+    placed.push(r);
+    labels += `<text class="azc-lbl" x="${cx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" style="fill:${d.color}">${txt}</text>`;
+  }));
+
+  const html = `
+        <div class="azki-trend-plot azc" id="${pfx}plot">
+          <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.title}">
+            ${grid}${xl}${paths}${labels}
+            <line class="azki-trend-guide" id="${pfx}guide" y1="${T}" y2="${T + ph}" style="display:none"/>
+            <g id="${pfx}hover"></g>
+            <rect id="${pfx}hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
+          </svg>
+          <div class="azki-trend-tip" id="${pfx}tip"></div>
+        </div>`;
+  return { html, g: { W, L, pw, T, ph, n, X, Y, m, defs, pfx } };
 }
 
 function azkiChartRender() {
@@ -4960,78 +5151,10 @@ function azkiChartRender() {
     } else if (!defs.length) {
       body = '<div class="azki-trend-note">حداقل یک مورد را برای نمایش روی نمودار انتخاب کنید.</div>';
     } else {
-      const W = 900, H = 300, L = m.pct ? 46 : 58, R = 14, T = 14, B = 34;
-      const pw = W - L - R, ph = H - T - B;
-      const X = i => L + pw * i / (n - 1);
-      let mx = 0;
-      defs.forEach(d => d.vals.forEach(v => { if (v !== null && v > mx) mx = v; }));
-      const top = azcNiceTop(mx, m.pct);
-      const Y = v => T + ph * (1 - v / top);
-
-      let grid = '';
-      const ticks = [];
-      if (m.pct && top >= 10) { const stp = azcPctStep(top); for (let v = 0; v <= top + 1e-9; v += stp) ticks.push(v); }
-      else { for (let k = 0; k <= 4; k++) ticks.push(top * k / 4); }
-      ticks.forEach(v => {
-        const y = Y(v);
-        grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`
-              + `<text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${m.pct ? faDigits(round2(v)) + '٪' : (m.short ? m.short(v) : formatNumber(Math.round(v)))}</text>`;
-      });
-      const step = Math.ceil(n / 8);
-      let xl = '';
-      m.points.forEach((p, i) => { if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${azcXLabel(p)}</text>`; });
-
-      let paths = '';
-      defs.forEach(d => {
-        const segs = []; let cur = null;
-        d.vals.forEach((v, i) => {
-          if (v === null) { cur = null; return; }
-          if (!cur) { cur = []; segs.push(cur); }
-          cur.push([X(i), Y(v)]);
-        });
-        const line = segs.map(sg => 'M' + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L')).join(' ');
-        if (d.id === m.areaId) {
-          const base = (T + ph).toFixed(1);
-          const area = segs.filter(sg => sg.length > 1).map(sg =>
-            `M${sg[0][0].toFixed(1)} ${base} L` + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') + ` L${sg[sg.length - 1][0].toFixed(1)} ${base} Z`).join(' ');
-          paths += `<path d="${area}" style="fill:${d.color}" opacity=".10"/>`;
-        }
-        paths += `<path d="${line}" fill="none" style="stroke:${d.color}" stroke-width="${d.id === m.areaId ? 2.8 : 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
-        if (n <= 45) d.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${d.color}"/>`; });
-      });
-
-      // مقدار هر نقطه بالای آن نوشته می‌شود (درصد یا تعداد، بسته به گزارش).
-      // اگر نقاط شلوغ باشند، برچسب‌هایی که روی هم می‌افتند حذف می‌شوند (مقدار دقیق همه‌ی نقاط در هاور/لمس هست).
-      // سری اصلی (ناحیه‌دار) اولویت دارد.
-      const placed = [];
-      let labels = '';
-      const ordered = defs.slice().sort((a, b) => (b.id === m.areaId) - (a.id === m.areaId));
-      ordered.forEach(d => d.vals.forEach((v, i) => {
-        if (v === null) return;
-        const txt = m.short ? m.short(v) : azcFmtVal(v, m.pct);
-        const w = txt.length * 6.8 + 6;
-        const px = X(i), py = Y(v);
-        let ly = py - 9;                       // خط‌پایه‌ی متن، بالای نقطه
-        if (ly - 10 < 2) ly = py + 19;         // اگر نقطه به سقف نمودار چسبیده، زیر نقطه بنویس
-        const cx = Math.min(Math.max(px, L + w / 2 + 1), W - R - w / 2 + 2);
-        const r = { x1: cx - w / 2 - 3, x2: cx + w / 2 + 3, y1: ly - 11, y2: ly + 3 };
-        if (placed.some(q => r.x1 < q.x2 && r.x2 > q.x1 && r.y1 < q.y2 && r.y2 > q.y1)) return;
-        placed.push(r);
-        labels += `<text class="azc-lbl" x="${cx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" style="fill:${d.color}">${txt}</text>`;
-      }));
-
-      body = `
-        <div class="azki-trend-plot azc" id="azc-plot">
-          <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.title}">
-            ${grid}${xl}${paths}${labels}
-            <line class="azki-trend-guide" id="azc-guide" y1="${T}" y2="${T + ph}" style="display:none"/>
-            <g id="azc-hover"></g>
-            <rect id="azc-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
-          </svg>
-          <div class="azki-trend-tip" id="azc-tip"></div>
-        </div>`;
+      const pb = azcPlotBuild(m, defs, 'azc-');
+      body = pb.html;
       root.innerHTML = tabsHtml + `<div class="azki-trend">${head}${body}</div>`;
-      azcBindHover({ W, L, pw, T, ph, n, X, Y, m, defs });
+      azcBindHover(pb.g);
       azcBindControls(root, m);
       return;
     }
@@ -5061,11 +5184,12 @@ function azcBindControls(root, m) {
 }
 
 function azcBindHover(g) {
-  const wrap = document.getElementById('azc-plot');
-  const hit = document.getElementById('azc-hit');
-  const guide = document.getElementById('azc-guide');
-  const hov = document.getElementById('azc-hover');
-  const tip = document.getElementById('azc-tip');
+  const P = g.pfx || 'azc-';
+  const wrap = document.getElementById(P + 'plot');
+  const hit = document.getElementById(P + 'hit');
+  const guide = document.getElementById(P + 'guide');
+  const hov = document.getElementById(P + 'hover');
+  const tip = document.getElementById(P + 'tip');
   if (!wrap || !hit) return;
   const svg = wrap.querySelector('svg');
 
@@ -8090,7 +8214,7 @@ document.addEventListener('visibilitychange', () => {
 </script>
 
 <style>
-.kb-wrap{direction:ltr;text-align:left;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.kb-wrap{direction:ltr;text-align:left;font-family:var(--font)}
 .kb-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
 .kb-bar input,.kb-bar select,.kb-m input,.kb-m select,.kb-m textarea,.kb-quick textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;min-width:0}
 .kb-bar input[type=search]{flex:1;min-width:140px}
@@ -8487,7 +8611,7 @@ window.kbNotifyStart=async function(){
 .att-lc>.att-ch{margin:0;min-width:130px}
 .att-ghost.out{outline:2px solid var(--danger)}
 .as-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
-.as-card{--c:var(--ink);background:var(--surface-tint);border:1px solid var(--line);border-right:4px solid var(--c);border-radius:var(--radius-sm);padding:8px 10px;display:grid;gap:2px}.as-card span{font-size:12px;color:var(--ink-soft)}.as-card b{font-size:20px;color:var(--c)}
+.as-card{--c:var(--ink);background:var(--surface-tint);border:1px solid var(--line);border-right:4px solid var(--c);border-radius:var(--radius-sm);padding:8px 10px;display:grid;gap:2px}.as-card span{font-size:12px;color:var(--ink-soft)}.as-card b{font-size:17px;color:var(--c)}
 .as-days{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .as-w{overflow-x:auto}
 .as-tbl{width:100%;border-collapse:collapse;font-size:13px;direction:rtl}.as-tbl th,.as-tbl td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}.as-tbl th{font-size:12px;color:var(--ink-soft);background:var(--surface-tint);white-space:nowrap}.as-tbl td.as-n{text-align:right;white-space:nowrap}.as-tbl small{display:block;color:var(--ink-soft);font-size:11px;font-weight:400}
