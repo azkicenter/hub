@@ -8749,9 +8749,10 @@ window.attOpen=async function(host){
 <script>
 // ============================================================
 // تب «افزودن کاربر» برای سرگروه و سرپرست
-//  - سرگروه: کارشناس به سنترهای خودش اضافه می‌کند، فعال/غیرفعال و انتقال می‌دهد
-//  - سرپرست: همین‌ها برای همه‌ی سنترها + تعریف سنتر جدید (با اساین اختیاری به سرگروه)
-// همه‌ی عملیات از طریق Edge Function «leader-users» انجام می‌شود (ساخت کاربر Auth فقط با service role ممکن است).
+//  - سرگروه: سنتر جدید (خودکار به خودش اساین می‌شود) و کارشناس به سنترهای خودش اضافه می‌کند، فعال/غیرفعال و انتقال می‌دهد
+//  - سرپرست: همین‌ها برای همه‌ی سنترها + تعیین سرگروه هر سنتر
+// همه‌ی داده‌ها در جدول‌های Supabase ذخیره می‌شود (profiles / leader_centers / center_agents)
+// و عملیات از طریق Edge Function «leader-users» انجام می‌شود (ساخت کاربر Auth فقط با service role ممکن است).
 // ============================================================
 const UM = { host: null, centers: [], agents: [], leaders: [], q: '' };
 const umEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -8768,39 +8769,63 @@ function usersOpen(host) {
     host.dataset.umInit = '1';
     host.innerHTML = `
       <style>
+        /* دکمه‌های شیشه‌ای هم‌سبک بقیه‌ی پنل‌ها */
+        .um-btn{font:inherit;font-size:13.5px;cursor:pointer;border-radius:var(--radius-sm);padding:9px 18px;font-weight:700;color:#fff;
+          border:1px solid rgba(255,255,255,.45);
+          background:linear-gradient(135deg,rgba(23,169,255,.65) 0%,rgba(22,86,245,.65) 100%);
+          box-shadow:0 10px 24px -10px rgba(22,86,245,.55),inset 0 1px 0 rgba(255,255,255,.5);
+          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);
+          transition:transform .15s,box-shadow .15s,filter .15s;outline:none}
+        .um-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+        .um-btn:active{transform:translateY(0)}
+        .um-btn:focus-visible{box-shadow:0 0 0 3px var(--accent-soft),0 10px 24px -10px rgba(22,86,245,.55)}
+        .um-btn:disabled{opacity:.55;cursor:default;transform:none;filter:none}
+        .um-btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);
+          box-shadow:var(--shadow-card)}
+        .um-btn.sm{padding:6px 12px;font-size:12px}
         .um-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
         .um-btns{display:flex;gap:8px;flex-wrap:wrap}
         .um-title{font-weight:800;font-size:15px}
-        .um-search{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);width:100%;margin-bottom:14px}
+        .um-search{font:inherit;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;margin-bottom:14px;box-sizing:border-box;
+          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);box-shadow:var(--shadow-card);outline:none}
+        .um-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
         .um-center{margin-bottom:16px}
-        .um-center-h{display:flex;justify-content:space-between;align-items:center;font-weight:800;padding:8px 4px}
+        .um-center-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px}
+        .um-center-h .um-cname{font-weight:800}
+        .um-center-h .um-lead{font-size:12px;font-weight:600;color:var(--ink-soft);margin-top:3px}
+        .um-center-h .um-lead.none{color:var(--ink-faint)}
         .um-center-h small{color:var(--ink-faint);font-weight:600}
-        .um-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+        .um-ch-end{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .um-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
         .um-row .um-name{flex:1;font-weight:700;min-width:120px}.um-row .um-user{color:var(--ink-faint);font-size:12px;direction:ltr}
         .um-row.off .um-name{color:var(--ink-faint);text-decoration:line-through}
         .um-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(34,197,94,.15);color:#16a34a}
         .um-row.off .um-badge{background:rgba(128,128,128,.15);color:var(--ink-faint)}
-        .um-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
-        .um-box{background:var(--surface,#fff);color:var(--ink);border-radius:16px;padding:20px;width:min(420px,100%);display:grid;gap:12px}
+        .um-modal{position:fixed;inset:0;background:rgba(15,27,51,.35);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+        .um-box{background:var(--surface,rgba(255,255,255,.72));color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;width:min(420px,100%);display:grid;gap:12px;
+          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);box-shadow:var(--shadow-float)}
         .um-box label{display:grid;gap:4px;font-size:12px;font-weight:700}
-        .um-box input,.um-box select{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+        .um-box input,.um-box select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-tint,transparent);color:var(--ink);outline:none}
+        .um-box input:focus,.um-box select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
         .um-box input.ltr{direction:ltr;text-align:left}
+        .um-checks{display:grid;gap:6px;max-height:240px;overflow:auto;padding:4px 2px}
+        .um-checks label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 8px;border-radius:8px;background:var(--surface-tint)}
+        .um-checks input{width:auto;padding:0}
         .um-actions{display:flex;gap:8px;justify-content:flex-end}
       </style>
       <div class="um-bar">
         <div class="um-title">افزودن کاربر و مدیریت کارشناسان</div>
         <div class="um-btns">
-          <button class="kb-btn" id="um-add" type="button">➕ افزودن کاربر</button>
-          <button class="kb-btn ghost" id="um-add-center" type="button" style="display:none">🏢 تعریف سنتر</button>
+          <button class="um-btn" id="um-add" type="button">➕ افزودن کاربر</button>
+          <button class="um-btn ghost" id="um-add-center" type="button">🏢 تعریف سنتر</button>
         </div>
       </div>
-      <input class="um-search" id="um-search" placeholder="جستجوی نام کارشناس / نام کاربری / سنتر" autocomplete="off">
+      <input class="um-search" id="um-search" placeholder="جستجوی نام کارشناس / نام کاربری / سنتر / سرگروه" autocomplete="off">
       <div id="um-list"></div>`;
     host.querySelector('#um-add').onclick = umAddModal;
     host.querySelector('#um-add-center').onclick = umCenterModal;
     host.querySelector('#um-search').addEventListener('input', e => { UM.q = e.target.value.trim(); umRender(); });
   }
-  host.querySelector('#um-add-center').style.display = umIsSup() ? '' : 'none';
   umLoad();
 }
 
@@ -8820,28 +8845,31 @@ async function umLoad() {
   list.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
   try {
     const d = await umCall({ action: 'list' });
-    UM.centers = (d.centers || []).map(c => ({ id: c.id, name: c.full_name || '—' })).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
-    UM.agents = d.agents || [];
     UM.leaders = (d.leaders || []).map(l => ({ id: l.id, name: l.full_name || '—' })).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+    UM.centers = (d.centers || []).map(c => ({ id: c.id, name: c.full_name || '—', leaderIds: c.leader_ids || [] })).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+    UM.agents = d.agents || [];
     umRender();
   } catch (e) {
     list.innerHTML = '<div class="empty-state">خطا در دریافت اطلاعات: ' + umEsc(e.message) + '</div>';
   }
 }
 
+const umLeaderNames = (c) => (c.leaderIds || []).map(id => (UM.leaders.find(l => l.id === id) || {}).name).filter(Boolean);
+
 function umRender() {
   const list = UM.host.querySelector('#um-list');
   if (!UM.centers.length) {
-    list.innerHTML = '<div class="empty-state">' + (umIsSup() ? 'هنوز سنتری تعریف نشده است' : 'هنوز سنتری به شما اساین نشده است') + '</div>';
+    list.innerHTML = '<div class="empty-state">' + (umIsSup() ? 'هنوز سنتری تعریف نشده است' : 'هنوز سنتری به شما اساین نشده است؛ با «تعریف سنتر» یک سنتر بسازید یا از سرپرست بخواهید سنتر را به شما اساین کند') + '</div>';
     return;
   }
   const q = UM.q.toLowerCase();
   const html = UM.centers.map(c => {
     const all = UM.agents.filter(a => a.center_id === c.id);
-    const centerHit = q && c.name.toLowerCase().includes(q);
+    const lnames = umLeaderNames(c);
+    const centerHit = q && (c.name.toLowerCase().includes(q) || lnames.some(n => n.toLowerCase().includes(q)));
     const ags = all.filter(a => !q || centerHit || String(a.full_name || '').toLowerCase().includes(q) || String(a.backoffice_id || '').toLowerCase().includes(q))
       .sort((a, b) => (a.status === 'disabled') - (b.status === 'disabled') || String(a.full_name).localeCompare(String(b.full_name), 'fa'));
-    if (q && !ags.length) return '';
+    if (q && !ags.length && !centerHit) return '';
     const active = all.filter(a => a.status !== 'disabled').length;
     const rows = ags.map(a => {
       const off = a.status === 'disabled';
@@ -8849,15 +8877,21 @@ function umRender() {
         <span class="um-name">${umEsc(a.full_name || '—')}</span>
         <span class="um-user">${umEsc(a.backoffice_id || '')}</span>
         <span class="um-badge">${off ? 'غیرفعال' : 'فعال'}</span>
-        ${UM.centers.length > 1 ? `<button class="kb-btn ghost" type="button" data-um-move="${a.id}">انتقال سنتر</button>` : ''}
-        <button class="kb-btn ${off ? '' : 'ghost'}" type="button" data-um-toggle="${a.id}" data-um-to="${off ? 'active' : 'disabled'}">${off ? 'فعال کردن' : 'غیرفعال کردن'}</button>
+        ${UM.centers.length > 1 ? `<button class="um-btn ghost sm" type="button" data-um-move="${a.id}">انتقال سنتر</button>` : ''}
+        <button class="um-btn sm ${off ? '' : 'ghost'}" type="button" data-um-toggle="${a.id}" data-um-to="${off ? 'active' : 'disabled'}">${off ? 'فعال کردن' : 'غیرفعال کردن'}</button>
       </div>`;
     }).join('') || '<div class="empty-state">نیرویی در این سنتر نیست</div>';
-    return `<div class="um-center list-card"><div class="um-center-h"><span>${umEsc(c.name)}</span><small>${faDigits(active)} فعال از ${faDigits(all.length)}</small></div>${rows}</div>`;
+    const lead = lnames.length ? `<div class="um-lead">سرگروه: ${lnames.map(umEsc).join('، ')}</div>` : `<div class="um-lead none">سرگروه: تعیین نشده</div>`;
+    return `<div class="um-center list-card"><div class="um-center-h">
+        <div><div class="um-cname">${umEsc(c.name)}</div>${lead}</div>
+        <div class="um-ch-end"><small>${faDigits(active)} فعال از ${faDigits(all.length)}</small>
+        ${umIsSup() ? `<button class="um-btn ghost sm" type="button" data-um-lead="${c.id}">تغییر سرگروه</button>` : ''}</div>
+      </div>${rows}</div>`;
   }).join('');
   list.innerHTML = html || '<div class="empty-state">موردی پیدا نشد</div>';
   list.querySelectorAll('[data-um-toggle]').forEach(b => b.onclick = () => umToggle(b.dataset.umToggle, b.dataset.umTo, b));
   list.querySelectorAll('[data-um-move]').forEach(b => b.onclick = () => umMoveModal(b.dataset.umMove));
+  list.querySelectorAll('[data-um-lead]').forEach(b => b.onclick = () => umLeadersModal(b.dataset.umLead));
 }
 
 async function umToggle(id, to, btn) {
@@ -8879,14 +8913,14 @@ function umModal(inner) {
 const umCenterOpts = (sel) => UM.centers.map(c => `<option value="${c.id}"${c.id === sel ? ' selected' : ''}>${umEsc(c.name)}</option>`).join('');
 
 function umAddModal() {
-  if (!UM.centers.length) { umToast(umIsSup() ? 'ابتدا یک سنتر تعریف کنید' : 'سنتری به شما اساین نشده است'); return; }
+  if (!UM.centers.length) { umToast(umIsSup() ? 'ابتدا یک سنتر تعریف کنید' : 'سنتری به شما اساین نشده است؛ ابتدا یک سنتر تعریف کنید'); return; }
   const m = umModal(`
     <div class="um-title">افزودن کاربر جدید</div>
     <label>سنتر<select id="um-c">${umCenterOpts()}</select></label>
     <label>نام و نام خانوادگی<input id="um-n" autocomplete="off"></label>
     <label>نام کاربری (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
     <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
-    <div class="um-actions"><button class="kb-btn ghost" id="um-x" type="button">انصراف</button><button class="kb-btn" id="um-ok" type="button">ثبت کاربر</button></div>`);
+    <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت کاربر</button></div>`);
   const q = s => m.querySelector(s);
   q('#um-u').addEventListener('input', e => { e.target.value = e.target.value.replace(/[^A-Za-z0-9._-]/g, ''); });
   q('#um-ok').onclick = async () => {
@@ -8899,21 +8933,37 @@ function umAddModal() {
 }
 
 function umCenterModal() {
+  const sup = umIsSup();
   const m = umModal(`
     <div class="um-title">تعریف سنتر جدید</div>
     <label>نام سنتر<input id="um-n" autocomplete="off"></label>
     <label>نام کاربری سنتر (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
     <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
-    <label>اساین به سرگروه (اختیاری)<select id="um-l"><option value="">— بدون سرگروه —</option>${UM.leaders.map(l => `<option value="${l.id}">${umEsc(l.name)}</option>`).join('')}</select></label>
-    <div class="um-actions"><button class="kb-btn ghost" id="um-x" type="button">انصراف</button><button class="kb-btn" id="um-ok" type="button">ثبت سنتر</button></div>`);
+    ${sup ? `<label>اساین به سرگروه (اختیاری)<select id="um-l"><option value="">— بدون سرگروه —</option>${UM.leaders.map(l => `<option value="${l.id}">${umEsc(l.name)}</option>`).join('')}</select></label>`
+          : `<div style="font-size:12px;color:var(--ink-soft)">این سنتر خودکار به شما اساین می‌شود.</div>`}
+    <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت سنتر</button></div>`);
   const q = s => m.querySelector(s);
   q('#um-u').addEventListener('input', e => { e.target.value = e.target.value.replace(/[^A-Za-z0-9._-]/g, ''); });
   q('#um-ok').onclick = async () => {
-    const body = { action: 'create_center', full_name: q('#um-n').value.trim(), username: q('#um-u').value.trim(), password: q('#um-p').value, leader_id: q('#um-l').value };
+    const body = { action: 'create_center', full_name: q('#um-n').value.trim(), username: q('#um-u').value.trim(), password: q('#um-p').value, leader_id: sup ? q('#um-l').value : '' };
     if (!body.full_name || !body.username || body.password.length < 6) { umToast('نام، نام کاربری و رمز (حداقل ۶ کاراکتر) را کامل وارد کنید'); return; }
     q('#um-ok').disabled = true;
     try { await umCall(body); m.remove(); umToast('سنتر ساخته شد'); await umLoad(); }
     catch (e) { q('#um-ok').disabled = false; umToast('ثبت نشد: ' + e.message); }
+  };
+}
+
+function umLeadersModal(centerId) {
+  const c = UM.centers.find(x => x.id === centerId); if (!c) return;
+  const m = umModal(`
+    <div class="um-title">سرگروه‌های «${umEsc(c.name)}»</div>
+    <div class="um-checks">${UM.leaders.length ? UM.leaders.map(l => `<label><input type="checkbox" value="${l.id}"${(c.leaderIds || []).includes(l.id) ? ' checked' : ''}>${umEsc(l.name)}</label>`).join('') : '<div class="empty-state">سرگروهی در سیستم نیست</div>'}</div>
+    <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ذخیره</button></div>`);
+  m.querySelector('#um-ok').onclick = async () => {
+    const ids = [...m.querySelectorAll('.um-checks input:checked')].map(i => i.value);
+    m.querySelector('#um-ok').disabled = true;
+    try { await umCall({ action: 'set_center_leaders', center_id: centerId, leader_ids: ids }); m.remove(); umToast('سرگروه سنتر ذخیره شد'); await umLoad(); }
+    catch (e) { m.querySelector('#um-ok').disabled = false; umToast('انجام نشد: ' + e.message); }
   };
 }
 
@@ -8922,7 +8972,7 @@ function umMoveModal(agentId) {
   const m = umModal(`
     <div class="um-title">انتقال «${umEsc(a.full_name || '')}» به سنتر دیگر</div>
     <label>سنتر مقصد<select id="um-c">${umCenterOpts(a.center_id)}</select></label>
-    <div class="um-actions"><button class="kb-btn ghost" id="um-x" type="button">انصراف</button><button class="kb-btn" id="um-ok" type="button">انتقال</button></div>`);
+    <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">انتقال</button></div>`);
   m.querySelector('#um-ok').onclick = async () => {
     const to = m.querySelector('#um-c').value;
     if (to === a.center_id) { m.remove(); return; }
