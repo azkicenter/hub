@@ -2261,6 +2261,7 @@
         <div class="list-card" id="azki-oct-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
+        <div id="azki-oct-centers"></div>
       </div>
 
       <div id="sup-view-azki-chart" style="display:none;">
@@ -2409,7 +2410,8 @@ const TABLE_META = "app_meta";
 const TABLE_AZKI_PERIOD = "azki_center_period_report";
 const TABLE_AZKI_BREAKDOWN = "azki_center_breakdown_report";
 const TABLE_AZKI_SHIFT = "azki_center_shift_report";
-const TABLE_CENTER_OCT = "oct_center_daily";
+const TABLE_CENTER_OCT = "azki_center_oct_daily";          // OCT روزانه (ورک‌فلوی داشبورد، ۴ ترکیب بدون سررسید × بدون الحاقیه)
+const TABLE_CENTER_OCT_BRK = "azki_center_oct_breakdown";  // OCT به تفکیک اسم مرکز (همه‌ی کاربرهای دارای «مرکز» در اسم)
 const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "پارسیان", "پردیس", "تجارت نو", "تعاون", "حکمت", "دی", "رازی", "سامان", "سینا", "کوثر", "ما", "معلم", "نوین", "هوشمند فردا"];
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
@@ -3080,11 +3082,11 @@ const azkiState = {
   centers: { loaded: false, rows: [] },
   shifts:  { loaded: false, rows: [], mode: 'date' },
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
-  oct:     { loaded: false, rows: [], excludeMaturity: true, excludeAddendum: true },
+  oct:     { loaded: false, rows: [], brk: [], excludeMaturity: true, excludeAddendum: true },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
   outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), dayOpen: true, dayMode: 'bar', allTags: null, companyMap: null, gen: 0 },
-  chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']), oct: new Set(['avg']) }, gen: 0 },
+  chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']), oct: new Set(['avg', 'sla']) }, gen: 0 },
   octSla: { loaded: false, byPeriod: {} },
 };
 
@@ -4492,12 +4494,14 @@ async function loadAzkiCompareView() {
 }
 
 // ============================================================
-// تب «OCT» (زمان صدور مراکز صدور = زمان بستن − زمان خرید سفارش)
-// منبع: کارت ۲۳۶۵۳ متابیس (OCT ازکی سنتر، مبنای «تاریخ بستن»). ورک‌فلوی جدای «OCT Center» در n8n
-// هر ۲ ساعت همین کارت رو برای ۴ ترکیبِ (بدون سررسید × بدون الحاقیه) می‌خونه و تو جدول
-// oct_center_daily می‌ریزه. اینجا هیچ OCT ای دوباره محاسبه نمی‌شه؛ همون عددهای کارت نشون داده می‌شه.
+// تب «OCT» (زمان صدور = زمان بستن − زمان خرید سفارش)
+// منبع: ورک‌فلوی داشبورد در n8n (کارت ۱۵۰۹۲ متابیس) هر ۲ ساعت OCT رو حساب می‌کنه و برای ۴ ترکیبِ
+// (بدون سررسید × بدون الحاقیه) تو دو جدول azki_center_oct_daily و azki_center_oct_breakdown می‌ریزه.
+// • محدود به شرکت/مرکز/کارشناسِ تعریف‌شده نیست؛ همه‌ی کاربرهای صدور شمرده می‌شن.
+// • «میانگین OCT مراکز» = سفارش‌های کاربرهایی که «مرکز» تو اسمشونه؛ «میانگین کل صدور سنتر» = همه‌ی سفارش‌ها.
+// • تو لیست مراکز، هر کاربری که اسم مرکز داشته باشه میانگین زمان پاسخگوی خودش رو داره.
 // نکته: صدک‌ها (P50/P75/P95) قابل جمع‌زدن نیستن، پس این تب فقط «روزانه» نشون می‌ده و فیلتر
-// «حالت نمایش» و «شرکت بیمه» (که کارت نداره) توش مخفیه.
+// «حالت نمایش» و «شرکت بیمه» توش مخفیه.
 // توجه: «محاسبه حقوق» هنوز از SLA اپراتورها استفاده می‌کنه و به این تب ربطی نداره.
 // ============================================================
 function azkiOctFmtSec(sec) {
@@ -4517,7 +4521,7 @@ const azkiOctMin = (rows, key) => { const v = azkiOctNums(rows, key); return v.l
 
 function azkiOctFilterText() {
   const st = azkiState.oct;
-  return `ازکی سنتر • مبنای تاریخ بستن • ${st.excludeMaturity ? 'بدون سررسید' : 'همراه با سررسید'} • ${st.excludeAddendum ? 'بدون الحاقیه' : 'همراه با الحاقیه'}`;
+  return `ازکی سنتر • مبنای تاریخ صدور • ${st.excludeMaturity ? 'بدون سررسید' : 'همراه با سررسید'} • ${st.excludeAddendum ? 'بدون الحاقیه' : 'همراه با الحاقیه'}`;
 }
 
 async function fetchAzkiOctRows(bounds, excludeAddendum, excludeMaturity) {
@@ -4534,22 +4538,53 @@ async function fetchAzkiOctRows(bounds, excludeAddendum, excludeMaturity) {
   );
 }
 
+async function fetchAzkiOctBreakdown(bounds, excludeAddendum, excludeMaturity) {
+  return fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_CENTER_OCT_BRK)
+      .select('*')
+      .eq('exclude_addendum', excludeAddendum)
+      .eq('exclude_maturity', excludeMaturity)
+      .gte('report_date', bounds.startDate)
+      .lte('report_date', bounds.endDate)
+      .order('report_date', { ascending: true })
+      .range(from, to)
+  );
+}
+
+// میانگین وزنی OCT هر مرکز در کل بازه (وزن = تعداد سفارشِ دارای OCT)
+function azkiOctCenterAgg(rows) {
+  const m = {};
+  rows.forEach(r => {
+    const name = r.center_name || 'نامشخص';
+    const g = m[name] || (m[name] = { name, orders: 0, octN: 0, sum: 0 });
+    g.orders += r.orders_count || 0;
+    g.octN += r.oct_n || 0;
+    g.sum += Number(r.oct_sum_hours) || 0;
+  });
+  return Object.values(m).map(g => ({ ...g, avg: g.octN ? g.sum / g.octN : null }))
+    .sort((a, b) => (b.orders - a.orders) || a.name.localeCompare(b.name, 'fa'));
+}
+
 async function loadAzkiOctView() {
   if (!azkiAllowed()) return;
   const bounds = getAzkiBounds();
   const st = azkiState.oct;
   const exA = st.excludeAddendum, exM = st.excludeMaturity;
   document.getElementById('azki-oct-label').textContent = azkiRangeText(bounds);
-  const res = await fetchAzkiOctRows(bounds, exA, exM);
+  const [res, brkRes] = await Promise.all([fetchAzkiOctRows(bounds, exA, exM), fetchAzkiOctBreakdown(bounds, exA, exM)]);
   // اگه وسط لود بازه یا یکی از دو فیلتر عوض شده، این جواب کهنه‌ست
   if (bounds !== azkiState.bounds || exA !== st.excludeAddendum || exM !== st.excludeMaturity) return;
   if (res.error) {
     document.getElementById('azki-oct-cards').innerHTML = '';
     document.getElementById('azki-oct-note').textContent = '';
+    document.getElementById('azki-oct-centers').innerHTML = '';
     document.getElementById('azki-oct-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${azkiShiftEsc(res.error.message)}</div>`;
     return;
   }
+  if (brkRes.error) console.warn('خطا در دریافت OCT تفکیک مراکز:', brkRes.error.message);
   st.rows = res.data || [];
+  st.brk = brkRes.error ? [] : (brkRes.data || []);
   st.loaded = true;
   renderAzkiOctView();
 }
@@ -4565,7 +4600,8 @@ function renderAzkiOctView() {
   if (!st.rows.length) {
     cardsEl.innerHTML = '';
     noteEl.textContent = azkiOctFilterText();
-    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه پیدا نشد</div>';
+    document.getElementById('azki-oct-centers').innerHTML = '';
+    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه و این ترکیبِ فیلتر پیدا نشد (اگه فیلتر «بدون سررسید/الحاقیه» روشنه، مطمئن شو ورک‌فلو برای اون ترکیب اجرا شده)</div>';
     return;
   }
 
@@ -4577,8 +4613,13 @@ function renderAzkiOctView() {
   }
   noteEl.textContent = azkiOctFilterText() + updText;
 
+  const wAvg = (sumKey, nKey, avgKey) => {
+    const sum = rows.reduce((a, r) => a + (Number(r[sumKey]) || 0), 0), n = rows.reduce((a, r) => a + (r[nKey] || 0), 0);
+    return n ? sum / n : azkiOctMean(rows, avgKey);
+  };
   cardsEl.innerHTML = [
-    ['میانگین OCT', azkiOctFmtHours(azkiOctMean(rows, 'avg_hours')), 'میانگینِ «میانگین روزانه»ها در بازه'],
+    ['میانگین OCT مراکز', azkiOctFmtHours(wAvg('oct_sum_hours', 'oct_n', 'avg_hours')), 'میانگین وزنیِ زمان صدور سفارش‌های همه‌ی کاربرهای مرکز در بازه'],
+    ['میانگین کل صدور سنتر', azkiOctFmtHours(wAvg('all_oct_sum_hours', 'all_oct_n', 'all_avg_hours')), 'میانگین وزنیِ زمان صدور همه‌ی سفارش‌ها (همه‌ی کاربرهای صدور، بدون محدودیت به لیست تعریف‌شده)'],
     ['میانه OCT (P50)', azkiOctFmtHours(azkiOctMean(rows, 'p50_hours')), 'میانگینِ P50 روزانه در بازه'],
     ['P95 OCT', azkiOctFmtHours(azkiOctMean(rows, 'p95_hours')), 'میانگینِ P95 روزانه در بازه'],
     ['بیشترین OCT', azkiOctFmtHours(azkiOctMax(rows, 'max_hours')), 'بیشترین OCT ثبت‌شده در بازه'],
@@ -4588,14 +4629,31 @@ function renderAzkiOctView() {
     <div class="row-item">
       <div class="row-date">${faDigits(r.report_date_jalali)}</div>
       <div class="row-main row-stats">
+        <span class="mini-stat"><span class="k">کل صدور سنتر</span><b>${azkiOctFmtHours(r.all_avg_hours)}</b></span>
         <span class="mini-stat"><span class="k">میانه (P50)</span><b>${azkiOctFmtHours(r.p50_hours)}</b></span>
         <span class="mini-stat"><span class="k">P75</span><b>${azkiOctFmtHours(r.p75_hours)}</b></span>
         <span class="mini-stat"><span class="k">P95</span><b>${azkiOctFmtHours(r.p95_hours)}</b></span>
         <span class="mini-stat"><span class="k">بیشترین</span><b>${azkiOctFmtHours(r.max_hours)}</b></span>
         <span class="mini-stat"><span class="k">کمترین</span><b>${azkiOctFmtHours(r.min_hours)}</b></span>
       </div>
-      <div class="row-badge pay-amount" title="میانگین OCT این روز">${azkiOctFmtHours(r.avg_hours)}</div>
+      <div class="row-badge pay-amount" title="میانگین OCT مراکز در این روز">${azkiOctFmtHours(r.avg_hours)}</div>
     </div>`).join('');
+
+  // میانگین زمان پاسخگویی هر مرکز (هر کاربری که «مرکز» تو اسمش بوده)
+  const cEl = document.getElementById('azki-oct-centers');
+  const centers = azkiOctCenterAgg(st.brk || []);
+  cEl.innerHTML = centers.length ? `
+    <div class="list-card">
+      <div class="period-label" style="margin:8px 0;">میانگین زمان پاسخگویی هر مرکز در بازه (${faDigits(centers.length)} مرکز)</div>
+      ${centers.map(c => `
+      <div class="row-item">
+        <div class="row-date" style="min-width:0;">${azkiShiftEsc(c.name)}</div>
+        <div class="row-main row-stats">
+          <span class="mini-stat"><span class="k">تعداد سفارش</span><b>${formatNumber(c.orders)}</b></span>
+        </div>
+        <div class="row-badge pay-amount" title="میانگین زمان صدور این مرکز">${azkiOctFmtHours(c.avg)}</div>
+      </div>`).join('')}
+    </div>` : '<div class="empty-state">تفکیک مراکز برای این بازه ثبت نشده</div>';
 }
 
 // فیلترهای «بدون سررسید» / «بدون الحاقیه»: هر تغییر، دوباره از جدول می‌خونه
@@ -4624,14 +4682,23 @@ function azkiBuildOctExport() {
   const h2 = v => (v === null || v === undefined || !isFinite(Number(v))) ? '' : round2(Number(v));
   const sheet = azkiXlsxSheet({
     title: 'گزارش OCT ازکی سنتر — به تفکیک روز (ساعت)',
-    headers: ['تاریخ', 'میانگین (ساعت)', 'میانه P50 (ساعت)', 'P75 (ساعت)', 'P95 (ساعت)', 'بیشترین (ساعت)', 'کمترین (ساعت)'],
-    rows: rows.map(r => [r.report_date_jalali, h2(r.avg_hours), h2(r.p50_hours), h2(r.p75_hours), h2(r.p95_hours), h2(r.max_hours), h2(r.min_hours)]),
+    headers: ['تاریخ', 'میانگین مراکز (ساعت)', 'میانه P50 (ساعت)', 'P75 (ساعت)', 'P95 (ساعت)', 'بیشترین (ساعت)', 'کمترین (ساعت)', 'میانگین کل صدور سنتر (ساعت)'],
+    rows: rows.map(r => [r.report_date_jalali, h2(r.avg_hours), h2(r.p50_hours), h2(r.p75_hours), h2(r.p95_hours), h2(r.max_hours), h2(r.min_hours), h2(r.all_avg_hours)]),
     total: ['میانگین روزها / بیشترین / کمترین', h2(azkiOctMean(rows, 'avg_hours')), h2(azkiOctMean(rows, 'p50_hours')), h2(azkiOctMean(rows, 'p75_hours')),
-      h2(azkiOctMean(rows, 'p95_hours')), h2(azkiOctMax(rows, 'max_hours')), h2(azkiOctMin(rows, 'min_hours'))],
-    widths: [34, 18, 18, 14, 14, 18, 18], fmts: ['text', 'pct', 'pct', 'pct', 'pct', 'pct', 'pct'],
+      h2(azkiOctMean(rows, 'p95_hours')), h2(azkiOctMax(rows, 'max_hours')), h2(azkiOctMin(rows, 'min_hours')), h2(azkiOctMean(rows, 'all_avg_hours'))],
+    widths: [34, 18, 18, 14, 14, 18, 18, 22], fmts: ['text', 'pct', 'pct', 'pct', 'pct', 'pct', 'pct', 'pct'],
     metaLine2: azkiOctFilterText(),
   });
-  return { sheets: [['OCT روزانه', sheet]], label: 'گزارش-OCT' };
+  const centers = azkiOctCenterAgg(st.brk || []);
+  const sheet2 = azkiXlsxSheet({
+    title: 'میانگین زمان پاسخگویی هر مرکز (ساعت)',
+    headers: ['نام مرکز', 'تعداد سفارش', 'میانگین OCT (ساعت)'],
+    rows: centers.map(c => [c.name, c.orders, h2(c.avg)]),
+    total: ['مجموع', centers.reduce((a, c) => a + c.orders, 0), ''],
+    widths: [44, 16, 20], fmts: ['text', 'int', 'pct'],
+    metaLine2: azkiOctFilterText(),
+  });
+  return { sheets: [['OCT روزانه', sheet], ['OCT هر مرکز', sheet2]], label: 'گزارش-OCT' };
 }
 
 function azkiMiniStatsHtml(total, center) {
@@ -4772,11 +4839,12 @@ function azcBuildOctModel() {
   };
   const col = key => rows.map(r => (r[key] === null || r[key] === undefined || !isFinite(Number(r[key]))) ? null : Number(r[key]));
   const all = [
-    { id: 'avg', name: 'میانگین OCT', color: 'var(--accent-deep)', vals: col('avg_hours'), sub: rows.map(() => '') },
+    { id: 'avg', name: 'میانگین OCT مراکز', color: 'var(--accent-deep)', vals: col('avg_hours'), sub: rows.map(r => r.oct_n ? `${formatNumber(r.oct_n)} سفارش` : '') },
+    { id: 'all', name: 'میانگین زمان صدور کل صدور سنتر', color: '#7C5CE0', vals: col('all_avg_hours'), sub: rows.map(r => r.all_oct_n ? `${formatNumber(r.all_oct_n)} سفارش` : '') },
     { id: 'p50', name: 'میانه (P50)', color: '#1fa971', vals: col('p50_hours'), sub: rows.map(() => '') },
     { id: 'p95', name: 'P95', color: '#e0453f', vals: col('p95_hours'), sub: rows.map(() => '') },
     {
-      id: 'sla', name: 'SLA: میانگین زمان صدور کل مراکز', color: '#F59E0B',
+      id: 'sla', name: 'SLA کارشناسان (میانگین زمان صدور)', color: '#F59E0B',
       vals: rows.map(r => { const s = slaOf(r); return s ? s.minutes / 60 : null; }),
       sub: rows.map(r => { const s = slaOf(r); return s ? `دوره ${periodLabelFromStartSort(s.periodStart)} • ${faDigits(s.centers)} مرکز` : ''; }),
     },
