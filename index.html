@@ -1801,6 +1801,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg>
         حضور و غیاب
       </button>
+      <button class="tab-btn" data-team-tab="users" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>
+        افزودن کاربر
+      </button>
     </div>
     <div class="subtabs" id="team-subtabs" style="display:none;">
       <button class="subtab-btn" data-team-tab="azki-shifts" type="button">
@@ -1879,6 +1883,7 @@
 
     <div class="panel" id="panel-kanban"></div>
     <div class="panel" id="panel-attendance"></div>
+    <div class="panel" id="panel-users"></div>
     <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
     <div class="panel" id="panel-azki-oct"></div>
@@ -2014,6 +2019,10 @@
         <button class="tab-btn" data-sup-tab="attendance" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg>
           حضور و غیاب
+        </button>
+        <button class="tab-btn" data-sup-tab="users" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>
+          افزودن کاربر
         </button>
       </div>
       <div class="subtabs" id="supervisor-subtabs" style="display:none;">
@@ -2258,6 +2267,7 @@
 
       <div id="sup-view-kanban" style="display:none;"></div>
       <div id="sup-view-attendance" style="display:none;"></div>
+      <div id="sup-view-users" style="display:none;"></div>
 
       <div id="sup-view-azki-payroll" style="display:none;">
         <div class="period-label" id="azki-payroll-label"></div>
@@ -2488,7 +2498,7 @@ function teamShowTab(tab) {
   }
   document.getElementById('panel-team').classList.remove('active');
   document.getElementById('panel-team-bugs').classList.remove('active');
-  ['panel-azki-compare', 'panel-azki-oct', 'panel-azki-chart', 'panel-azki-outage', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll', 'panel-kanban', 'panel-attendance'].forEach(id => {
+  ['panel-azki-compare', 'panel-azki-oct', 'panel-azki-chart', 'panel-azki-outage', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll', 'panel-kanban', 'panel-attendance', 'panel-users'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2510,6 +2520,7 @@ function teamShowTab(tab) {
   if (tab === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
   if (tab === 'kanban') kbOpen(document.getElementById('panel-kanban'));
   if (tab === 'attendance') attOpen(document.getElementById('panel-attendance'));
+  if (tab === 'users') usersOpen(document.getElementById('panel-users'));
   if (window.refreshGlassReveals) window.refreshGlassReveals();
 }
 document.querySelectorAll('#team-tabs .tab-btn').forEach(btn => {
@@ -2861,6 +2872,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
     $('sup-view-kanban').style.display = which === 'kanban' ? '' : 'none';
     $('sup-view-attendance').style.display = which === 'attendance' ? '' : 'none';
+    $('sup-view-users').style.display = which === 'users' ? '' : 'none';
     // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
     $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
     document.querySelector('main').classList.toggle('sm-wide', which === 'map');
@@ -2877,6 +2889,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
     if (which === 'kanban') kbOpen($('sup-view-kanban'));
     if (which === 'attendance') attOpen($('sup-view-attendance'));
+    if (which === 'users') usersOpen($('sup-view-users'));
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   }
   document.querySelectorAll('#supervisor-tabs .tab-btn').forEach(btn => {
@@ -8732,5 +8745,192 @@ window.attOpen=async function(host){
 })();
 </script>
 
+
+<script>
+// ============================================================
+// تب «افزودن کاربر» برای سرگروه و سرپرست
+//  - سرگروه: کارشناس به سنترهای خودش اضافه می‌کند، فعال/غیرفعال و انتقال می‌دهد
+//  - سرپرست: همین‌ها برای همه‌ی سنترها + تعریف سنتر جدید (با اساین اختیاری به سرگروه)
+// همه‌ی عملیات از طریق Edge Function «leader-users» انجام می‌شود (ساخت کاربر Auth فقط با service role ممکن است).
+// ============================================================
+const UM = { host: null, centers: [], agents: [], leaders: [], q: '' };
+const umEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const umIsSup = () => currentUserRole === 'supervisor';
+function umToast(m) {
+  const t = document.createElement('div'); t.className = 'kb-toast'; t.textContent = m; t.onclick = () => t.remove();
+  document.body.appendChild(t); setTimeout(() => t.remove(), 6000);
+}
+
+function usersOpen(host) {
+  if (!host) return;
+  UM.host = host;
+  if (!host.dataset.umInit) {
+    host.dataset.umInit = '1';
+    host.innerHTML = `
+      <style>
+        .um-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+        .um-btns{display:flex;gap:8px;flex-wrap:wrap}
+        .um-title{font-weight:800;font-size:15px}
+        .um-search{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);width:100%;margin-bottom:14px}
+        .um-center{margin-bottom:16px}
+        .um-center-h{display:flex;justify-content:space-between;align-items:center;font-weight:800;padding:8px 4px}
+        .um-center-h small{color:var(--ink-faint);font-weight:600}
+        .um-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+        .um-row .um-name{flex:1;font-weight:700;min-width:120px}.um-row .um-user{color:var(--ink-faint);font-size:12px;direction:ltr}
+        .um-row.off .um-name{color:var(--ink-faint);text-decoration:line-through}
+        .um-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(34,197,94,.15);color:#16a34a}
+        .um-row.off .um-badge{background:rgba(128,128,128,.15);color:var(--ink-faint)}
+        .um-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+        .um-box{background:var(--surface,#fff);color:var(--ink);border-radius:16px;padding:20px;width:min(420px,100%);display:grid;gap:12px}
+        .um-box label{display:grid;gap:4px;font-size:12px;font-weight:700}
+        .um-box input,.um-box select{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+        .um-box input.ltr{direction:ltr;text-align:left}
+        .um-actions{display:flex;gap:8px;justify-content:flex-end}
+      </style>
+      <div class="um-bar">
+        <div class="um-title">افزودن کاربر و مدیریت کارشناسان</div>
+        <div class="um-btns">
+          <button class="kb-btn" id="um-add" type="button">➕ افزودن کاربر</button>
+          <button class="kb-btn ghost" id="um-add-center" type="button" style="display:none">🏢 تعریف سنتر</button>
+        </div>
+      </div>
+      <input class="um-search" id="um-search" placeholder="جستجوی نام کارشناس / نام کاربری / سنتر" autocomplete="off">
+      <div id="um-list"></div>`;
+    host.querySelector('#um-add').onclick = umAddModal;
+    host.querySelector('#um-add-center').onclick = umCenterModal;
+    host.querySelector('#um-search').addEventListener('input', e => { UM.q = e.target.value.trim(); umRender(); });
+  }
+  host.querySelector('#um-add-center').style.display = umIsSup() ? '' : 'none';
+  umLoad();
+}
+
+async function umCall(body) {
+  const { data, error } = await supabaseClient.functions.invoke('leader-users', { body });
+  if (error) {
+    let msg = error.message;
+    try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (_) {}
+    throw new Error(msg);
+  }
+  if (data && data.error) throw new Error(data.error);
+  return data;
+}
+
+async function umLoad() {
+  const list = UM.host.querySelector('#um-list');
+  list.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+  try {
+    const d = await umCall({ action: 'list' });
+    UM.centers = (d.centers || []).map(c => ({ id: c.id, name: c.full_name || '—' })).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+    UM.agents = d.agents || [];
+    UM.leaders = (d.leaders || []).map(l => ({ id: l.id, name: l.full_name || '—' })).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+    umRender();
+  } catch (e) {
+    list.innerHTML = '<div class="empty-state">خطا در دریافت اطلاعات: ' + umEsc(e.message) + '</div>';
+  }
+}
+
+function umRender() {
+  const list = UM.host.querySelector('#um-list');
+  if (!UM.centers.length) {
+    list.innerHTML = '<div class="empty-state">' + (umIsSup() ? 'هنوز سنتری تعریف نشده است' : 'هنوز سنتری به شما اساین نشده است') + '</div>';
+    return;
+  }
+  const q = UM.q.toLowerCase();
+  const html = UM.centers.map(c => {
+    const all = UM.agents.filter(a => a.center_id === c.id);
+    const centerHit = q && c.name.toLowerCase().includes(q);
+    const ags = all.filter(a => !q || centerHit || String(a.full_name || '').toLowerCase().includes(q) || String(a.backoffice_id || '').toLowerCase().includes(q))
+      .sort((a, b) => (a.status === 'disabled') - (b.status === 'disabled') || String(a.full_name).localeCompare(String(b.full_name), 'fa'));
+    if (q && !ags.length) return '';
+    const active = all.filter(a => a.status !== 'disabled').length;
+    const rows = ags.map(a => {
+      const off = a.status === 'disabled';
+      return `<div class="um-row${off ? ' off' : ''}">
+        <span class="um-name">${umEsc(a.full_name || '—')}</span>
+        <span class="um-user">${umEsc(a.backoffice_id || '')}</span>
+        <span class="um-badge">${off ? 'غیرفعال' : 'فعال'}</span>
+        ${UM.centers.length > 1 ? `<button class="kb-btn ghost" type="button" data-um-move="${a.id}">انتقال سنتر</button>` : ''}
+        <button class="kb-btn ${off ? '' : 'ghost'}" type="button" data-um-toggle="${a.id}" data-um-to="${off ? 'active' : 'disabled'}">${off ? 'فعال کردن' : 'غیرفعال کردن'}</button>
+      </div>`;
+    }).join('') || '<div class="empty-state">نیرویی در این سنتر نیست</div>';
+    return `<div class="um-center list-card"><div class="um-center-h"><span>${umEsc(c.name)}</span><small>${faDigits(active)} فعال از ${faDigits(all.length)}</small></div>${rows}</div>`;
+  }).join('');
+  list.innerHTML = html || '<div class="empty-state">موردی پیدا نشد</div>';
+  list.querySelectorAll('[data-um-toggle]').forEach(b => b.onclick = () => umToggle(b.dataset.umToggle, b.dataset.umTo, b));
+  list.querySelectorAll('[data-um-move]').forEach(b => b.onclick = () => umMoveModal(b.dataset.umMove));
+}
+
+async function umToggle(id, to, btn) {
+  const name = (UM.agents.find(a => a.id === id) || {}).full_name || '';
+  if (!confirm(to === 'disabled' ? `«${name}» غیرفعال شود؟` : `«${name}» فعال شود؟`)) return;
+  btn.disabled = true;
+  try { await umCall({ action: 'set_status', agent_id: id, status: to }); umToast(to === 'disabled' ? 'کاربر غیرفعال شد' : 'کاربر فعال شد'); await umLoad(); }
+  catch (e) { btn.disabled = false; umToast('انجام نشد: ' + e.message); }
+}
+
+function umModal(inner) {
+  const m = document.createElement('div'); m.className = 'um-modal';
+  m.innerHTML = `<div class="um-box">${inner}</div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  m.querySelector('#um-x').onclick = () => m.remove();
+  return m;
+}
+const umCenterOpts = (sel) => UM.centers.map(c => `<option value="${c.id}"${c.id === sel ? ' selected' : ''}>${umEsc(c.name)}</option>`).join('');
+
+function umAddModal() {
+  if (!UM.centers.length) { umToast(umIsSup() ? 'ابتدا یک سنتر تعریف کنید' : 'سنتری به شما اساین نشده است'); return; }
+  const m = umModal(`
+    <div class="um-title">افزودن کاربر جدید</div>
+    <label>سنتر<select id="um-c">${umCenterOpts()}</select></label>
+    <label>نام و نام خانوادگی<input id="um-n" autocomplete="off"></label>
+    <label>نام کاربری (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
+    <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
+    <div class="um-actions"><button class="kb-btn ghost" id="um-x" type="button">انصراف</button><button class="kb-btn" id="um-ok" type="button">ثبت کاربر</button></div>`);
+  const q = s => m.querySelector(s);
+  q('#um-u').addEventListener('input', e => { e.target.value = e.target.value.replace(/[^A-Za-z0-9._-]/g, ''); });
+  q('#um-ok').onclick = async () => {
+    const body = { action: 'create', center_id: q('#um-c').value, full_name: q('#um-n').value.trim(), username: q('#um-u').value.trim(), password: q('#um-p').value };
+    if (!body.full_name || !body.username || body.password.length < 6) { umToast('نام، نام کاربری و رمز (حداقل ۶ کاراکتر) را کامل وارد کنید'); return; }
+    q('#um-ok').disabled = true;
+    try { await umCall(body); m.remove(); umToast('کاربر ساخته شد'); await umLoad(); }
+    catch (e) { q('#um-ok').disabled = false; umToast('ثبت نشد: ' + e.message); }
+  };
+}
+
+function umCenterModal() {
+  const m = umModal(`
+    <div class="um-title">تعریف سنتر جدید</div>
+    <label>نام سنتر<input id="um-n" autocomplete="off"></label>
+    <label>نام کاربری سنتر (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
+    <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
+    <label>اساین به سرگروه (اختیاری)<select id="um-l"><option value="">— بدون سرگروه —</option>${UM.leaders.map(l => `<option value="${l.id}">${umEsc(l.name)}</option>`).join('')}</select></label>
+    <div class="um-actions"><button class="kb-btn ghost" id="um-x" type="button">انصراف</button><button class="kb-btn" id="um-ok" type="button">ثبت سنتر</button></div>`);
+  const q = s => m.querySelector(s);
+  q('#um-u').addEventListener('input', e => { e.target.value = e.target.value.replace(/[^A-Za-z0-9._-]/g, ''); });
+  q('#um-ok').onclick = async () => {
+    const body = { action: 'create_center', full_name: q('#um-n').value.trim(), username: q('#um-u').value.trim(), password: q('#um-p').value, leader_id: q('#um-l').value };
+    if (!body.full_name || !body.username || body.password.length < 6) { umToast('نام، نام کاربری و رمز (حداقل ۶ کاراکتر) را کامل وارد کنید'); return; }
+    q('#um-ok').disabled = true;
+    try { await umCall(body); m.remove(); umToast('سنتر ساخته شد'); await umLoad(); }
+    catch (e) { q('#um-ok').disabled = false; umToast('ثبت نشد: ' + e.message); }
+  };
+}
+
+function umMoveModal(agentId) {
+  const a = UM.agents.find(x => x.id === agentId); if (!a) return;
+  const m = umModal(`
+    <div class="um-title">انتقال «${umEsc(a.full_name || '')}» به سنتر دیگر</div>
+    <label>سنتر مقصد<select id="um-c">${umCenterOpts(a.center_id)}</select></label>
+    <div class="um-actions"><button class="kb-btn ghost" id="um-x" type="button">انصراف</button><button class="kb-btn" id="um-ok" type="button">انتقال</button></div>`);
+  m.querySelector('#um-ok').onclick = async () => {
+    const to = m.querySelector('#um-c').value;
+    if (to === a.center_id) { m.remove(); return; }
+    m.querySelector('#um-ok').disabled = true;
+    try { await umCall({ action: 'move_agent', agent_id: agentId, center_id: to }); m.remove(); umToast('کاربر منتقل شد'); await umLoad(); }
+    catch (e) { m.querySelector('#um-ok').disabled = false; umToast('انجام نشد: ' + e.message); }
+  };
+}
+</script>
 </body>
 </html>
