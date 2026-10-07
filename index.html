@@ -2410,8 +2410,8 @@ const TABLE_META = "app_meta";
 const TABLE_AZKI_PERIOD = "azki_center_period_report";
 const TABLE_AZKI_BREAKDOWN = "azki_center_breakdown_report";
 const TABLE_AZKI_SHIFT = "azki_center_shift_report";
-const TABLE_CENTER_OCT = "azki_center_oct_daily";          // OCT روزانه (ورک‌فلوی داشبورد، ۴ ترکیب بدون سررسید × بدون الحاقیه)
-const TABLE_CENTER_OCT_BRK = "azki_center_oct_breakdown";  // OCT به تفکیک اسم مرکز (همه‌ی کاربرهای دارای «مرکز» در اسم)
+const TABLE_CENTER_OCT = "oct_center_daily";               // OCT روزانه از کارت ۲۳۶۵۳ (۴ ترکیب بدون سررسید × بدون الحاقیه)
+const TABLE_CENTER_OCT_BRK = "azki_center_oct_breakdown";  // OCT به تفکیک اسم مرکز (از کارت ۱۵۰۹۲؛ همه‌ی کاربرهای دارای «مرکز» در اسم)
 const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "پارسیان", "پردیس", "تجارت نو", "تعاون", "حکمت", "دی", "رازی", "سامان", "سینا", "کوثر", "ما", "معلم", "نوین", "هوشمند فردا"];
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
@@ -4495,13 +4495,12 @@ async function loadAzkiCompareView() {
 
 // ============================================================
 // تب «OCT» (زمان صدور = زمان بستن − زمان خرید سفارش)
-// منبع: ورک‌فلوی داشبورد در n8n (کارت ۱۵۰۹۲ متابیس) هر ۲ ساعت OCT رو حساب می‌کنه و برای ۴ ترکیبِ
-// (بدون سررسید × بدون الحاقیه) تو دو جدول azki_center_oct_daily و azki_center_oct_breakdown می‌ریزه.
-// • محدود به شرکت/مرکز/کارشناسِ تعریف‌شده نیست؛ همه‌ی کاربرهای صدور شمرده می‌شن.
-// • «میانگین OCT مراکز» = سفارش‌های کاربرهایی که «مرکز» تو اسمشونه؛ «میانگین کل صدور سنتر» = همه‌ی سفارش‌ها.
-// • تو لیست مراکز، هر کاربری که اسم مرکز داشته باشه میانگین زمان پاسخگوی خودش رو داره.
-// نکته: صدک‌ها (P50/P75/P95) قابل جمع‌زدن نیستن، پس این تب فقط «روزانه» نشون می‌ده و فیلتر
-// «حالت نمایش» و «شرکت بیمه» توش مخفیه.
+// منبع: کارت ۲۳۶۵۳ متابیس (مبنای «تاریخ بستن»). ورک‌فلوی داشبورد در n8n هر ۲ ساعت کارت رو برای ۴ ترکیبِ
+// (بدون سررسید × بدون الحاقیه) می‌خونه و تو جدول oct_center_daily می‌ریزه:
+//  • avg/p50/p75/p95/max/min = فقط operator_type «ازکی سنتر»
+//  • all_avg_hours = همون کارت بدون فیلتر operator_type (کل صدور)
+// لیست «میانگین هر مرکز» از جدول azki_center_oct_breakdown (کارت ۱۵۰۹۲، همه‌ی کاربرهای دارای «مرکز» در اسم) می‌آد.
+// نکته: صدک‌ها قابل جمع‌زدن نیستن، پس این تب فقط «روزانه» نشون می‌ده؛ فیلتر «حالت نمایش» و «شرکت بیمه» توش مخفیه.
 // توجه: «محاسبه حقوق» هنوز از SLA اپراتورها استفاده می‌کنه و به این تب ربطی نداره.
 // ============================================================
 function azkiOctFmtSec(sec) {
@@ -4521,7 +4520,7 @@ const azkiOctMin = (rows, key) => { const v = azkiOctNums(rows, key); return v.l
 
 function azkiOctFilterText() {
   const st = azkiState.oct;
-  return `ازکی سنتر • مبنای تاریخ صدور • ${st.excludeMaturity ? 'بدون سررسید' : 'همراه با سررسید'} • ${st.excludeAddendum ? 'بدون الحاقیه' : 'همراه با الحاقیه'}`;
+  return `ازکی سنتر • مبنای تاریخ بستن • ${st.excludeMaturity ? 'بدون سررسید' : 'همراه با سررسید'} • ${st.excludeAddendum ? 'بدون الحاقیه' : 'همراه با الحاقیه'}`;
 }
 
 async function fetchAzkiOctRows(bounds, excludeAddendum, excludeMaturity) {
@@ -4618,8 +4617,8 @@ function renderAzkiOctView() {
     return n ? sum / n : azkiOctMean(rows, avgKey);
   };
   cardsEl.innerHTML = [
-    ['میانگین OCT مراکز', azkiOctFmtHours(wAvg('oct_sum_hours', 'oct_n', 'avg_hours')), 'میانگین وزنیِ زمان صدور سفارش‌های همه‌ی کاربرهای مرکز در بازه'],
-    ['میانگین کل صدور سنتر', azkiOctFmtHours(wAvg('all_oct_sum_hours', 'all_oct_n', 'all_avg_hours')), 'میانگین وزنیِ زمان صدور همه‌ی سفارش‌ها (همه‌ی کاربرهای صدور، بدون محدودیت به لیست تعریف‌شده)'],
+    ['میانگین OCT مراکز', azkiOctFmtHours(wAvg('oct_sum_hours', 'oct_n', 'avg_hours')), 'میانگینِ «میانگین روزانه»ها در بازه (ازکی سنتر)'],
+    ['میانگین کل صدور سنتر', azkiOctFmtHours(wAvg('all_oct_sum_hours', 'all_oct_n', 'all_avg_hours')), 'میانگینِ «میانگین روزانه»ها در بازه (کل صدور، بدون فیلتر نوع کارشناس)'],
     ['میانه OCT (P50)', azkiOctFmtHours(azkiOctMean(rows, 'p50_hours')), 'میانگینِ P50 روزانه در بازه'],
     ['P95 OCT', azkiOctFmtHours(azkiOctMean(rows, 'p95_hours')), 'میانگینِ P95 روزانه در بازه'],
     ['بیشترین OCT', azkiOctFmtHours(azkiOctMax(rows, 'max_hours')), 'بیشترین OCT ثبت‌شده در بازه'],
