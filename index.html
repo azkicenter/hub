@@ -4640,7 +4640,7 @@ function renderAzkiOctCompare() {
       const avgMin = periodsData.reduce((t, x) => t + x.minutes, 0) / periodsData.length;
       valEl.textContent = azkiOctFmtSec(avgMin * 60);
       const last = periodsData[periodsData.length - 1];
-      subEl.textContent = `${faDigits(last.centers)} ${last.unit === 'agents' ? 'کارشناس' : 'مرکز'} • وزن‌دار`;
+      subEl.textContent = `${faDigits(last.centers)} ${last.unit === 'agents' ? 'کارشناس' : 'مرکز'} • وزن‌دار` + (last.noOrders ? ` • ${faDigits(last.noOrders)} مرکز بدون آمار صدور` : '');
     } else {
       valEl.textContent = '—';
       subEl.textContent = sla.loaded ? 'برای این بازه ثبت نشده' : 'در حال بارگذاری...';
@@ -4974,9 +4974,14 @@ async function loadAzkiOctSla() {
       .filter(r => r.period_start_sort === ps && r.avg_issuance_minutes != null && isFinite(Number(r.avg_issuance_minutes)))
       .map(r => { const k = normCenterKey(r.center_key || r.center_name); return { k, v: Number(r.avg_issuance_minutes), w: (weight[ps] && weight[ps][k]) || 0 }; });
     if (!items.length) return;
-    const wSum = items.reduce((a, x) => a + x.w, 0);
-    const minutes = wSum > 0 ? items.reduce((a, x) => a + x.v * x.w, 0) / wSum : items.reduce((a, x) => a + x.v, 0) / items.length;
-    byPeriod[ps] = { minutes, centers: items.length, periodStart: ps };
+    // همه‌ی مراکزِ گزارش SLA حساب می‌شن، حتی اگه اسمشون تو گزارش صدور (تب تعداد صدور) نباشه:
+    // وزن = تعداد صدور مرکز؛ مرکزی که آمار صدور نداره با «میانگین وزنِ بقیه‌ی مراکز» وارد می‌شه (حذف نمی‌شه).
+    const known = items.filter(x => x.w > 0);
+    const avgW = known.length ? known.reduce((a, x) => a + x.w, 0) / known.length : 1;
+    const eff = items.map(x => ({ v: x.v, w: x.w > 0 ? x.w : avgW }));
+    const wSum = eff.reduce((a, x) => a + x.w, 0);
+    const minutes = eff.reduce((a, x) => a + x.v * x.w, 0) / wSum;
+    byPeriod[ps] = { minutes, centers: items.length, noOrders: items.length - known.length, unit: 'centers', periodStart: ps };
   });
   // اگر جدول center_sla_report برای دوره‌ای خالی بود، SLA کل را از daily_targets می‌سازیم
   // (n8n میانگین زمان صدور هر کارشناس را از کارت ۲۰۵۱۶ آنجا می‌نویسد). وزن هر کارشناس = مجموع صدورش در همان دوره.
