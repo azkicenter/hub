@@ -8789,6 +8789,13 @@ async function init(){
   A.centers=(p.data||[]).map(x=>({id:x.id,name:x.full_name||'—'})).sort((a,b)=>a.name.localeCompare(b.name,'fa'));
   A.sel=A.centers[0]&&A.centers[0].id;
 }
+async function nextCount(ids){
+  A.nextN=0; if(!mgr()||!ids||!ids.length||!isCur())return;
+  const nw=add(A.week,7), r=await supabaseClient.from(TE).select('id',{count:'exact',head:true}).in('center_id',ids).gte('day',nw).lte('day',add(nw,6));
+  A.nextN=r.count||0;
+}
+const nextBar=()=>A.nextN>0?`<div class="att-req"><span>برای <b>هفته‌ی بعد</b> ${faDigits(A.nextN)} ردیف حضور و غیاب ثبت شده است (سنترها معمولاً هفته‌ی بعد را پر می‌کنند).</span><span class="att-sp"></span><button class="kb-btn" id="a-gonext" type="button">نمایش هفته‌ی بعد</button></div>`:'';
+function bindNext(H){const b=H.querySelector('#a-gonext');if(b)b.onclick=()=>{A.week=add(A.week,7);loadWeek()}}
 async function loadWeek(){
   const h=await supabaseClient.from(TH).select('*'); A.hol={}; (h.data||[]).forEach(x=>A.hol[x.day]=x.title||'تعطیل رسمی');
   const c=A.sel;
@@ -8799,7 +8806,7 @@ async function loadWeek(){
       const p=ids.length?await fetchAllRows((f,t)=>supabaseClient.from('profiles').select('id, full_name, status').in('id',ids).eq('role','agent').range(f,t)):{data:[]};
       A.agents[c]=(p.data||[]).filter(x=>x.status!=='disabled').map(x=>({id:x.id,name:x.full_name||'—'})).sort((a,b)=>a.name.localeCompare(b.name,'fa'));
     }
-    const er=await supabaseClient.from(TE).select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.entries=er.data||[];
+    const er=await supabaseClient.from(TE).select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.entries=er.data||[]; if(er.error)toast('خواندن حضور و غیاب انجام نشد: '+er.error.message);
     const ur=await supabaseClient.from(TU).select('*').eq('center_id',c).eq('week_start',A.week).maybeSingle(); A.unlock=ur.data||null;
     const lr=await supabaseClient.from('att_locks').select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.locks={}; (lr.data||[]).forEach(x=>A.locks[x.day]=x);
     // اگه برای کسی ورودی ثبت شده ولی تو لیست نفرات سنتر نیست (مثلاً دسترسی/اساین)، اسمش رو جدا می‌گیریم تا همه‌ی نقش‌ها یکسان ببینن
@@ -8817,6 +8824,7 @@ async function loadWeek(){
   }
   if(A.role!=='center'){const pr=await supabaseClient.from(TU).select('*').eq('status','pending').order('requested_at');A.pending=pr.data||[]}
   if(mgr()&&A.view==='status')await loadStatus();
+  await nextCount(A.view==='status'?(A.centers||[]).map(c=>c.id):(A.sel?[A.sel]:[]));
   render();
 }
 function render(){
@@ -8845,10 +8853,10 @@ function renderSet(){
   const cols=DN.map((n,i)=>{const d=add(A.week,i),list=dayEn(d).sort((a,b)=>aname(a.agent_id).localeCompare(aname(b.agent_id),'fa')),cp=capped(d),act=actN(d);
     return `<div class="att-col${A.hol[d]?' hol':''}" data-day="${d}"><div class="att-h"><b>${n}</b><span>${fdate(d)}</span>${A.hol[d]?`<em>${e(A.hol[d])}</em>`:i===6?'<em>جمعه</em>':''}${cp?`<small class="${act>=cap()?'full':''}">${faDigits(act)} از ${faDigits(cap())} فعال</small>`:''}${!cOpen(d)?'<small class="full">🔒 قفل</small>':''}${mgr()?`<button type="button" data-lk="${d}">${cOpen(d)?'🔒 قفل کن':'🔓 باز کن'}</button>`:''}</div><div class="att-chs">${lane(d,'morning',list)}${lane(d,'night',list)}</div></div>`}).join('');
   
-  H.innerHTML=`<div class="att"><div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="a-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="a-next" type="button">هفته بعد</button></div>${badge}<span class="att-sp"></span>
+  H.innerHTML=`<div class="att">${nextBar()}<div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="a-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="a-next" type="button">هفته بعد</button></div>${badge}<span class="att-sp"></span>
   ${A.role!=='center'?`<select id="a-c">${A.centers.map(c=>`<option value="${e(c.id)}">${e(c.name)}</option>`).join('')}</select><button class="kb-btn ghost" id="a-sus" type="button">تعلیق کاربر</button>`:''}
   ${sup()?'<button class="kb-btn ghost" id="a-hol" type="button">تعطیلات رسمی</button>':''}${mgr()?`<span class="att-lk"><button class="kb-btn ghost" id="a-lkw" type="button">🔒 قفل هفته</button><button class="kb-btn ghost" id="a-ukw" type="button">🔓 باز کردن هفته</button><label><input type="checkbox" id="a-lkall" ${A.lkAll?'checked':''}> اعمال روی همه سنترها</label></span>`:''}${ed?'<button class="kb-btn ghost" id="a-carry" type="button" title="چیدمان آخرین هفته‌ی ثبت‌شده را روی جاهای خالی این هفته اعمال می‌کند">📋 اعمال چیدمان هفته قبل</button>':''}${canReq?'<button class="kb-btn" id="a-req" type="button">درخواست باز کردن قفل</button>':''}</div>${reqs}<div class="att-wrap${ed?'':' nopool'}">${pool}<div class="att-grid">${cols}</div></div></div>`;
-  const q=i=>H.querySelector(i);
+  const q=i=>H.querySelector(i); bindNext(H);
   q('#a-prev').onclick=()=>{A.week=add(A.week,-7);loadWeek()}; q('#a-next').onclick=()=>{A.week=add(A.week,7);loadWeek()};
   if(q('#a-c')){q('#a-c').value=A.sel;q('#a-c').onchange=ev=>{A.sel=ev.target.value;loadWeek()};q('#a-sus').onclick=suspendModal}
   if(q('#a-hol'))q('#a-hol').onclick=holModal;
@@ -8885,7 +8893,7 @@ async function loadStatus(){
   const lr=await supabaseClient.from('att_locks').select('*').in('center_id',ids).gte('day',A.week).lte('day',w1);
   const ur=await supabaseClient.from(TU).select('center_id').in('center_id',ids).eq('week_start',A.week).eq('status','approved');
   const locks={},unl={}; (lr.data||[]).forEach(x=>locks[x.center_id+'|'+x.day]=x); (ur.data||[]).forEach(x=>unl[x.center_id]=true);
-  A.st.data={entries:er.data||[],locks,unl};
+  A.st.data={entries:er.data||[],locks,unl}; if(er.error)toast('خواندن حضور و غیاب انجام نشد: '+er.error.message);
   // نفراتی که برای‌شون ورودی ثبت شده ولی تو لیست اساین اون سنتر نیستن هم نمایش داده می‌شن (مثل پنل خود سنتر)
   const ent=er.data||[], have={}; ids.forEach(c=>{have[c]=new Set((A.agents[c]||[]).map(a=>a.id))});
   const miss=[...new Set(ent.filter(x=>!have[x.center_id]||!have[x.center_id].has(x.agent_id)).map(x=>x.agent_id))];
@@ -8928,11 +8936,11 @@ function renderStatus(){
     }
     return `<tr>${main}</tr>${detail}`}).join('');
   const head=!wk?'<th>سنتر</th><th>کل</th><th>حاضر</th><th>ساعتی</th><th>مرخصی</th><th>اف</th><th>تعلیق</th><th>ثبت‌نشده</th><th>شیفت</th><th>پوشش</th>':'<th>سنتر</th>'+days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('');
-  H.innerHTML=`<div class="att"><div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="s-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="s-next" type="button">هفته بعد</button></div><span class="att-sp"></span>
+  H.innerHTML=`<div class="att">${nextBar()}<div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="s-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="s-next" type="button">هفته بعد</button></div><span class="att-sp"></span>
     <div class="subtabs" style="margin:0"><button class="subtab-btn${wk?'':' active'}" data-sm="day" type="button">نمای روزانه</button><button class="subtab-btn${wk?' active':''}" data-sm="week" type="button">نمای هفتگی</button></div>
     <button class="kb-btn ghost" id="s-carry" type="button" title="چیدمان آخرین هفته‌ی ثبت‌شده را روی جاهای خالی این هفته‌ی همه سنترها اعمال می‌کند">📋 اعمال چیدمان هفته قبل روی همه سنترها</button><button class="kb-btn ghost" id="s-all" type="button">باز/بسته کردن همه</button></div>${dayBar}${cards}
     <div class="as-w"><table class="as-tbl"><thead><tr>${head}</tr></thead><tbody>${rowsHtml}</tbody></table></div></div>`;
-  const q=i=>H.querySelector(i);
+  const q=i=>H.querySelector(i); bindNext(H);
   q('#s-prev').onclick=()=>{A.week=add(A.week,-7);loadWeek()}; q('#s-next').onclick=()=>{A.week=add(A.week,7);loadWeek()};
   H.querySelectorAll('[data-sm]').forEach(b=>b.onclick=()=>{A.st.mode=b.dataset.sm;renderStatus()});
   H.querySelectorAll('[data-sd]').forEach(b=>b.onclick=()=>{A.st.day=b.dataset.sd;renderStatus()});
