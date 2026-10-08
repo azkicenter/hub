@@ -345,6 +345,7 @@
   }
   .logout-link:hover { color: var(--danger); }
 
+
   main {
     max-width: 880px;
     margin: 0 auto;
@@ -1761,9 +1762,8 @@
     </div>
     <div class="who">
       <span class="user-chip" id="user-label"></span>
-      <button class="logout-link" id="logout-btn">
+      <button class="logout-link" id="logout-btn" title="خروج" aria-label="خروج">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        خروج
       </button>
     </div>
   </header>
@@ -1836,7 +1836,7 @@
       </button>
       <button class="tab-btn" data-team-tab="users" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>
-        سنتر
+        مدیریت کاربران
       </button>
     </div>
     <div class="subtabs" id="team-subtabs" style="display:none;">
@@ -2056,7 +2056,7 @@
         </button>
         <button class="tab-btn" data-sup-tab="users" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>
-          سنتر
+          مدیریت کاربران
         </button>
       </div>
       <div class="subtabs" id="supervisor-subtabs" style="display:none;">
@@ -6052,7 +6052,7 @@ async function loadLastUpdate() {
 
 async function enterApp(user) {
   loginScreen.style.display = 'none';
-  appScreen.style.display = 'block';
+  // appScreen عمداً اینجا نشون داده نمی‌شه؛ تا نقش کاربر مشخص نشه، تب‌های پیش‌فرض (اپراتور) نباید چشمک بزنن
   document.getElementById('user-label').textContent = '';
 
   currentUserId = user.id;
@@ -6154,6 +6154,8 @@ async function enterApp(user) {
     loadTargets(user.id);
     loadBugs(user.id);
   }
+
+  appScreen.style.display = 'block';
 
   if (isLeader || isSupervisor || (!isAdmin && !isCenter)) kbNotifyStart();
 
@@ -9008,7 +9010,7 @@ window.attOpen=async function(host){
 
 <script>
 // ============================================================
-// تب «سنتر» (افزودن سنتر / افزودن کاربر / لیست کشویی کاربران هر سنتر) برای سرگروه و سرپرست
+// تب «مدیریت کاربران» (افزودن سنتر / افزودن کاربر / لیست کشویی کاربران هر سنتر) برای سرگروه و سرپرست
 //  - سرگروه: سنتر جدید (خودکار به خودش اساین می‌شود) و کارشناس به سنترهای خودش اضافه می‌کند و فعال/غیرفعال می‌کند
 //  - سرپرست: همین‌ها برای همه‌ی سنترها + تعیین سرگروه هر سنتر
 // همه‌ی داده‌ها در جدول‌های Supabase ذخیره می‌شود (profiles / leader_centers / center_agents)
@@ -9273,7 +9275,7 @@ const LEADER_TAB_DEFS = [
   ['azki-shifts', 'گزارش ← تفکیک شیفت', 1], ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1],
   ['azki-chart', 'گزارش ← نمودار', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
-  ['attendance', 'حضور و غیاب'], ['users', 'سنتر']
+  ['attendance', 'حضور و غیاب'], ['users', 'مدیریت کاربران']
 ];
 
 function applyLeaderHiddenTabs(hiddenList) {
@@ -9323,6 +9325,47 @@ async function umLeaderTabsModal() {
     catch (e) { m.querySelector('#um-ok').disabled = false; umToast('ذخیره نشد: ' + e.message); }
   };
 }
+</script>
+<script>
+// بروزرسانی خودکار داده‌ها بدون رفرش مرورگر
+//  - هر ۳ دقیقه (فقط وقتی تب مرورگر باز است و کاربر مشغول تایپ/پنجره‌ی بازی نیست)
+//  - وقتی بعد از ≥۹۰ ثانیه به تب برمی‌گردد
+(function () {
+  let busy = false, last = Date.now();
+
+  function userIsBusy() {
+    const el = document.activeElement, tag = el && el.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    return !!document.querySelector('.um-modal, .kb-modal, .kb-m, .att-m');
+  }
+
+  async function softRefresh(manual) {
+    if (busy || !currentUserId) return;
+    if (!manual && userIsBusy()) return;
+    busy = true;
+    try {
+      const jobs = [];
+      if (typeof loadLastUpdate === 'function') jobs.push(loadLastUpdate());
+      switch (currentUserRole) {
+        case 'admin': jobs.push(loadAdminView()); break;
+        case 'center': jobs.push(loadCenterView(currentUserId)); break;
+        case 'leader': jobs.push(loadTeamView(currentUserId)); break;
+        case 'supervisor': jobs.push(loadSupervisorView()); break;
+        default: jobs.push(loadTargets(currentUserId), loadBugs(currentUserId));
+      }
+      if (UM.host && UM.host.dataset.umInit && UM.host.offsetParent !== null) jobs.push(umLoad());
+      await Promise.allSettled(jobs);
+    } finally {
+      busy = false; last = Date.now();
+      if (window.refreshGlassReveals) window.refreshGlassReveals();
+    }
+  }
+
+  setInterval(() => { if (document.visibilityState === 'visible' && Date.now() - last >= 180000) softRefresh(false); }, 30000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - last >= 90000) softRefresh(false);
+  });
+})();
 </script>
 </body>
 </html>
