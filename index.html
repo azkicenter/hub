@@ -1702,6 +1702,65 @@
     .shift-card-count { font-size: 20px; }
   }
 </style>
+<style id="um-styles">
+        /* دکمه‌های شیشه‌ای هم‌سبک بقیه‌ی پنل‌ها */
+        .um-btn{font:inherit;font-size:13.5px;cursor:pointer;border-radius:var(--radius-sm);padding:9px 18px;font-weight:700;color:#fff;
+          border:1px solid rgba(255,255,255,.45);
+          background:linear-gradient(135deg,rgba(23,169,255,.65) 0%,rgba(22,86,245,.65) 100%);
+          box-shadow:0 10px 24px -10px rgba(22,86,245,.55),inset 0 1px 0 rgba(255,255,255,.5);
+          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);
+          transition:transform .15s,box-shadow .15s,filter .15s;outline:none}
+        .um-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+        .um-btn:active{transform:translateY(0)}
+        .um-btn:focus-visible{box-shadow:0 0 0 3px var(--accent-soft),0 10px 24px -10px rgba(22,86,245,.55)}
+        .um-btn:disabled{opacity:.55;cursor:default;transform:none;filter:none}
+        .um-btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);
+          box-shadow:var(--shadow-card)}
+        .um-btn.sm{padding:6px 12px;font-size:12px}
+        .um-btn.danger{color:#dc2626;border-color:rgba(220,38,38,.45)}
+        .um-btn.danger:hover{background:rgba(220,38,38,.1)}
+        .um-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+        .um-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .um-title{font-weight:800;font-size:15px}
+        .um-search{font:inherit;font-size:13px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:190px;max-width:100%;margin:0;box-sizing:border-box;
+          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);box-shadow:var(--shadow-card);outline:none}
+        .um-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+        .um-center{margin-bottom:12px;overflow:hidden}
+        .um-center-h{cursor:pointer;-webkit-user-select:none;user-select:none}
+        .um-center-h:hover{background:var(--surface-tint,rgba(128,128,128,.06))}
+        .um-caret{display:inline-block;width:10px;height:10px;border-inline-end:2px solid var(--ink-soft);border-bottom:2px solid var(--ink-soft);transform:rotate(45deg);transition:transform .2s;margin-inline-end:4px;flex:none}
+        .um-center.open .um-caret{transform:rotate(-135deg)}
+        .um-cwrap{display:flex;align-items:center;gap:10px}
+        .um-body{display:none}
+        .um-center.open .um-body{display:block}
+        .um-center-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px}
+        .um-center-h .um-cname{font-weight:800}
+        .um-center-h .um-lead{font-size:12px;font-weight:600;color:var(--ink-soft);margin-top:3px}
+        .um-center-h .um-lead.none{color:var(--ink-faint)}
+        .um-center-h small{color:var(--ink-faint);font-weight:600}
+        .um-ch-end{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .um-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
+        .um-row .um-name{flex:1;font-weight:700;min-width:120px}.um-row .um-user{color:var(--ink-faint);font-size:12px;direction:ltr}
+        .um-row.off .um-name{color:var(--ink-faint);text-decoration:line-through}
+        .um-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(34,197,94,.15);color:#16a34a}
+        .um-row.off .um-badge{background:rgba(128,128,128,.15);color:var(--ink-faint)}
+        .um-modal{position:fixed;inset:0;background:rgba(15,27,51,.35);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+        .um-box{background:var(--surface,rgba(255,255,255,.72));color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;width:min(420px,100%);display:grid;gap:12px;
+          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);box-shadow:var(--shadow-float)}
+        .um-box label{display:grid;gap:4px;font-size:12px;font-weight:700}
+        .um-box input,.um-box select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-tint,transparent);color:var(--ink);outline:none}
+        .um-box input:focus,.um-box select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+        .um-box input.ltr{direction:ltr;text-align:left}
+        .um-checks{display:grid;gap:6px;max-height:240px;overflow:auto;padding:4px 2px}
+        .um-checks label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 8px;border-radius:8px;background:var(--surface-tint)}
+        .um-checks input{width:auto;padding:0}
+        .um-actions{display:flex;gap:8px;justify-content:flex-end}
+        .um-bar{justify-content:center}
+        .um-btns{justify-content:center}
+        .um-settings{max-width:520px;margin:0 auto;display:grid;gap:12px}
+        .um-settings .um-checks{max-height:none}
+        .um-settings .um-actions{justify-content:center}
+</style>
 <style id="perf-overrides">
 /* بهینه‌سازی سرعت: بلور (backdrop-filter) روی المان‌های تکراری حذف شد؛ هدر/مودال‌ها همچنان شیشه‌ای هستند */
 .list-card,.row-item,.bug-item,.team-item,.leader-item,.summary-card,.ticket-primary-card,.ticket-hero-card,
@@ -2058,6 +2117,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>
           مدیریت کاربران
         </button>
+        <button class="tab-btn" data-sup-tab="settings" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          تنظیمات
+        </button>
       </div>
       <div class="subtabs" id="supervisor-subtabs" style="display:none;">
           <button class="subtab-btn" data-sup-tab="azki-period" type="button">
@@ -2310,6 +2373,7 @@
       <div id="sup-view-kanban" style="display:none;"></div>
       <div id="sup-view-attendance" style="display:none;"></div>
       <div id="sup-view-users" style="display:none;"></div>
+      <div id="sup-view-settings" style="display:none;"></div>
 
       <div id="sup-view-azki-payroll" style="display:none;">
         <div class="period-label" id="azki-payroll-label"></div>
@@ -2918,6 +2982,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-kanban').style.display = which === 'kanban' ? '' : 'none';
     $('sup-view-attendance').style.display = which === 'attendance' ? '' : 'none';
     $('sup-view-users').style.display = which === 'users' ? '' : 'none';
+    $('sup-view-settings').style.display = which === 'settings' ? '' : 'none';
     // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
     $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
     document.querySelector('main').classList.toggle('sm-wide', which === 'map');
@@ -2935,6 +3000,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'kanban') kbOpen($('sup-view-kanban'));
     if (which === 'attendance') attOpen($('sup-view-attendance'));
     if (which === 'users') usersOpen($('sup-view-users'));
+    if (which === 'settings') settingsOpen($('sup-view-settings'));
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   }
   document.querySelectorAll('#supervisor-tabs .tab-btn').forEach(btn => {
@@ -9030,72 +9096,16 @@ function usersOpen(host) {
   if (!host.dataset.umInit) {
     host.dataset.umInit = '1';
     host.innerHTML = `
-      <style>
-        /* دکمه‌های شیشه‌ای هم‌سبک بقیه‌ی پنل‌ها */
-        .um-btn{font:inherit;font-size:13.5px;cursor:pointer;border-radius:var(--radius-sm);padding:9px 18px;font-weight:700;color:#fff;
-          border:1px solid rgba(255,255,255,.45);
-          background:linear-gradient(135deg,rgba(23,169,255,.65) 0%,rgba(22,86,245,.65) 100%);
-          box-shadow:0 10px 24px -10px rgba(22,86,245,.55),inset 0 1px 0 rgba(255,255,255,.5);
-          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);
-          transition:transform .15s,box-shadow .15s,filter .15s;outline:none}
-        .um-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
-        .um-btn:active{transform:translateY(0)}
-        .um-btn:focus-visible{box-shadow:0 0 0 3px var(--accent-soft),0 10px 24px -10px rgba(22,86,245,.55)}
-        .um-btn:disabled{opacity:.55;cursor:default;transform:none;filter:none}
-        .um-btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);
-          box-shadow:var(--shadow-card)}
-        .um-btn.sm{padding:6px 12px;font-size:12px}
-        .um-btn.danger{color:#dc2626;border-color:rgba(220,38,38,.45)}
-        .um-btn.danger:hover{background:rgba(220,38,38,.1)}
-        .um-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-        .um-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-        .um-title{font-weight:800;font-size:15px}
-        .um-search{font:inherit;font-size:13px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:190px;max-width:100%;margin:0;box-sizing:border-box;
-          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);box-shadow:var(--shadow-card);outline:none}
-        .um-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-        .um-center{margin-bottom:12px;overflow:hidden}
-        .um-center-h{cursor:pointer;-webkit-user-select:none;user-select:none}
-        .um-center-h:hover{background:var(--surface-tint,rgba(128,128,128,.06))}
-        .um-caret{display:inline-block;width:10px;height:10px;border-inline-end:2px solid var(--ink-soft);border-bottom:2px solid var(--ink-soft);transform:rotate(45deg);transition:transform .2s;margin-inline-end:4px;flex:none}
-        .um-center.open .um-caret{transform:rotate(-135deg)}
-        .um-cwrap{display:flex;align-items:center;gap:10px}
-        .um-body{display:none}
-        .um-center.open .um-body{display:block}
-        .um-center-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px}
-        .um-center-h .um-cname{font-weight:800}
-        .um-center-h .um-lead{font-size:12px;font-weight:600;color:var(--ink-soft);margin-top:3px}
-        .um-center-h .um-lead.none{color:var(--ink-faint)}
-        .um-center-h small{color:var(--ink-faint);font-weight:600}
-        .um-ch-end{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-        .um-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
-        .um-row .um-name{flex:1;font-weight:700;min-width:120px}.um-row .um-user{color:var(--ink-faint);font-size:12px;direction:ltr}
-        .um-row.off .um-name{color:var(--ink-faint);text-decoration:line-through}
-        .um-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(34,197,94,.15);color:#16a34a}
-        .um-row.off .um-badge{background:rgba(128,128,128,.15);color:var(--ink-faint)}
-        .um-modal{position:fixed;inset:0;background:rgba(15,27,51,.35);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
-        .um-box{background:var(--surface,rgba(255,255,255,.72));color:var(--ink);border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;width:min(420px,100%);display:grid;gap:12px;
-          -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);backdrop-filter:blur(var(--glass-blur)) saturate(180%);box-shadow:var(--shadow-float)}
-        .um-box label{display:grid;gap:4px;font-size:12px;font-weight:700}
-        .um-box input,.um-box select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-tint,transparent);color:var(--ink);outline:none}
-        .um-box input:focus,.um-box select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-        .um-box input.ltr{direction:ltr;text-align:left}
-        .um-checks{display:grid;gap:6px;max-height:240px;overflow:auto;padding:4px 2px}
-        .um-checks label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 8px;border-radius:8px;background:var(--surface-tint)}
-        .um-checks input{width:auto;padding:0}
-        .um-actions{display:flex;gap:8px;justify-content:flex-end}
-      </style>
       <div class="um-bar">
         <div class="um-btns">
           <button class="um-btn" id="um-add" type="button">➕ افزودن کاربر</button>
           <button class="um-btn ghost" id="um-add-center" type="button">🏢 افزودن سنتر</button>
-          ${umIsSup() ? '<button class="um-btn ghost" id="um-tabs" type="button">👁 تب‌های سرگروه</button>' : ''}
           <input class="um-search" id="um-search" type="search" placeholder="جستجو…" title="جستجوی نام کارشناس / نام کاربری / سنتر / سرگروه" autocomplete="off">
         </div>
       </div>
       <div id="um-list"></div>`;
     host.querySelector('#um-add').onclick = umAddModal;
     host.querySelector('#um-add-center').onclick = umCenterModal;
-    const tabsBtn = host.querySelector('#um-tabs'); if (tabsBtn) tabsBtn.onclick = umLeaderTabsModal;
     let umT; host.querySelector('#um-search').addEventListener('input', e => { const v = e.target.value.trim(); clearTimeout(umT); umT = setTimeout(() => { UM.q = v; umRender(); }, 150); });
     const lst = host.querySelector('#um-list');
     lst.addEventListener('click', umListClick);
@@ -9308,21 +9318,26 @@ async function loadLeaderHiddenTabs() {
   } catch (e) { console.warn('خواندن تنظیمات تب‌های سرگروه ناموفق بود:', e.message); }
 }
 
-async function umLeaderTabsModal() {
+async function settingsOpen(host) {
+  if (!host) return;
+  host.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
   let hidden = [];
   try { hidden = (await umCall({ action: 'get_tab_settings' })).hidden || []; }
-  catch (e) { umToast('خواندن تنظیمات انجام نشد: ' + e.message); return; }
+  catch (e) { host.innerHTML = '<div class="empty-state">خواندن تنظیمات انجام نشد: ' + umEsc(e.message) + '</div>'; return; }
   const hs = new Set(hidden);
-  const m = umModal(`
+  host.innerHTML = `<div class="um-settings list-card" style="padding:18px">
     <div class="um-title">تب‌های قابل‌نمایش برای سرگروه‌ها</div>
     <div style="font-size:12px;color:var(--ink-soft)">تیک = نمایش داده شود. تب‌های بدون تیک برای همه‌ی سرگروه‌ها مخفی می‌شود.</div>
     <div class="um-checks">${LEADER_TAB_DEFS.map(([k, n, sub]) => `<label style="${sub ? 'margin-right:18px' : ''}"><input type="checkbox" value="${k}"${hs.has(k) ? '' : ' checked'}>${umEsc(n)}</label>`).join('')}</div>
-    <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ذخیره</button></div>`);
-  m.querySelector('#um-ok').onclick = async () => {
-    const off = [...m.querySelectorAll('.um-checks input:not(:checked)')].map(i => i.value);
-    m.querySelector('#um-ok').disabled = true;
-    try { await umCall({ action: 'set_tab_settings', hidden: off }); m.remove(); umToast('تنظیمات ذخیره شد؛ سرگروه‌ها با ورود/رفرش بعدی تغییر را می‌بینند'); }
-    catch (e) { m.querySelector('#um-ok').disabled = false; umToast('ذخیره نشد: ' + e.message); }
+    <div class="um-actions"><button class="um-btn" id="st-save" type="button">ذخیره</button></div>
+  </div>`;
+  const save = host.querySelector('#st-save');
+  save.onclick = async () => {
+    const off = [...host.querySelectorAll('.um-checks input:not(:checked)')].map(i => i.value);
+    save.disabled = true;
+    try { await umCall({ action: 'set_tab_settings', hidden: off }); umToast('تنظیمات ذخیره شد؛ سرگروه‌ها با ورود/رفرش بعدی تغییر را می‌بینند'); }
+    catch (e) { umToast('ذخیره نشد: ' + e.message); }
+    save.disabled = false;
   };
 }
 </script>
