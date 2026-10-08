@@ -1772,11 +1772,10 @@
 @media (prefers-reduced-motion:reduce){.tab-dot,.last-update-dot,.sm-pin .ring{animation:none!important}}
 </style>
 <style id="select-dark-fix">
-/* لیست کشویی (select) در حالت شب: پس‌زمینه تیره و متن روشن تا نوشته‌ها دیده شوند */
-html[data-theme="dark"]{color-scheme:dark}
-html[data-theme="light"]{color-scheme:light}
-html[data-theme="dark"] select option,html[data-theme="dark"] select optgroup{background:#18233a;color:#EAF0FB}
-html[data-theme="light"] select option,html[data-theme="light"] select optgroup{background:#fff;color:#0F1B33}
+/* لیست کشویی در حالت شب: پس‌زمینه‌ی روشن و نوشته‌ی تیره (سفید نشود) */
+html select{color-scheme:light}
+html select option,html select optgroup,html[data-theme="dark"] select option,html[data-theme="dark"] select optgroup{background-color:#ffffff !important;color:#0F1B33 !important}
+html select option:checked,html select option:hover{background-color:#dbe7ff !important;color:#0F1B33 !important}
 </style>
 </head>
 <body>
