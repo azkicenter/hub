@@ -438,18 +438,18 @@
     align-items: center;
     padding: 0;
     margin: 0;
+    transition: opacity .28s ease;
   }
+  .last-update-bar.is-faded { opacity: .45; }
   .last-update-card {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: var(--surface);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 4px 12px;
-    box-shadow: var(--shadow-card);
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 4px 6px;
+    box-shadow: none;
     font-size: 11.5px;
     font-weight: 600;
     color: var(--ink);
@@ -8291,6 +8291,7 @@ document.addEventListener('visibilitychange', () => {
 
 (function () {
   var accentBar = document.querySelector('.header-accent-bar');
+  var updBar = document.getElementById('last-update-bar');
   if (!accentBar) return;
 
   var ticking = false;
@@ -8301,8 +8302,10 @@ document.addEventListener('visibilitychange', () => {
     // هیسترزیس: اینجوری نزدیک مرز تند تند باز و بسته نمیشه
     if (currentY <= 4) {
       accentBar.classList.remove('is-compact');
+      if (updBar) updBar.classList.remove('is-faded');
     } else if (currentY > 24) {
       accentBar.classList.add('is-compact');
+      if (updBar) updBar.classList.add('is-faded');
     }
 
     ticking = false;
