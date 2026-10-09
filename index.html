@@ -8828,7 +8828,7 @@ async function loadWeek(){
       }
     }
   }
-  if(A.role!=='center'){const pr=await supabaseClient.from(TU).select('*').eq('status','pending').order('requested_at');A.pending=pr.data||[]}
+  if(A.role!=='center'){let pq=supabaseClient.from(TU).select('*').eq('status','pending'); if(ldr())pq=pq.in('center_id',(A.centers||[]).map(c=>c.id)); const pr=await pq.order('requested_at');A.pending=pr.data||[]}
   if(mgr()&&A.view==='status')await loadStatus();
   await nextCount(A.view==='status'?(A.centers||[]).map(c=>c.id):(A.sel?[A.sel]:[]));
   render();
