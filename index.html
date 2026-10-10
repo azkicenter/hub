@@ -1655,6 +1655,28 @@
   .pay-metric small, .pay-amount small { font-size: 11px; font-weight: 600; opacity: .75; margin-inline-start: 3px; }
   .row-badge.pay-amount { min-width: 150px; }
 
+  /* تب «بررسی عملکرد» پنل سنتر: جدول روز × شرکت بیمه */
+  .center-perf-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .center-perf-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: max-content; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .center-perf-table th, .center-perf-table td { padding: 10px 14px; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  .center-perf-table thead th { font-weight: 700; color: var(--ink); background: var(--surface-tint); }
+  .center-perf-table th:first-child, .center-perf-table td:first-child { position: sticky; inset-inline-start: 0; text-align: start; font-weight: 700; background: var(--surface); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); z-index: 1; }
+  .center-perf-table thead th:first-child { background: var(--surface-tint); }
+  .center-perf-table td.is-zero { color: var(--ink-faint); }
+  .center-perf-table td.is-total, .center-perf-table th.is-total { font-weight: 800; color: var(--accent-deep); }
+  .center-perf-table tfoot td { font-weight: 800; background: var(--accent-soft); border-bottom: 0; }
+  .center-perf-table tfoot td:first-child { background: var(--accent-soft); }
+  .center-perf-share { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(0, 3fr) auto; align-items: center; gap: 14px; }
+  .center-perf-bar { height: 8px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
+  .center-perf-bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-deep)); }
+  .center-perf-pct { font-size: 11.5px; color: var(--ink-soft); margin-inline-start: 6px; font-weight: 600; }
+  .center-pay-note { margin: 0 0 12px; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--amber-soft); color: var(--ink); font-size: 12.5px; line-height: 1.8; }
+  .center-pay-note:empty { display: none; }
+  @media (max-width: 640px) {
+    .center-perf-share { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .center-perf-share .center-perf-bar { grid-column: 1 / -1; grid-row: 2; }
+  }
+
   /* ارقام فارسی IRANSansX پایین‌رفتگی ندارن و داخل بج‌ها کمی بالاتر از وسط می‌شینن؛
      ۱.۵ پیکسل از پدینگ پایین به بالا منتقل می‌شه تا عدد دقیقاً وسط بج بیفته. */
   html.font-iransans .row-badge,
@@ -2016,6 +2038,10 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v.01M18 14v.01"/></svg>
         محاسبه حقوق
       </button>
+      <button class="tab-btn" data-center-tab="center-perf" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+        بررسی عملکرد
+      </button>
     </div>
 
     <div id="center-filter" class="azki-filter" style="display:none;">
@@ -2058,6 +2084,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
 
     <div class="panel" id="panel-center-payroll">
       <div class="period-label" id="center-payroll-label"></div>
+      <div class="center-pay-note" id="center-payroll-note"></div>
       <div class="summary-row">
         <div class="summary-card">
           <div class="label">مجموع صدور</div>
@@ -2087,6 +2114,42 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       <div class="list-card" id="center-payroll-list">
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
+    </div>
+
+    <div class="panel" id="panel-center-perf">
+      <div class="period-label" id="center-perf-label"></div>
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="label">مجموع صدور سنتر</div>
+          <div class="value" id="center-perf-total">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">تعداد شرکت‌های بیمه</div>
+          <div class="value" id="center-perf-companies">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">بیشترین صدور</div>
+          <div class="value" id="center-perf-top" style="font-size:20px;">—</div>
+        </div>
+      </div>
+
+      <div class="sm-stabs" id="center-perf-gran" style="margin-bottom:12px;">
+        <button type="button" class="sm-stab active" data-gran="daily">روزانه</button>
+        <button type="button" class="sm-stab" data-gran="weekly">هفتگی</button>
+        <button type="button" class="sm-stab" data-gran="monthly">ماهانه</button>
+      </div>
+
+      <div class="azki-payroll-actions">
+        <button type="button" class="sm-btn azki-export-btn" id="center-perf-export">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+          خروجی اکسل
+        </button>
+      </div>
+
+      <div class="list-card" id="center-perf-share">
+        <div class="loading-state">در حال بارگذاری...</div>
+      </div>
+      <div class="list-card" id="center-perf-table" style="margin-top:14px;"></div>
     </div>
 
     <div class="panel" id="panel-center-bugs">
@@ -2660,12 +2723,14 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     document.getElementById('panel-center').classList.remove('active');
     document.getElementById('panel-center-bugs').classList.remove('active');
     document.getElementById('panel-center-payroll').classList.remove('active');
+    document.getElementById('panel-center-perf').classList.remove('active');
     document.getElementById('panel-attendance').classList.remove('active');
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.centerTab).classList.add('active');
     // تب حضور و غیاب فیلتر تاریخ نمی‌خواد (خودش ناوبری هفته داره)
     document.getElementById('center-filter').style.display = btn.dataset.centerTab === 'attendance' ? 'none' : '';
     if (btn.dataset.centerTab === 'center-payroll' && !centerPayrollState.loaded) loadCenterPayroll();
+    if (btn.dataset.centerTab === 'center-perf' && !centerPerfState.loaded) loadCenterPerf();
     if (btn.dataset.centerTab === 'attendance') attOpen(document.getElementById('panel-attendance'));
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   });
@@ -7468,6 +7533,8 @@ function centerApplyRange() {
   // تب محاسبه حقوق هم از همین بازه استفاده می‌کنه
   centerPayrollState.loaded = false;
   if (centerViewId && document.getElementById('panel-center-payroll').classList.contains('active')) loadCenterPayroll();
+  centerPerfState.loaded = false;
+  if (centerViewId && document.getElementById('panel-center-perf').classList.contains('active')) loadCenterPerf();
 }
 
 function initCenterFilter() {
@@ -7648,6 +7715,12 @@ async function loadCenterSla(periodStartSort, samePeriod, seq) {
 }
 
 async function loadCenterView(centerId) {
+  if (centerViewId !== centerId) {
+    // سنتر عوض شده → داده‌ی کش‌شده‌ی حقوق و عملکرد برای سنتر قبلی بود
+    centerPayrollState.loaded = false;
+    centerPerfState.loaded = false;
+    centerOtherKeysCache.id = null;
+  }
   centerViewId = centerId;
   const listEl = document.getElementById('center-list');
   const bugsListEl = document.getElementById('center-bugs-list');
@@ -7731,19 +7804,33 @@ function renderCenterRateRows() {
     </div>`).join('');
 }
 
-// ردیف‌های گزارش مالی که مال همین سنترن: برابری کامل کلید نام، یا اینکه کلید کوتاه ردیف («رضوانی») به‌صورت
-// کلمه‌ی کامل داخل نام پروفایل («مجید رضوانی») باشه. اگه سنتر دیگه‌ای هم همین کلید کوتاه رو داشته باشه (و
-// برابر کامل نباشه) مبهمه و ردیف رد می‌شه تا داده‌ی سنتر دیگه‌ای قاطی نشه.
+// ردیف‌های گزارش مالی که مال همین سنترن. سه حالت تطبیق (روی کلید نرمال‌شده‌ی نام):
+//  ۱) برابری کامل؛ ۲) کلید ردیف («رضوانی») به‌صورت کلمه‌ی کامل داخل نام پروفایل («مجید رضوانی») باشه؛
+//  ۳) برعکس: نام پروفایل به‌صورت کلمه‌ی کامل داخل کلید ردیف باشه («رضوانی» داخل «رضوانی شعبه ۲»).
+// اگه سنتر دیگه‌ای هم همین ردیف رو ادعا کنه (و برابر کامل نباشه) مبهمه و ردیف رد می‌شه تا داده‌ی سنتر دیگه‌ای قاطی نشه.
 function centerPayrollMatchRows(rawRows, ownName, otherKeys) {
   const own = normCenterKey(ownName);
   if (!own) return [];
+  const has = (hay, needle) => (' ' + hay + ' ').includes(' ' + needle + ' ');
   return rawRows.filter(r => {
     const k = normCenterKey(r.center_name);
     if (!k) return false;
     if (k === own) return true;
-    if (!(' ' + own + ' ').includes(' ' + k + ' ')) return false;
-    return !otherKeys.some(o => o && o !== own && (' ' + o + ' ').includes(' ' + k + ' '));
+    if (otherKeys.some(o => o && o !== own && o === k)) return false;       // دقیقاً مال سنتر دیگه‌ایه
+    if (has(own, k)) return !otherKeys.some(o => o && o !== own && has(o, k));
+    if (has(k, own)) return !otherKeys.some(o => o && o !== own && has(k, o));
+    return false;
   });
+}
+
+// نام سایر سنترها (فقط برای تشخیص ردیف مبهم). اگه دسترسی نبود لیست خالی برمی‌گرده و نادیده گرفته می‌شه.
+const centerOtherKeysCache = { id: null, keys: [] };
+async function centerGetOtherKeys() {
+  if (centerOtherKeysCache.id === centerViewId && centerViewId) return centerOtherKeysCache.keys;
+  const { data } = await fetchAllRows((from, to) => supabaseClient.from(TABLE_PROFILES).select('id, full_name').eq('role', 'center').range(from, to));
+  const keys = (data || []).filter(c => c.id !== centerViewId).map(c => normCenterKey(c.full_name)).filter(Boolean);
+  centerOtherKeysCache.id = centerViewId; centerOtherKeysCache.keys = keys;
+  return keys;
 }
 
 // میانگین زمان صدور سنتر برای دوره‌ی ۲۱ تا ۲۰ که تاریخ شروع فیلتر داخلشه (همون منطق سرپرست):
@@ -7781,9 +7868,17 @@ async function fetchCenterPayrollSla(bounds, keys, agentIds) {
   return vals.length ? round2(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
 }
 
+// وضعیت کارشناس برای نمایش: فعال / پنل آموزش / غیرفعال
+function centerAgentStatus(p) {
+  const disabled = !!p && p.status === 'disabled';
+  const training = !!p && isTrainingPanel(p);
+  return { disabled, training, label: disabled ? 'غیرفعال' : (training ? 'پنل آموزش' : 'فعال') };
+}
+
 async function loadCenterPayroll() {
   const seq = ++centerPayrollState.seq;
   const listEl = document.getElementById('center-payroll-list');
+  const noteEl = document.getElementById('center-payroll-note');
   const bounds = centerPayrollBounds();
   renderCenterRateRows();
   if (!bounds || !centerViewId) { listEl.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>'; return; }
@@ -7792,16 +7887,17 @@ async function loadCenterPayroll() {
   const ownName = centerViewName || '';
   document.getElementById('center-payroll-label').textContent =
     `${ownName ? `سنتر: ${ownName} — ` : ''}بازه‌ی انتخابی: ${faDigits(bounds.startLabel)} تا ${faDigits(bounds.endLabel)}`;
+  noteEl.textContent = '';
   listEl.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
 
   const fail = msg => { listEl.innerHTML = `<div class="empty-state">${msg}</div>`; ['total', 'avg', 'amount'].forEach(k => { document.getElementById('center-payroll-' + k).textContent = '—'; }); };
 
   try {
-    // کارشناس‌های فعلی همین سنتر
+    // همه‌ی کارشناس‌های اساین‌شده به این سنتر (فعال، غیرفعال، پنل آموزش)
     const { data: links, error: lErr } = await fetchAllRows((from, to) =>
       supabaseClient.from(TABLE_CENTER_AGENTS).select('agent_id').eq('center_id', centerViewId).range(from, to));
     if (lErr) throw new Error(lErr.message);
-    const ids = (links || []).map(l => l.agent_id).filter(Boolean);
+    const ids = [...new Set((links || []).map(l => l.agent_id).filter(Boolean))];
     let agentProfiles = [];
     if (ids.length) {
       const { data: profs, error: pErr } = await fetchAllRows((from, to) =>
@@ -7810,78 +7906,80 @@ async function loadCenterPayroll() {
       agentProfiles = profs || [];
     }
     const agentIds = agentProfiles.map(a => a.id);
+    const startSort = centerSortKey(centerFilterState.from), endSort = centerSortKey(centerFilterState.to);
 
-    // گزارش مالی (تعداد صدور مرکز) + نام سایر سنترها (فقط برای تشخیص نام مبهم؛ اگه دسترسی نبود نادیده گرفته می‌شه)
-    const [breakdownRes, otherRes] = await Promise.all([
+    // گزارش مالی + نام سایر سنترها + ریز روزانه‌ی کارشناس‌ها (daily_targets) هم‌زمان
+    const [breakdownRes, otherKeys, targetsRes] = await Promise.all([
       fetchAzkiBreakdownRows(['کل'], bounds),
-      fetchAllRows((from, to) => supabaseClient.from(TABLE_PROFILES).select('id, full_name').eq('role', 'center').range(from, to)),
+      centerGetOtherKeys().catch(() => []),
+      agentIds.length
+        ? fetchAllRows((from, to) =>
+            supabaseClient.from(TABLE_TARGETS).select('*')
+              .in('agent_id', agentIds)
+              .gte('report_date_sort', startSort).lte('report_date_sort', endSort)
+              .order('report_date_sort', { ascending: true }).order('agent_id', { ascending: true })
+              .range(from, to))
+        : Promise.resolve({ data: [], error: null }),
     ]);
     if (seq !== centerPayrollState.seq) return;
     if (breakdownRes.error) throw new Error('دریافت گزارش صدور: ' + breakdownRes.error.message);
-    const otherKeys = (otherRes.data || []).filter(c => c.id !== centerViewId).map(c => normCenterKey(c.full_name)).filter(Boolean);
+    if (targetsRes.error) throw new Error('دریافت ریز صدور کارشناس‌ها: ' + targetsRes.error.message);
+    const rows = targetsRes.data || [];
 
-    const matched = centerPayrollMatchRows(breakdownRes.data || [], ownName, otherKeys);
-    if (!matched.length) {
-      centerPayrollState.center = null; centerPayrollState.agents = []; centerPayrollState.rest = null; centerPayrollState.days = [];
-      centerPayrollState.bounds = bounds; centerPayrollState.name = ownName; centerPayrollState.loaded = true;
-      fail('برای این بازه گزارش صدوری برای سنتر شما ثبت نشده است.');
-      return;
-    }
-
-    // SLA → نرخ
-    const matchedKeys = [...new Set(matched.map(r => normCenterKey(r.center_name)))];
-    const sla = await fetchCenterPayrollSla(bounds, [normCenterKey(ownName), ...matchedKeys], agentIds);
-    if (seq !== centerPayrollState.seq) return;
-    const slaMap = {};
-    if (sla != null) matchedKeys.forEach(k => { slaMap[k] = sla; });
-    const centerData = computeAzkiPayrollCenterData(matched, slaMap);
-    const count = centerData.reduce((s, c) => s + c.count, 0);
-    const amount = centerData.reduce((s, c) => s + c.amount, 0);
-    const rate = centerData[0] ? centerData[0].rate : 0;
-    const center = { count, amount, rate, avgMin: sla, hasSla: sla != null };
-
-    // ریز صدور کارشناس‌های همین سنتر از daily_targets. کارشناس غیرفعال‌شده (profiles.status = 'disabled')
-    // از داشبورد مخفیه ولی لینکش به سنتر هست، پس اگه تو بازه صدور داشته باشه اینجا با وضعیت «غیرفعال» میاد.
-    const startSort = centerSortKey(centerFilterState.from), endSort = centerSortKey(centerFilterState.to);
-    let rows = [];
-    if (agentIds.length) {
-      const { data: tRows, error: tErr } = await fetchAllRows((from, to) =>
-        supabaseClient.from(TABLE_TARGETS).select('*')
-          .in('agent_id', agentIds)
-          .gte('report_date_sort', startSort).lte('report_date_sort', endSort)
-          .order('report_date_sort', { ascending: true }).order('agent_id', { ascending: true })
-          .range(from, to));
-      if (tErr) throw new Error('دریافت ریز صدور کارشناس‌ها: ' + tErr.message);
-      rows = tRows || [];
-    }
-    if (seq !== centerPayrollState.seq) return;
-    const slaAgents = buildSlaMapFromRows(rows, startSort) || {};
-    const profById = {}; agentProfiles.forEach(a => { profById[a.id] = a; });
+    // جمع صدور هر کارشناس
     const byAgent = {};
     const days = [];
     rows.forEach(r => {
-      const a = byAgent[r.agent_id] || (byAgent[r.agent_id] = { id: r.agent_id, count: 0, daysCount: 0 });
+      const a = byAgent[r.agent_id] || (byAgent[r.agent_id] = { count: 0, daysCount: 0 });
       const c = Number(r.target_count) || 0;
       a.count += c; a.daysCount += 1;
       days.push({ id: r.agent_id, date: toJalaliDisplay(r.report_date_jalali), sort: Number(r.report_date_sort) || 0, count: c });
     });
-    const agents = Object.values(byAgent).map(a => {
-      const pr = profById[a.id];
-      return {
-        id: a.id, name: pr ? (pr.full_name || pr.backoffice_id || '—') : '—', backoffice: pr ? (pr.backoffice_id || '') : '',
-        status: pr && pr.status === 'disabled' ? 'غیرفعال' : 'در سنتر', count: a.count, daysCount: a.daysCount,
-        sla: slaAgents[a.id] != null ? round2(Number(slaAgents[a.id])) : null,
-        rate, amount: rate * a.count,
-      };
-    }).sort((x, y) => (x.status === 'در سنتر' ? 0 : 1) - (y.status === 'در سنتر' ? 0 : 1) || y.count - x.count || x.name.localeCompare(y.name, 'fa'));
-    const nameById = {}; agents.forEach(a => { nameById[a.id] = a; });
-    const dayRows = days.filter(d => nameById[d.id]).map(d => ({ ...d, agent: nameById[d.id] }))
+    const sumAgents = Object.values(byAgent).reduce((s0, a) => s0 + a.count, 0);
+
+    // تعداد صدور سنتر: از گزارش مالی؛ اگه ردیفی با نام سنتر نخورد از جمع کارشناس‌ها
+    const matched = centerPayrollMatchRows(breakdownRes.data || [], ownName, otherKeys);
+    const matchedKeys = [...new Set(matched.map(r => normCenterKey(r.center_name)))];
+    const sla = await fetchCenterPayrollSla(bounds, [normCenterKey(ownName), ...matchedKeys], agentIds);
+    if (seq !== centerPayrollState.seq) return;
+
+    let count, rate, fromReport = matched.length > 0;
+    if (fromReport) {
+      const slaMap = {};
+      if (sla != null) [normCenterKey(ownName), ...matchedKeys].forEach(k => { if (k) slaMap[k] = sla; });
+      const centerData = computeAzkiPayrollCenterData(matched, slaMap);
+      count = centerData.reduce((s0, c) => s0 + c.count, 0);
+      rate = centerData[0] ? centerData[0].rate : azkiPayrollRateForAvgMinutes(sla);
+    } else {
+      count = sumAgents;
+      rate = azkiPayrollRateForAvgMinutes(sla);
+    }
+    const center = { count, amount: rate * count, rate, avgMin: sla, hasSla: sla != null, fromReport };
+
+    // ریز کارشناس‌ها: فعال‌ها و پنل آموزش همیشه (حتی با صدور صفر)، غیرفعال فقط اگه تو بازه صدور داشته باشه
+    const agents = agentProfiles.map(p => {
+      const st = centerAgentStatus(p);
+      const a = byAgent[p.id] || { count: 0, daysCount: 0 };
+      return { id: p.id, name: p.full_name || p.backoffice_id || '—', backoffice: p.backoffice_id || '',
+        disabled: st.disabled, training: st.training, status: st.label, count: a.count, daysCount: a.daysCount,
+        rate, amount: rate * a.count };
+    }).filter(a => !a.disabled || a.count > 0)
+      .sort((x, y) => (x.disabled - y.disabled) || (x.training - y.training) || y.count - x.count || x.name.localeCompare(y.name, 'fa'));
+    const byId = {}; agents.forEach(a => { byId[a.id] = a; });
+    const dayRows = days.filter(d => byId[d.id]).map(d => ({ ...d, agent: byId[d.id] }))
       .sort((a, b) => a.agent.name.localeCompare(b.agent.name, 'fa') || a.sort - b.sort);
 
-    // کارشناس حذف‌شده از سیستم / پنل آموزش / ثبت‌نشده: اختلاف جمع سنتر با جمع کارشناس‌ها (فقط وقتی مثبته)
-    const sumAgents = agents.reduce((s, a) => s + a.count, 0);
-    const restCount = count - sumAgents;
+    // اختلاف جمع سنتر (گزارش مالی) با جمع کارشناس‌ها: کارشناس حذف‌شده از سیستم / ثبت‌نشده (فقط وقتی مثبته)
+    const restCount = fromReport ? count - sumAgents : 0;
     const rest = restCount > 0 ? { count: restCount, rate, amount: rate * restCount } : null;
+
+    if (!fromReport && count === 0 && !agents.length) {
+      Object.assign(centerPayrollState, { bounds, name: ownName, center: null, agents: [], rest: null, days: [], loaded: true });
+      fail('برای این بازه گزارش صدوری برای سنتر شما ثبت نشده است.');
+      return;
+    }
+    noteEl.textContent = fromReport ? '' :
+      'برای این بازه ردیفی با نام سنتر شما در گزارش مالی پیدا نشد؛ تعداد صدور از جمع صدور کارشناس‌ها محاسبه شده است.';
 
     Object.assign(centerPayrollState, { bounds, name: ownName, center, agents, rest, days: dayRows, loaded: true });
     renderCenterPayroll();
@@ -7911,16 +8009,28 @@ function renderCenterPayroll() {
       </div>
       <div class="row-badge pay-amount">${formatNumber(c.amount)}<small>ریال</small></div>
     </div>`;
-  const agentRow = (name, count, amount, sub) => `
+
+  const agentRow = a => `
     <div class="row-item azki-payroll-row">
-      <div class="pay-name">${escHtml(name)}${sub ? `<div style="font-size:11px;font-weight:500;opacity:.7;margin-top:2px;">${sub}</div>` : ''}</div>
-      <div class="pay-metrics">
-        <div class="pay-metric"><span class="k">تعداد صدور</span><span class="v">${formatNumber(count)}</span></div>
+      <div class="pay-name">
+        <span>${escHtml(a.name)}</span>${a.training ? '<span class="team-edu-badge" title="پنل آموزش این سنتر">پنل آموزش</span>' : ''}${a.disabled ? '<span class="team-disabled-badge" title="دیگر با ما همکاری ندارد؛ فقط آمار صدورش در این بازه حفظ شده">غیرفعال</span>' : ''}
+        ${a.backoffice ? `<div style="font-size:11px;font-weight:500;opacity:.7;margin-top:2px;">${escHtml(a.backoffice)}</div>` : ''}
       </div>
-      <div class="row-badge pay-amount">${formatNumber(amount)}<small>ریال</small></div>
+      <div class="pay-metrics">
+        <div class="pay-metric"><span class="k">تعداد صدور</span><span class="v">${formatNumber(a.count)}</span></div>
+        <div class="pay-metric"><span class="k">تعداد روز</span><span class="v">${formatNumber(a.daysCount)}</span></div>
+        <div class="pay-metric"><span class="k">نرخ هر صدور</span><span class="v">${formatNumber(a.rate)}<small>ریال</small></span></div>
+      </div>
+      <div class="row-badge pay-amount">${formatNumber(a.amount)}<small>ریال</small></div>
     </div>`;
-  const body = st.agents.map(a => agentRow(a.name, a.count, a.amount, [a.backoffice, a.status !== 'در سنتر' ? a.status : ''].filter(Boolean).join(' — '))).join('')
-    + (st.rest ? agentRow('سایر (کارشناس حذف‌شده / پنل آموزش / ثبت‌نشده)', st.rest.count, st.rest.amount, '') : '');
+  const restRow = r => `
+    <div class="row-item azki-payroll-row">
+      <div class="pay-name">سایر (کارشناس حذف‌شده / ثبت‌نشده)</div>
+      <div class="pay-metrics"><div class="pay-metric"><span class="k">تعداد صدور</span><span class="v">${formatNumber(r.count)}</span></div></div>
+      <div class="row-badge pay-amount">${formatNumber(r.amount)}<small>ریال</small></div>
+    </div>`;
+
+  const body = st.agents.map(agentRow).join('') + (st.rest ? restRow(st.rest) : '');
   listEl.innerHTML = head + body;
 }
 
@@ -7947,15 +8057,15 @@ async function exportCenterPayrollExcel() {
       widths: [32, 14, 22, 18, 22], fmts: ['text', 'int', 'pct', 'int', 'int'],
     })]);
 
-    const agentRows = agents.map(a => [name, a.name, a.backoffice, a.status, a.daysCount, a.count, a.sla != null ? a.sla : '', a.rate, a.amount]);
-    if (rest) agentRows.push([name, 'سایر (کارشناس حذف‌شده / پنل آموزش / ثبت‌نشده)', '', 'باقی‌مانده نسبت به جمع سنتر', '', rest.count, '', rest.rate, rest.amount]);
+    const agentRows = agents.map(a => [name, a.name, a.backoffice, a.status, a.daysCount, a.count, a.rate, a.amount]);
+    if (rest) agentRows.push([name, 'سایر (کارشناس حذف‌شده / ثبت‌نشده)', '', 'باقی‌مانده نسبت به جمع سنتر', '', rest.count, rest.rate, rest.amount]);
     if (agentRows.length) {
       sheets.push(['ریز کارشناس‌ها', azkiXlsxSheet({
         title: 'محاسبه حقوق — ریز صدور کارشناس‌ها', bounds, metaLine2: `${meta}   |   ${note}`,
-        headers: ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'وضعیت', 'تعداد روز', 'تعداد صدور', 'میانگین زمان صدور (دقیقه)', 'نرخ هر صدور سنتر (ریال)', 'مبلغ برآوردی (ریال)'],
+        headers: ['نام سنتر', 'نام کارشناس', 'یوزر بک‌آفیس', 'وضعیت', 'تعداد روز', 'تعداد صدور', 'نرخ هر صدور سنتر (ریال)', 'مبلغ برآوردی (ریال)'],
         rows: agentRows,
-        total: ['جمع کل', '', '', '', '', agentRows.reduce((s, r) => s + r[5], 0), '', '', agentRows.reduce((s, r) => s + r[8], 0)],
-        widths: [32, 28, 18, 24, 12, 14, 22, 22, 22], fmts: ['text', 'text', 'text', 'text', 'int', 'int', 'pct', 'int', 'int'],
+        total: ['جمع کل', '', '', '', '', agentRows.reduce((s0, r) => s0 + r[5], 0), '', agentRows.reduce((s0, r) => s0 + r[7], 0)],
+        widths: [32, 28, 18, 24, 12, 14, 22, 22], fmts: ['text', 'text', 'text', 'text', 'int', 'int', 'int', 'int'],
       })]);
     }
     if (days.length) {
@@ -7963,7 +8073,7 @@ async function exportCenterPayrollExcel() {
         title: 'محاسبه حقوق — جزئیات روزانه کارشناس‌ها', bounds, metaLine2: meta,
         headers: ['نام سنتر', 'نام کارشناس', 'وضعیت', 'تاریخ', 'تعداد صدور'],
         rows: days.map(d => [name, d.agent.name, d.agent.status, d.date, d.count]),
-        total: ['جمع کل', '', '', '', days.reduce((s, d) => s + d.count, 0)],
+        total: ['جمع کل', '', '', '', days.reduce((s0, d) => s0 + d.count, 0)],
         widths: [32, 28, 18, 16, 14], fmts: ['text', 'text', 'text', 'text', 'int'],
       })]);
     }
@@ -7976,6 +8086,168 @@ async function exportCenterPayrollExcel() {
   }
 }
 document.getElementById('center-payroll-export').addEventListener('click', exportCenterPayrollExcel);
+
+// ============================================================
+// تب «بررسی عملکرد» پنل سنتر — تعداد صدور سنتر به تفکیک شرکت بیمه (روزانه / هفتگی / ماهانه)
+// منبع: azki_center_breakdown_report (همون گزارشی که محاسبه حقوق ازش خونده می‌شه)؛ ردیف‌های scope هر شرکت
+// + scope «کل». اختلاف «کل» با جمع شرکت‌ها (اگه شرکتی تو لیست فیلتر نباشه) به‌صورت ستون «سایر» میاد.
+// ============================================================
+const centerPerfState = { loaded: false, seq: 0, gran: 'daily', rows: [], bounds: null, name: '', model: null };
+
+function buildCenterPerfModel(rows, gran) {
+  const comp = {};                 // نام شرکت -> جمع کل بازه
+  const per = {};                  // کلید دوره -> { label, sortKey, by: {شرکت: n}, all: n }
+  rows.forEach(r => {
+    const n = Number(r.orders_count) || 0;
+    const scope = r.company_scope;
+    const { jy, jm, jd } = parseJalaliParts(r.report_date_jalali);
+    const { key, label } = azkiPeriodGroupKey(jy, jm, jd, gran);
+    const sortKey = jy * 10000 + jm * 100 + jd;
+    const p = per[key] || (per[key] = { key, label, sortKey, by: {}, all: 0 });
+    p.sortKey = Math.min(p.sortKey, sortKey);
+    if (scope === 'کل') { p.all += n; return; }
+    p.by[scope] = (p.by[scope] || 0) + n;
+    comp[scope] = (comp[scope] || 0) + n;
+  });
+  const periods = Object.values(per).sort((a, b) => a.sortKey - b.sortKey);
+  // «سایر» = کل − جمع شرکت‌ها در هر دوره (فقط وقتی مثبته)
+  let otherTotal = 0;
+  periods.forEach(p => {
+    const sum = Object.values(p.by).reduce((x, y) => x + y, 0);
+    p.other = Math.max(0, p.all - sum);
+    p.total = Math.max(p.all, sum);
+    otherTotal += p.other;
+  });
+  const companies = Object.keys(comp).filter(k => comp[k] > 0).sort((a, b) => comp[b] - comp[a] || a.localeCompare(b, 'fa'));
+  const grand = periods.reduce((s0, p) => s0 + p.total, 0);
+  return { periods, companies, compTotals: comp, otherTotal, grand };
+}
+
+async function loadCenterPerf() {
+  const seq = ++centerPerfState.seq;
+  const bounds = centerPayrollBounds();
+  const shareEl = document.getElementById('center-perf-share');
+  const tableEl = document.getElementById('center-perf-table');
+  if (!bounds || !centerViewId) { shareEl.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>'; return; }
+  centerPerfState.loaded = false;
+  const ownName = centerViewName || '';
+  document.getElementById('center-perf-label').textContent =
+    `${ownName ? `سنتر: ${ownName} — ` : ''}بازه‌ی انتخابی: ${faDigits(bounds.startLabel)} تا ${faDigits(bounds.endLabel)}`;
+  shareEl.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+  tableEl.innerHTML = '';
+  ['total', 'companies', 'top'].forEach(k => { document.getElementById('center-perf-' + k).textContent = '—'; });
+
+  try {
+    const [res, otherKeys] = await Promise.all([
+      fetchAzkiBreakdownRows([...AZKI_COMPANIES, 'کل'], bounds),
+      centerGetOtherKeys().catch(() => []),
+    ]);
+    if (seq !== centerPerfState.seq) return;
+    if (res.error) throw new Error(res.error.message);
+    const matched = centerPayrollMatchRows(res.data || [], ownName, otherKeys);
+    centerPerfState.rows = matched;
+    centerPerfState.bounds = bounds;
+    centerPerfState.name = ownName;
+    centerPerfState.loaded = true;
+    renderCenterPerf();
+  } catch (e) {
+    if (seq !== centerPerfState.seq) return;
+    shareEl.innerHTML = `<div class="empty-state">خطا در دریافت اطلاعات: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderCenterPerf() {
+  const st = centerPerfState;
+  const shareEl = document.getElementById('center-perf-share');
+  const tableEl = document.getElementById('center-perf-table');
+  if (!st.loaded) return;
+  const m = buildCenterPerfModel(st.rows, st.gran);
+  st.model = m;
+
+  document.getElementById('center-perf-total').textContent = formatNumber(m.grand);
+  document.getElementById('center-perf-companies').textContent = formatNumber(m.companies.length);
+  const topName = m.companies[0];
+  document.getElementById('center-perf-top').textContent = topName ? `${topName} (${formatNumber(m.compTotals[topName])})` : '—';
+
+  if (!m.periods.length || !m.grand) {
+    shareEl.innerHTML = '<div class="empty-state">برای این بازه صدوری برای سنتر شما ثبت نشده است.</div>';
+    tableEl.innerHTML = '';
+    return;
+  }
+
+  // سهم هر شرکت از کل صدور
+  const shareRows = m.companies.map(n => ({ name: n, count: m.compTotals[n] }));
+  if (m.otherTotal > 0) shareRows.push({ name: 'سایر شرکت‌ها', count: m.otherTotal });
+  const maxCount = Math.max(...shareRows.map(r => r.count), 1);
+  shareEl.innerHTML = shareRows.map(r => {
+    const pct = m.grand ? Math.round(r.count / m.grand * 1000) / 10 : 0;
+    return `
+    <div class="row-item center-perf-share">
+      <div class="pay-name">${escHtml(r.name)}</div>
+      <div class="center-perf-bar"><i style="width:${Math.max(2, r.count / maxCount * 100)}%"></i></div>
+      <div class="row-badge">${formatNumber(r.count)}<span class="center-perf-pct">${faDigits(pct)}٪</span></div>
+    </div>`;
+  }).join('');
+
+  // جدول دوره × شرکت
+  const cols = m.companies.slice();
+  const hasOther = m.otherTotal > 0;
+  const th = cols.map(n => `<th>${escHtml(n)}</th>`).join('') + (hasOther ? '<th>سایر</th>' : '');
+  const body = m.periods.map(p => {
+    const cells = cols.map(n => { const v = p.by[n] || 0; return `<td class="${v ? '' : 'is-zero'}">${v ? formatNumber(v) : '—'}</td>`; }).join('')
+      + (hasOther ? `<td class="${p.other ? '' : 'is-zero'}">${p.other ? formatNumber(p.other) : '—'}</td>` : '');
+    return `<tr><td>${escHtml(p.label)}</td>${cells}<td class="is-total">${formatNumber(p.total)}</td></tr>`;
+  }).join('');
+  const foot = cols.map(n => `<td>${formatNumber(m.compTotals[n])}</td>`).join('')
+    + (hasOther ? `<td>${formatNumber(m.otherTotal)}</td>` : '');
+  tableEl.innerHTML = `
+    <div class="center-perf-scroll">
+      <table class="center-perf-table">
+        <thead><tr><th>${st.gran === 'daily' ? 'تاریخ' : (st.gran === 'weekly' ? 'هفته' : 'ماه')}</th>${th}<th class="is-total">جمع</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr><td>جمع کل</td>${foot}<td>${formatNumber(m.grand)}</td></tr></tfoot>
+      </table>
+    </div>`;
+}
+
+document.querySelectorAll('#center-perf-gran .sm-stab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#center-perf-gran .sm-stab').forEach(b => b.classList.toggle('active', b === btn));
+    centerPerfState.gran = btn.dataset.gran;
+    if (centerPerfState.loaded) renderCenterPerf();
+  });
+});
+
+async function exportCenterPerfExcel() {
+  const st = centerPerfState, m = st.model;
+  const btn = document.getElementById('center-perf-export');
+  if (!st.loaded || !m || !m.periods.length) { alert('اطلاعاتی برای خروجی گرفتن وجود نداره.'); return; }
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'در حال آماده‌سازی...';
+  try {
+    await ensureXlsxLib();
+    const cols = m.companies.slice();
+    const hasOther = m.otherTotal > 0;
+    const headers = [st.gran === 'daily' ? 'تاریخ' : (st.gran === 'weekly' ? 'هفته' : 'ماه'), ...cols, ...(hasOther ? ['سایر'] : []), 'جمع'];
+    const rows = m.periods.map(p => [p.label, ...cols.map(n => p.by[n] || 0), ...(hasOther ? [p.other] : []), p.total]);
+    const total = ['جمع کل', ...cols.map(n => m.compTotals[n]), ...(hasOther ? [m.otherTotal] : []), m.grand];
+    const n = headers.length;
+    const ws = azkiXlsxSheet({
+      title: 'بررسی عملکرد — صدور به تفکیک شرکت بیمه', bounds: st.bounds,
+      metaLine2: `سنتر: ${st.name || ''}   |   نمایش: ${{ daily: 'روزانه', weekly: 'هفتگی', monthly: 'ماهانه' }[st.gran]}`,
+      headers, rows, total,
+      widths: headers.map((h, i) => i === 0 ? 24 : 14), fmts: headers.map((h, i) => i === 0 ? 'text' : 'int'),
+    });
+    azkiXlsxSave([['بررسی عملکرد', ws]], 'بررسی-عملکرد', st.bounds);
+  } catch (e) {
+    alert('خروجی اکسل با خطا مواجه شد: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+document.getElementById('center-perf-export').addEventListener('click', exportCenterPerfExcel);
 
 function renderTeamBugsList(list, containerId = 'team-bugs-list') {
   const teamBugsContainer = document.getElementById(containerId);
