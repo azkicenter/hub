@@ -1858,11 +1858,6 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         خطاها
         <span class="tab-dot bugs-dot" id="bugs-dot"></span>
       </button>
-      <button class="tab-btn" data-tab="agent-tasks" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/></svg>
-        تسک‌ها
-        <span class="tab-dot kb-dot"></span>
-      </button>
       <button class="tab-btn" data-tab="agent-attendance" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg>
         حضور و غیاب
@@ -2476,7 +2471,6 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       </div>
     </div>
 
-    <div class="panel" id="panel-agent-tasks"></div>
     <div class="panel" id="panel-agent-attendance"></div>
     <div class="panel" id="panel-bugs">
       <div class="list-card" id="bugs-list">
@@ -2595,11 +2589,9 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
     document.querySelectorAll('#main-tabs .tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('panel-targets').classList.remove('active');
     document.getElementById('panel-bugs').classList.remove('active');
-    document.getElementById('panel-agent-tasks').classList.remove('active');
     document.getElementById('panel-agent-attendance').classList.remove('active');
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'agent-tasks') kbOpen(document.getElementById('panel-agent-tasks'));
     if (btn.dataset.tab === 'agent-attendance') attOpen(document.getElementById('panel-agent-attendance'));
     if (btn.dataset.tab === 'bugs') {
       markBugsSeen(lastBugsKeys);
@@ -6247,11 +6239,12 @@ async function enterApp(user) {
   } else {
     loadTargets(user.id);
     loadBugs(user.id);
+    loadAgentHiddenTabs();
   }
 
   appScreen.style.display = 'block';
 
-  if (isLeader || isSupervisor || (!isAdmin && !isCenter)) kbNotifyStart();
+  if (isLeader || isSupervisor) kbNotifyStart();
 
   if (window.refreshGlassReveals) window.refreshGlassReveals();
 }
@@ -8679,7 +8672,7 @@ function pulse(silent){
   if(S.popOpen)renderPop();
 }
 function openTasksTab(){
-  const b=document.querySelector('#main-tabs [data-tab="agent-tasks"]')||document.querySelector('#team-tabs [data-team-tab="kanban"]')||document.querySelector('[data-sup-tab="kanban"]');
+  const b=document.querySelector('#team-tabs [data-team-tab="kanban"]')||document.querySelector('[data-sup-tab="kanban"]');
   if(b&&b.offsetParent!==null)b.click();
 }
 function renderPop(){
@@ -9505,7 +9498,7 @@ async function settingsOpen(host) {
   try { hidden = (await umCall({ action: 'get_tab_settings' })).hidden || []; }
   catch (e) { host.innerHTML = '<div class="empty-state">خواندن تنظیمات انجام نشد: ' + umEsc(e.message) + '</div>'; return; }
   const hs = new Set(hidden);
-  host.innerHTML = `<div class="um-settings list-card" style="padding:18px">
+  host.innerHTML = `<div class="um-settings list-card" id="st-leader" style="padding:18px">
     <div class="um-title">تب‌های قابل‌نمایش برای سرگروه‌ها</div>
     <div style="font-size:12px;color:var(--ink-soft)">تیک = نمایش داده شود. تب‌های بدون تیک برای همه‌ی سرگروه‌ها مخفی می‌شود.</div>
     <div class="um-checks">${LEADER_TAB_DEFS.map(([k, n, sub]) => `<label style="${sub ? 'margin-right:18px' : ''}"><input type="checkbox" value="${k}"${hs.has(k) ? '' : ' checked'}>${umEsc(n)}</label>`).join('')}</div>
@@ -9513,11 +9506,71 @@ async function settingsOpen(host) {
   </div>`;
   const save = host.querySelector('#st-save');
   save.onclick = async () => {
-    const off = [...host.querySelectorAll('.um-checks input:not(:checked)')].map(i => i.value);
+    const off = [...host.querySelectorAll('#st-leader .um-checks input:not(:checked)')].map(i => i.value);
     save.disabled = true;
     try { await umCall({ action: 'set_tab_settings', hidden: off }); umToast('تنظیمات ذخیره شد؛ سرگروه‌ها با ورود/رفرش بعدی تغییر را می‌بینند'); }
     catch (e) { umToast('ذخیره نشد: ' + e.message); }
     save.disabled = false;
+  };
+  agentSettingsRender(host);
+}
+
+// ============================================================
+// تب‌های قابل‌نمایش برای کارشناس‌ها (ایجنت‌ها) — تنظیم توسط سرپرست
+// ذخیره در جدول agent_tab_settings از طریق توابع agent_tab_settings_get/set (فایل agent_tab_settings.sql)
+// کلیدها همان data-tab دکمه‌های #main-tabs هستند
+// ============================================================
+const AGENT_TAB_DEFS = [['targets', 'تارگت روزانه'], ['bugs', 'خطاها'], ['agent-attendance', 'حضور و غیاب']];
+
+function applyAgentHiddenTabs(hiddenList) {
+  const hidden = new Set(hiddenList || []);
+  const btns = [...document.querySelectorAll('#main-tabs .tab-btn')];
+  if (btns.length && btns.every(b => hidden.has(b.dataset.tab))) hidden.clear(); // حداقل یک تب باید بماند
+  btns.forEach(b => { b.style.display = hidden.has(b.dataset.tab) ? 'none' : ''; });
+  const cur = btns.find(b => b.classList.contains('active'));
+  if (!cur || hidden.has(cur.dataset.tab)) {
+    const first = btns.find(b => !hidden.has(b.dataset.tab));
+    if (first) first.click();
+  }
+}
+
+async function loadAgentHiddenTabs() {
+  try {
+    const r = await supabaseClient.rpc('agent_tab_settings_get');
+    if (r.error) throw r.error;
+    applyAgentHiddenTabs(r.data || []);
+  } catch (e) { console.warn('خواندن تنظیمات تب‌های کارشناس ناموفق بود:', e.message); }
+}
+
+async function agentSettingsRender(host) {
+  const card = document.createElement('div');
+  card.className = 'um-settings list-card';
+  card.id = 'st-agent';
+  card.style.cssText = 'padding:18px;margin-top:14px';
+  card.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+  host.appendChild(card);
+  let hidden = [];
+  try {
+    const r = await supabaseClient.rpc('agent_tab_settings_get');
+    if (r.error) throw r.error;
+    hidden = r.data || [];
+  } catch (e) { card.innerHTML = '<div class="empty-state">خواندن تنظیمات کارشناس‌ها انجام نشد: ' + umEsc(e.message) + '</div>'; return; }
+  const hs = new Set(hidden);
+  card.innerHTML = `<div class="um-title">تب‌های قابل‌نمایش برای کارشناس‌ها</div>
+    <div style="font-size:12px;color:var(--ink-soft)">تیک = نمایش داده شود. تب‌های بدون تیک برای همه‌ی کارشناس‌ها مخفی می‌شود (حداقل یک تب باید فعال بماند).</div>
+    <div class="um-checks">${AGENT_TAB_DEFS.map(([k, n]) => `<label><input type="checkbox" value="${k}"${hs.has(k) ? '' : ' checked'}>${umEsc(n)}</label>`).join('')}</div>
+    <div class="um-actions"><button class="um-btn" id="st-agent-save" type="button">ذخیره</button></div>`;
+  const btn = card.querySelector('#st-agent-save');
+  btn.onclick = async () => {
+    const off = [...card.querySelectorAll('.um-checks input:not(:checked)')].map(i => i.value);
+    if (off.length >= AGENT_TAB_DEFS.length) { umToast('حداقل یک تب باید فعال بماند'); return; }
+    btn.disabled = true;
+    try {
+      const r = await supabaseClient.rpc('agent_tab_settings_set', { p_hidden: off });
+      if (r.error) throw r.error;
+      umToast('تنظیمات ذخیره شد؛ کارشناس‌ها با ورود/رفرش بعدی تغییر را می‌بینند');
+    } catch (e) { umToast('ذخیره نشد: ' + e.message); }
+    btn.disabled = false;
   };
 }
 </script>
