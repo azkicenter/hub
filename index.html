@@ -9078,6 +9078,45 @@ function drop(agent,en,day,shift){
 }
 function overlay(html){const ov=document.createElement('div');ov.className='kb-ov';ov.innerHTML='<div class="att-m">'+html+'</div>';document.body.appendChild(ov);
   const close=()=>ov.remove();ov.onmousedown=ev=>{if(ev.target===ov)close()};return{ov,close,q:i=>ov.querySelector(i)}}
+// اعتبارسنجی بازه‌های حضور: «حضور» = مجموع بازه‌ها حداقل ۸ ساعت (می‌تواند چند بازه‌ی جدا باشد، مثلاً ۰۸–۱۲ و ۲۰–۲۴)؛
+// «مرخصی ساعتی» = مجموع کمتر از ۸ ساعت. بازه‌ها نباید هم‌پوشانی داشته باشند.
+function validPer(st,per){
+  if(st!=='present'&&st!=='hourly')return{periods:null};
+  const iv=[];
+  for(const p of per){
+    if(!p[0]||!p[1])continue;
+    const s=toM(p[0]); let en=toE(p[1]);
+    if(en<=s){if(st==='present')en+=1440;else return{err:'ساعت پایان هر بازه باید بعد از شروع آن باشد (۰۰:۰۰ یعنی پایان شبانه‌روز).'}}
+    iv.push({p:p.slice(),s,en});
+  }
+  if(!iv.length)return{err:'حداقل یک بازه‌ی حضور وارد کنید.'};
+  iv.sort((a,b)=>a.s-b.s);
+  let tot=0;
+  for(let i=0;i<iv.length;i++){if(i&&iv[i].s<iv[i-1].en)return{err:'بازه‌ها نباید هم‌پوشانی داشته باشند.'};tot+=iv[i].en-iv[i].s}
+  if(st==='present'&&tot<REQ)return{err:'مجموع ساعت حضور کمتر از ۸ ساعت است؛ برای این حالت «مرخصی ساعتی» ثبت کنید.'};
+  if(st==='hourly'&&tot>=REQ)return{err:'مجموع ساعت حضور ۸ ساعت یا بیشتر است؛ وضعیت «حضور» را انتخاب کنید.'};
+  return{periods:iv.map(x=>x.p)};
+}
+const PER_HINT='بازه‌های حضور در این روز (ساعت‌ها ۲۴ ساعته است). «حضور» یعنی مجموع حداقل ۸ ساعت؛ لازم نیست پیوسته باشد (مثلاً ۰۸ تا ۱۲ و ۲۰ تا ۲۴). کمتر از ۸ ساعت «مرخصی ساعتی» است.';
+// ویرایشگر بازه‌ها (مشترک بین پنجره‌ی سنتر/سرگروه و پنجره‌ی ایجنت)
+function perEditor(m,per,getSt,getSh){
+  const rows=()=>{m.q('#x-rows').innerHTML=per.map((p,i)=>`<div class="rw" style="margin-bottom:6px">از ${tp(p[0],`data-i="${i}" data-k="0"`)} تا ${tp(p[1],`data-i="${i}" data-k="1"`)}${per.length>1?`<button class="kb-btn ghost" type="button" data-rm="${i}">✕</button>`:''}</div>`).join('');
+    m.q('#x-rows').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{per.splice(+b.dataset.rm,1);rows()})};
+  m.ov.addEventListener('change',ev=>{const t=ev.target.closest&&ev.target.closest('.tp'); if(!t)return; per[+t.dataset.i][+t.dataset.k]=tpv(t)});
+  const isDef=(p,a,b)=>p.length===1&&p[0][0]===a[0]&&p[0][1]===a[1];
+  const HD=['08:00','12:00'];
+  let last=getSt();
+  const sync=()=>{const st=getSt();
+    if(st!==last){
+      if(st==='present'&&isDef(per,HD)){per.length=0;per.push(SHD[getSh()].slice())}
+      else if(st==='hourly'&&(isDef(per,SHD.morning)||isDef(per,SHD.night))){per.length=0;per.push(HD.slice())}
+      last=st}
+    m.q('#x-p').style.display=(st==='present'||st==='hourly')?'':'none';rows()};
+  m.ov.querySelectorAll('input[name=x-s]').forEach(i=>i.onchange=sync);
+  m.q('#x-add').onclick=()=>{per.push(['14:00','16:00']);rows()};
+  sync();
+  return{rows,reset:(old)=>{if(per.length===1&&isDef(per,SHD[old])){per.length=0;per.push(SHD[getSh()].slice());rows()}}};
+}
 function entryModal(en){
   const name=aname(en.agent_id);
   if(A.role==='center'&&en.status==='suspended'){toast('این نفر توسط سرگروه تعلیق شده و فقط سرگروه می‌تواند آن را تغییر دهد');return}
@@ -9085,36 +9124,19 @@ function entryModal(en){
   const sh=en.shift||'morning', sts=mgr()?Object.keys(ST):['present','hourly','leave','weekly_off'];
   const m=overlay(`<b>${e(name)} — ${DN[(new Date(en.day+'T00:00:00Z').getUTCDay()+1)%7]} ${fdate(en.day)} · ${SHN[sh]}</b>
    ${sts.map(k=>`<label><input type="radio" name="x-s" value="${k}" ${en.status===k?'checked':''}>${ST[k][0]}</label>`).join('')}
-   <div id="x-w" style="display:none"><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">ساعت حضور (حداقل ۸ ساعت؛ لازم نیست دقیقاً ۸ تا ۱۶ باشد، ساعت‌ها ۲۴ ساعته است)</div><div id="x-wr" class="rw"></div></div>
-   <div id="x-p" style="display:none"><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">بازه‌های حضور در این روز (بقیه‌ی شیفت مرخصی ساعتی محسوب می‌شود، ساعت‌ها ۲۴ ساعته است)</div><div id="x-rows"></div><button class="kb-btn ghost" id="x-add" type="button">+ بازه‌ی دیگر</button></div>
+   <div id="x-p" style="display:none"><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">${PER_HINT}</div><div id="x-rows"></div><button class="kb-btn ghost" id="x-add" type="button">+ بازه‌ی دیگر</button></div>
    <div class="azki-error" id="x-err"></div>
    <div class="acts"><button class="kb-btn" id="x-ok" type="button">ذخیره</button><button class="kb-btn ghost" id="x-x" type="button">انصراف</button><button class="kb-btn del" id="x-del" type="button">حذف از این روز</button></div>`);
-  const per=(en.status==='hourly'&&en.periods&&en.periods.length?en.periods:[['08:00','12:00']]).map(x=>x.slice());
-  const win=(en.status==='present'&&en.periods&&en.periods.length?en.periods[0]:SHD[sh]).slice();
-  const wr=()=>{m.q('#x-wr').innerHTML='از '+tp(win[0],'data-w="1" data-k="0"')+' تا '+tp(win[1],'data-w="1" data-k="1"')};
-  const rows=()=>{m.q('#x-rows').innerHTML=per.map((p,i)=>`<div class="rw" style="margin-bottom:6px">از ${tp(p[0],`data-i="${i}" data-k="0"`)} تا ${tp(p[1],`data-i="${i}" data-k="1"`)}${per.length>1?`<button class="kb-btn ghost" type="button" data-rm="${i}">✕</button>`:''}</div>`).join('');
-    m.q('#x-rows').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{per.splice(+b.dataset.rm,1);rows()})};
-  m.ov.addEventListener('change',ev=>{const t=ev.target.closest&&ev.target.closest('.tp'); if(!t)return; if(t.dataset.w)win[+t.dataset.k]=tpv(t); else per[+t.dataset.i][+t.dataset.k]=tpv(t)});
-  const cur=()=>m.q('input[name=x-s]:checked').value, sync=()=>{m.q('#x-p').style.display=cur()==='hourly'?'':'none';m.q('#x-w').style.display=cur()==='present'?'':'none'};
-  m.ov.querySelectorAll('input[name=x-s]').forEach(i=>i.onchange=sync); wr(); rows(); sync();
-  m.q('#x-add').onclick=()=>{per.push(['14:00','16:00']);rows()}; m.q('#x-x').onclick=m.close;
+  const per=((en.status==='hourly'||en.status==='present')&&en.periods&&en.periods.length?en.periods:(en.status==='hourly'?[['08:00','12:00']]:[SHD[sh]])).map(x=>x.slice());
+  const cur=()=>m.q('input[name=x-s]:checked').value;
+  perEditor(m,per,cur,()=>sh);
+  m.q('#x-x').onclick=m.close;
   m.q('#x-del').onclick=()=>{m.close();run(supabaseClient.from(TE).delete().eq('id',en.id))};
   m.q('#x-ok').onclick=()=>{
     const st=cur(),fail=t=>{m.q('#x-err').textContent=t;m.q('#x-err').style.display='block'};
     if(!capOk(en.day,en.agent_id,st))return fail(capMsg());
-    let periods=null;
-    if(st==='present'){
-      if(dur(win[0],win[1])<REQ)return fail('ساعت حضور کمتر از ۸ ساعت است؛ برای این حالت «مرخصی ساعتی» ثبت کنید.');
-      periods=[win.slice()];
-    }
-    if(st==='hourly'){
-      periods=per.filter(p=>p[0]&&p[1]).sort((a,b)=>toM(a[0])-toM(b[0]));
-      if(!periods.length)return fail('حداقل یک بازه‌ی حضور وارد کنید.');
-      let tot=0;
-      for(let i=0;i<periods.length;i++){if(toM(periods[i][0])>=toE(periods[i][1]))return fail('ساعت پایان هر بازه باید بعد از شروع آن باشد (۰۰:۰۰ یعنی پایان شبانه‌روز).');if(i&&toM(periods[i][0])<toE(periods[i-1][1]))return fail('بازه‌ها نباید هم‌پوشانی داشته باشند.');tot+=toE(periods[i][1])-toM(periods[i][0])}
-      if(tot>=REQ)return fail('مجموع ساعت حضور ۸ ساعت یا بیشتر است؛ وضعیت «حضور» را انتخاب کنید.');
-    }
-    m.close();run(supabaseClient.from(TE).update({status:st,periods}).eq('id',en.id));
+    const v=validPer(st,per); if(v.err)return fail(v.err);
+    m.close();run(supabaseClient.from(TE).update({status:st,periods:v.periods}).eq('id',en.id));
   };
 }
 function suspendModal(){
@@ -9150,25 +9172,6 @@ async function loadAgentWeek(){
   else{A.ag=r.data;A.agErr='';A.centers=(r.data&&r.data.centers)||[];A.sel=(r.data&&r.data.center)||null}
   renderAgent();
 }
-function agValid(st,win,per){
-  if(st==='present'){
-    if(dur(win[0],win[1])<REQ)return{err:'ساعت حضور کمتر از ۸ ساعت است؛ برای این حالت «مرخصی ساعتی» ثبت کنید.'};
-    return{periods:[win.slice()]};
-  }
-  if(st==='hourly'){
-    const periods=per.filter(p=>p[0]&&p[1]).map(p=>p.slice()).sort((a,b)=>toM(a[0])-toM(b[0]));
-    if(!periods.length)return{err:'حداقل یک بازه‌ی حضور وارد کنید.'};
-    let tot=0;
-    for(let i=0;i<periods.length;i++){
-      if(toM(periods[i][0])>=toE(periods[i][1]))return{err:'ساعت پایان هر بازه باید بعد از شروع آن باشد (۰۰:۰۰ یعنی پایان شبانه‌روز).'};
-      if(i&&toM(periods[i][0])<toE(periods[i-1][1]))return{err:'بازه‌ها نباید هم‌پوشانی داشته باشند.'};
-      tot+=toE(periods[i][1])-toM(periods[i][0]);
-    }
-    if(tot>=REQ)return{err:'مجموع ساعت حضور ۸ ساعت یا بیشتر است؛ وضعیت «حضور» را انتخاب کنید.'};
-    return{periods};
-  }
-  return{periods:null};
-}
 async function agSet(day,status,shift,periods){
   const r=await supabaseClient.rpc('att_agent_set',{p_center:A.sel,p_day:day,p_status:status,p_shift:shift,p_periods:periods});
   if(r.error)toast(rpcErr(r));else toast('ثبت شد');
@@ -9193,7 +9196,7 @@ function renderAgent(){
   const cnt={}; days.forEach(d=>{if(d.mine)cnt[d.mine.status]=(cnt[d.mine.status]||0)+1});
   const none=days.filter(d=>!d.mine).length;
   const sum=Object.keys(ST).filter(k=>cnt[k]).map(k=>`<span class="as-pill" style="--c:${ST[k][1]}">${ST[k][0]} ${faDigits(cnt[k])}</span>`).join('')+(none?`<span class="as-pill" style="--c:#B0892B">ثبت‌نشده ${faDigits(none)}</span>`:'');
-  const rules=`<details class="ag-rules"><summary>قوانین ثبت حضور</summary><ul><li>فقط روزهایی که قفل نیستند قابل ثبت‌اند (هفته‌ی بعد به‌صورت پیش‌فرض باز است؛ برای باز شدن بقیه با سنتر خود هماهنگ کنید).</li><li>در جمعه و تعطیلات رسمی حداکثر ${faDigits(Math.round(PCT*100))}٪ نفرات سنتر (${faDigits(g.cap)} نفر از ${faDigits(g.agents)} نفر) می‌توانند فعال باشند؛ برای بقیه مرخصی ثبت کنید.</li><li>«حضور» حداقل ۸ ساعت است؛ کمتر از آن «مرخصی ساعتی» محسوب می‌شود.</li><li>تعلیق را فقط سرگروه تغییر می‌دهد.</li></ul></details>`;
+  const rules=`<details class="ag-rules"><summary>قوانین ثبت حضور</summary><ul><li>فقط روزهایی که قفل نیستند قابل ثبت‌اند (هفته‌ی بعد به‌صورت پیش‌فرض باز است؛ برای باز شدن بقیه با سنتر خود هماهنگ کنید).</li><li>در جمعه و تعطیلات رسمی حداکثر ${faDigits(Math.round(PCT*100))}٪ نفرات سنتر (${faDigits(g.cap)} نفر از ${faDigits(g.agents)} نفر) می‌توانند فعال باشند؛ برای بقیه مرخصی ثبت کنید.</li><li>«حضور» یعنی مجموع حداقل ۸ ساعت؛ لازم نیست پیوسته باشد (مثلاً ۰۸ تا ۱۲ و ۲۰ تا ۲۴). کمتر از آن «مرخصی ساعتی» است.</li><li>تعلیق را فقط سرگروه تغییر می‌دهد.</li></ul></details>`;
   const cards=days.map((d,i)=>{
     const m=d.mine, sus=!!m&&m.status==='suspended', myAct=!!m&&ACT.includes(m.status), full=d.capped&&!myAct&&d.active>=g.cap;
     const sh=m?(m.shift||'morning'):'morning';
@@ -9224,26 +9227,19 @@ function agentModal(day){
   const m=overlay(`<b>${DN[di]} ${fdate(day)}</b>
    <div class="rw"><span>شیفت:</span><label><input type="radio" name="x-sh" value="morning" ${sh==='morning'?'checked':''}>☀ صبح</label><label><input type="radio" name="x-sh" value="night" ${sh==='night'?'checked':''}>🌙 شب</label></div>
    <div class="ag-sts">${sts.map(k=>`<label><input type="radio" name="x-s" value="${k}" ${(en?en.status:'present')===k?'checked':''}>${ST[k][0]}</label>`).join('')}</div>
-   <div id="x-w" style="display:none"><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">ساعت حضور (حداقل ۸ ساعت، ساعت‌ها ۲۴ ساعته است)</div><div id="x-wr" class="rw"></div></div>
-   <div id="x-p" style="display:none"><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">بازه‌های حضور در این روز (بقیه‌ی شیفت مرخصی ساعتی محسوب می‌شود)</div><div id="x-rows"></div><button class="kb-btn ghost" id="x-add" type="button">+ بازه‌ی دیگر</button></div>
+   <div id="x-p" style="display:none"><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">${PER_HINT}</div><div id="x-rows"></div><button class="kb-btn ghost" id="x-add" type="button">+ بازه‌ی دیگر</button></div>
    <div class="azki-error" id="x-err"></div>
    <div class="acts"><button class="kb-btn" id="x-ok" type="button">ذخیره</button><button class="kb-btn ghost" id="x-x" type="button">انصراف</button>${en?'<button class="kb-btn del" id="x-del" type="button">حذف از این روز</button>':''}</div>`);
-  const per=(en&&en.status==='hourly'&&en.periods&&en.periods.length?en.periods:[['08:00','12:00']]).map(x=>x.slice());
-  const win=((en&&en.status==='present'&&en.periods&&en.periods.length)?en.periods[0]:SHD[sh]).slice();
-  const wr=()=>{m.q('#x-wr').innerHTML='از '+tp(win[0],'data-w="1" data-k="0"')+' تا '+tp(win[1],'data-w="1" data-k="1"')};
-  const rows=()=>{m.q('#x-rows').innerHTML=per.map((p,i)=>`<div class="rw" style="margin-bottom:6px">از ${tp(p[0],`data-i="${i}" data-k="0"`)} تا ${tp(p[1],`data-i="${i}" data-k="1"`)}${per.length>1?`<button class="kb-btn ghost" type="button" data-rm="${i}">✕</button>`:''}</div>`).join('');
-    m.q('#x-rows').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{per.splice(+b.dataset.rm,1);rows()})};
-  m.ov.addEventListener('change',ev=>{const t=ev.target.closest&&ev.target.closest('.tp'); if(!t)return; if(t.dataset.w)win[+t.dataset.k]=tpv(t); else per[+t.dataset.i][+t.dataset.k]=tpv(t)});
-  const cur=()=>m.q('input[name=x-s]:checked').value, sync=()=>{m.q('#x-p').style.display=cur()==='hourly'?'':'none';m.q('#x-w').style.display=cur()==='present'?'':'none'};
-  m.ov.querySelectorAll('input[name=x-s]').forEach(i=>i.onchange=sync);
-  m.ov.querySelectorAll('input[name=x-sh]').forEach(i=>i.onchange=()=>{sh=i.value;win[0]=SHD[sh][0];win[1]=SHD[sh][1];wr()});
-  wr(); rows(); sync();
-  m.q('#x-add').onclick=()=>{per.push(['14:00','16:00']);rows()}; m.q('#x-x').onclick=m.close;
+  const per=((en&&(en.status==='hourly'||en.status==='present')&&en.periods&&en.periods.length)?en.periods:(en&&en.status==='hourly'?[['08:00','12:00']]:[SHD[sh]])).map(x=>x.slice());
+  const cur=()=>m.q('input[name=x-s]:checked').value;
+  const pe=perEditor(m,per,cur,()=>sh);
+  m.ov.querySelectorAll('input[name=x-sh]').forEach(i=>i.onchange=()=>{const old=sh;sh=i.value;pe.reset(old)});
+  m.q('#x-x').onclick=m.close;
   if(m.q('#x-del'))m.q('#x-del').onclick=()=>{m.close();agClear(day)};
   m.q('#x-ok').onclick=async()=>{
     const st=cur(), fail=t=>{m.q('#x-err').textContent=t;m.q('#x-err').style.display='block'};
     if(full&&ACT.includes(st))return fail(capMsg(g.cap));
-    const v=agValid(st,win,per); if(v.err)return fail(v.err);
+    const v=validPer(st,per); if(v.err)return fail(v.err);
     const b=m.q('#x-ok'); b.disabled=true;
     const r=await supabaseClient.rpc('att_agent_set',{p_center:A.sel,p_day:day,p_status:st,p_shift:sh,p_periods:v.periods});
     if(r.error){b.disabled=false;return fail(rpcErr(r))}
