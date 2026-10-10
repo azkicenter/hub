@@ -1863,6 +1863,10 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         تسک‌ها
         <span class="tab-dot kb-dot"></span>
       </button>
+      <button class="tab-btn" data-tab="agent-attendance" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg>
+        حضور و غیاب
+      </button>
     </div>
 
     <div class="panel active" id="panel-targets">
@@ -2473,6 +2477,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
     </div>
 
     <div class="panel" id="panel-agent-tasks"></div>
+    <div class="panel" id="panel-agent-attendance"></div>
     <div class="panel" id="panel-bugs">
       <div class="list-card" id="bugs-list">
         <div class="loading-state">در حال بارگذاری...</div>
@@ -2591,9 +2596,11 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
     document.getElementById('panel-targets').classList.remove('active');
     document.getElementById('panel-bugs').classList.remove('active');
     document.getElementById('panel-agent-tasks').classList.remove('active');
+    document.getElementById('panel-agent-attendance').classList.remove('active');
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'agent-tasks') kbOpen(document.getElementById('panel-agent-tasks'));
+    if (btn.dataset.tab === 'agent-attendance') attOpen(document.getElementById('panel-agent-attendance'));
     if (btn.dataset.tab === 'bugs') {
       markBugsSeen(lastBugsKeys);
     }
@@ -8697,53 +8704,88 @@ window.kbNotifyStart=async function(){
 </script>
 
 <style>
+/* ===== حضور و غیاب =====
+   تایپوگرافی همان فونت/اندازه‌ی بقیه‌ی برنامه (var(--font) و ۱۳٫۵px)، دکمه‌ها هم‌اندازه، کارت‌ها فشرده ===== */
+.att-host,.att,.att-m{font-family:var(--font);font-size:13.5px;font-weight:400;line-height:1.6}
 .att{direction:rtl;text-align:right}
-.att-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
-.att-bar select,.att-m input,.att-m select,.att-m textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px 10px;min-width:0}
-.att-nav{display:flex;align-items:center;gap:8px;font-weight:700}
-.att-badge{padding:4px 11px;border-radius:99px;font-size:12px;font-weight:700}
+/* دکمه‌های نوار بالا و پنجره‌ها: همه یک اندازه */
+.att-host .kb-btn,.att-m .kb-btn{font-family:var(--font);font-size:12.5px;font-weight:700;line-height:1;height:32px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;border-radius:var(--radius-sm);box-sizing:border-box}
+.att-host .kb-btn:disabled,.att-m .kb-btn:disabled{opacity:.5;cursor:default}
+.att-host .subtab-btn{font-size:12.5px;height:32px;padding:0 14px}
+.att-host .subtab-btn.active{transform:none;box-shadow:none}
+/* دکمه‌های داخل کارت‌ها: همه یک اندازه */
+.att-ln button,.att-h button,.att-hl .kb-btn,.ag-day .kb-btn{font-family:var(--font);font-size:12px;font-weight:700;line-height:1;height:28px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;border-radius:var(--radius-sm);box-sizing:border-box;cursor:pointer}
+.att-ln button,.att-h button{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
+.att-ln button:hover,.att-h button:hover{background:var(--accent-soft);color:var(--ink)}
+.att-host .att-hl .kb-btn,.att-host .ag-day .kb-btn,.att-m .att-hl .kb-btn{height:28px;padding:0 10px;font-size:12px}
+.as-ex{font-family:var(--font);font-size:12px;cursor:pointer;background:transparent;border:0;color:var(--ink-soft);padding:0 4px;line-height:1}
+/* ورودی‌ها و لیست‌های کشویی هم‌قد دکمه‌ها */
+.att-bar select,.att-m select,.att-m input:not([type=radio]):not([type=checkbox]){height:32px;font-family:var(--font);font-size:12.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:0 10px;min-width:0;box-sizing:border-box}
+.att-m textarea{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px 10px;min-width:0}
+.tp{display:inline-flex;gap:3px;align-items:center;direction:ltr}.tp select{height:30px;padding:0 4px}
+.att-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.att-nav{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+.att-badge{padding:2px 10px;border-radius:99px;font-size:11.5px;font-weight:700;line-height:1.7}
 .att-badge.lock{background:var(--danger-soft);color:var(--danger)}.att-badge.open{background:var(--success-soft);color:var(--success)}.att-badge.wait{background:var(--amber-soft);color:var(--amber)}
 .att-sp{flex:1}
-.att-pool{display:flex;flex-direction:column;gap:6px;padding:10px;position:sticky;top:calc(var(--topbar-h,84px) + 12px);max-height:calc(100vh - var(--topbar-h,84px) - 36px);z-index:1;overflow-y:auto;background:var(--surface-tint);border:1px dashed var(--line);border-radius:var(--radius)}
-.att-pool>b{width:100%;font-size:12px;color:var(--ink-soft)}
-.att-wrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:12px;align-items:start}.att-wrap.nopool{grid-template-columns:minmax(0,1fr)}
-.att-grid{display:flex;flex-direction:column;gap:8px;padding-bottom:8px}
-.att-col{display:grid;grid-template-columns:140px minmax(0,1fr);gap:12px;align-items:start;background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius);padding:8px 10px;min-height:64px}
-.att-chs{display:grid;gap:6px}
-.att-lane{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;align-items:start;padding:6px 8px;background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius-sm);min-height:46px}
+/* کارت‌های فشرده‌ی چیدمان هفته */
+.att-pool{display:flex;flex-direction:column;gap:5px;padding:8px;position:sticky;top:calc(var(--topbar-h,84px) + 12px);max-height:calc(100vh - var(--topbar-h,84px) - 36px);z-index:1;overflow-y:auto;background:var(--surface-tint);border:1px dashed var(--line);border-radius:var(--radius)}
+.att-pool>b{width:100%;font-size:11.5px;font-weight:700;line-height:1.6;color:var(--ink-soft)}
+.att-wrap{display:grid;grid-template-columns:176px minmax(0,1fr);gap:10px;align-items:start}.att-wrap.nopool{grid-template-columns:minmax(0,1fr)}
+.att-grid{display:flex;flex-direction:column;gap:6px;padding-bottom:6px}
+.att-col{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px;align-items:start;background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius);padding:6px 8px;min-height:0}
+.att-chs{display:grid;gap:4px}
+.att-lane{display:grid;grid-template-columns:52px minmax(0,1fr);gap:6px;align-items:start;padding:4px 6px;background:var(--surface);border:1px dashed var(--line);border-radius:var(--radius-sm);min-height:34px}
 .att-lane.over{outline:2px dashed var(--accent)}
-.att-ln{display:grid;gap:3px;justify-items:start;font-size:12px;font-weight:700;color:var(--ink-soft)}
-.att-ln button{font:inherit;font-size:11px;cursor:pointer;background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink-soft);padding:1px 6px}
-.att-lc{display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;min-height:30px}
-.att-lc>.att-ch{margin:0;min-width:130px}
+.att-ln{display:grid;gap:3px;justify-items:start;font-size:11.5px;font-weight:700;color:var(--ink-soft)}
+.att-lc{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;min-height:24px}
+.att-lc>.att-ch{margin:0;min-width:104px}
 .att-ghost.out{outline:2px solid var(--danger)}
-.as-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
-.as-card{--c:var(--ink);background:var(--surface-tint);border:1px solid var(--line);border-right:4px solid var(--c);border-radius:var(--radius-sm);padding:8px 10px;display:grid;gap:2px}.as-card span{font-size:12px;color:var(--ink-soft)}.as-card b{font-size:17px;color:var(--c)}
-.as-days{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.as-w{overflow-x:auto}
-.as-tbl{width:100%;border-collapse:collapse;font-size:13px;direction:rtl}.as-tbl th,.as-tbl td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}.as-tbl th{font-size:12px;color:var(--ink-soft);background:var(--surface-tint);white-space:nowrap}.as-tbl td.as-n{text-align:right;white-space:nowrap}.as-tbl small{display:block;color:var(--ink-soft);font-size:11px;font-weight:400}
-.as-ex{font:inherit;cursor:pointer;background:transparent;border:0;color:var(--ink-soft);padding:0 4px}
-.as-bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;min-width:70px}.as-bar i{display:block;height:100%;background:var(--success)}
-.as-pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
-.as-cell{display:inline-block;min-width:54px;padding:3px 8px;border-radius:8px;font-weight:700;background:var(--surface-tint);color:var(--ink-soft)}.as-cell.ok{background:var(--success-soft);color:var(--success)}.as-cell.warn{background:var(--amber-soft);color:var(--amber)}.as-cell.bad{background:var(--danger-soft);color:var(--danger)}.as-cell.none{background:var(--surface-tint);color:var(--ink-soft)}
-.as-d>td{background:var(--surface-tint);text-align:right!important}.as-ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-bottom:8px}.as-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px 9px;font-size:12.5px}.as-a small{display:inline;margin:0}
-.tp{display:inline-flex;gap:3px;align-items:center;direction:ltr}.tp select{padding:5px 6px}
-.att-lk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px}.att-lk label{display:flex;gap:4px;align-items:center}
-.att-col.hol{border-color:var(--amber);background:var(--amber-soft)}.att-col.over{outline:none}
-.att-h{display:grid;gap:2px;margin:0;padding:0 0 0 12px;border-left:1px solid var(--line);font-size:12px;color:var(--ink-soft);align-content:start}
-.att-h b{font-size:13.5px;color:var(--ink)}.att-h em{font-style:normal;color:var(--amber);font-weight:700}.att-h small{font-weight:700;color:var(--accent-strong)}.att-h small.full{color:var(--danger)}
-.att-h button{justify-self:start;font:inherit;font-size:11px;cursor:pointer;background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink-soft);padding:1px 8px}
-.att-ch{display:block;background:var(--surface);border:1px solid var(--line);border-right:4px solid var(--c,var(--line));border-radius:var(--radius-sm);padding:6px 9px;margin-bottom:6px;font-size:12.5px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
-.att-ch small{display:block;color:var(--ink-soft);font-size:11px;margin-top:2px}
+.att-h{display:grid;gap:2px;margin:0;padding:0 0 0 8px;border-left:1px solid var(--line);font-size:11.5px;line-height:1.5;color:var(--ink-soft);align-content:start;justify-items:start}
+.att-h b{font-size:13px;color:var(--ink)}.att-h em{font-style:normal;color:var(--amber);font-weight:700}.att-h small{font-weight:700;color:var(--accent-strong)}.att-h small.full{color:var(--danger)}
+.att-ch{display:block;background:var(--surface);border:1px solid var(--line);border-right:3px solid var(--c,var(--line));border-radius:var(--radius-sm);padding:3px 8px;margin-bottom:4px;font-size:12px;line-height:1.45;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.att-ch small{display:block;color:var(--ink-soft);font-size:10.5px;margin-top:0}
 .att-ch.pool{display:block;margin:0}
-@media(max-width:700px){.att-wrap{grid-template-columns:minmax(0,1fr)}.att-pool{position:static;max-height:none;flex-direction:row;flex-wrap:wrap}.att-col{grid-template-columns:1fr}.att-h{border-left:0;padding:0 0 6px;border-bottom:1px solid var(--line)}}.att-ch.nodrag{cursor:pointer}.att-ch.drag{opacity:.35}
+.att-col.hol{border-color:var(--amber);background:var(--amber-soft)}.att-col.over{outline:none}
+@media(max-width:700px){.att-wrap{grid-template-columns:minmax(0,1fr)}.att-pool{position:static;max-height:none;flex-direction:row;flex-wrap:wrap}.att-col{grid-template-columns:1fr}.att-h{border-left:0;padding:0 0 4px;border-bottom:1px solid var(--line)}}.att-ch.nodrag{cursor:pointer}.att-ch.drag{opacity:.35}
 .att-ghost{position:fixed;z-index:1001;pointer-events:none;opacity:.92;margin:0;box-shadow:0 12px 30px rgba(0,0,0,.3)}
-.att-req{padding:10px 12px;margin-bottom:8px;background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
-.att-m{direction:rtl;text-align:right;background:var(--surface);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;width:min(460px,100%);max-height:92vh;overflow:auto;display:grid;gap:10px;color:var(--ink)}
+.att-req{padding:8px 12px;margin-bottom:8px;background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius-sm);display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+/* نمای وضعیت (سرپرست/سرگروه) */
+.as-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px;margin-bottom:10px}
+.as-card{--c:var(--ink);background:var(--surface-tint);border:1px solid var(--line);border-right:3px solid var(--c);border-radius:var(--radius-sm);padding:5px 9px;display:grid;gap:0}.as-card span{font-size:11.5px;color:var(--ink-soft)}.as-card b{font-size:15px;color:var(--c)}
+.as-days{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.as-w{overflow-x:auto}
+.as-tbl{width:100%;border-collapse:collapse;font-size:12.5px;direction:rtl}.as-tbl th,.as-tbl td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}.as-tbl th{font-size:11.5px;color:var(--ink-soft);background:var(--surface-tint);white-space:nowrap}.as-tbl td.as-n{text-align:right;white-space:nowrap}.as-tbl small{display:block;color:var(--ink-soft);font-size:10.5px;font-weight:400}
+.as-bar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;min-width:70px}.as-bar i{display:block;height:100%;background:var(--success)}
+.as-pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11.5px;font-weight:700;line-height:1.7;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+.as-cell{display:inline-block;min-width:46px;padding:2px 7px;border-radius:8px;font-size:12px;font-weight:700;background:var(--surface-tint);color:var(--ink-soft)}.as-cell.ok{background:var(--success-soft);color:var(--success)}.as-cell.warn{background:var(--amber-soft);color:var(--amber)}.as-cell.bad{background:var(--danger-soft);color:var(--danger)}.as-cell.none{background:var(--surface-tint);color:var(--ink-soft)}
+.as-d>td{background:var(--surface-tint);text-align:right!important}.as-ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:5px;margin-bottom:8px}.as-a{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px}.as-a small{display:inline;margin:0}
+.att-lk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px}.att-lk label{display:flex;gap:4px;align-items:center}
+.att-host .empty-state{padding:28px 16px;font-size:13.5px}
+/* پنجره‌ها */
+.att-m{direction:rtl;text-align:right;background:var(--surface);backdrop-filter:blur(24px);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;width:min(440px,100%);max-height:92vh;overflow:auto;display:grid;gap:9px;color:var(--ink)}
+.att-m>b{font-size:14px;font-weight:700}
 .att-m label{display:flex;align-items:center;gap:8px;font-size:13px}.att-m input[type=radio],.att-m input[type=checkbox]{padding:0;width:16px;height:16px;accent-color:var(--accent)}
-.att-m .rw{display:flex;gap:8px;align-items:center}.att-m .acts{display:flex;gap:8px;flex-wrap:wrap}
+.att-m .rw{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.att-m .acts{display:flex;gap:8px;flex-wrap:wrap}
 .att-m .days{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.att-hl{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px}
+.att-m .ag-sts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.att-hl{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-bottom:1px solid var(--line);font-size:13px}
+/* نمای ایجنت: کارت‌های روزانه‌ی فشرده */
+.ag-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.ag-rules{margin:0 0 8px;background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--ink-soft)}
+.ag-rules summary{cursor:pointer;font-weight:700;color:var(--ink)}
+.ag-rules ul{margin:6px 0 2px;padding:0 16px 0 0;display:grid;gap:2px;line-height:1.7}
+.ag-list{display:grid;gap:5px}
+.ag-day{--c:transparent;display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 9px;background:var(--surface);border:1px solid var(--line);border-right:3px solid var(--c);border-radius:var(--radius-sm)}
+.ag-day.hol{background:var(--amber-soft);border-top-color:var(--amber);border-bottom-color:var(--amber);border-left-color:var(--amber)}
+.ag-day.today{outline:2px solid var(--accent-soft)}
+.ag-d{display:grid;line-height:1.4}.ag-d b{font-size:13px}.ag-d span{font-size:11px;color:var(--ink-soft)}
+.ag-d em{font-style:normal;font-size:11px;font-weight:700;color:var(--amber)}
+.ag-d small{font-size:11px;font-weight:700;color:var(--accent-strong)}.ag-d small.full{color:var(--danger)}
+.ag-st{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0;font-size:12px;color:var(--ink-soft)}
+.ag-act{display:flex;gap:5px;justify-content:flex-end;align-items:center}
+.ag-note{font-size:11.5px;color:var(--ink-faint);white-space:nowrap}
+@media(max-width:560px){.ag-day{grid-template-columns:minmax(0,1fr) auto}.ag-st{grid-column:1/-1;order:3}}
 </style>
 <script>
 (function(){
@@ -8764,6 +8806,7 @@ const unlocked=()=>!!(A.unlock&&A.unlock.status==='approved');
 const sup=()=>A.role==='supervisor';
 const ldr=()=>A.role==='leader';
 const mgr=()=>sup()||ldr();
+const agt=()=>!['center','leader','supervisor','admin'].includes(A.role);
 const cOpen=d=>{const L=A.locks[d];return L?!L.locked:(isNext()||unlocked())};
 const dayOpen=d=>mgr()?true:(A.role==='center'&&cOpen(d));
 const canEdit=()=>mgr()||(A.role==='center'&&DN.some((_,i)=>cOpen(add(A.week,i))));
@@ -8792,11 +8835,12 @@ const dayEn=d=>A.entries.filter(x=>x.day===d);
 const actN=(d,skip)=>dayEn(d).filter(x=>ACT.includes(x.status)&&x.agent_id!==skip).length;
 const capOk=(d,agent,st)=>!capped(d)||!ACT.includes(st)||actN(d,agent)<cap();
 function toast(m){const t=document.createElement('div');t.className='kb-toast';t.textContent=m;t.onclick=()=>t.remove();document.body.appendChild(t);setTimeout(()=>t.remove(),6000)}
-const capMsg=()=>`در روز تعطیل/جمعه حداکثر ${faDigits(Math.round(PCT*100))}٪ نفرات (${faDigits(cap())} نفر) می‌توانند فعال باشند؛ برای بقیه مرخصی ثبت کنید.`;
+const capMsg=n=>`در روز تعطیل/جمعه حداکثر ${faDigits(Math.round(PCT*100))}٪ نفرات (${faDigits(n==null?cap():n)} نفر) می‌توانند فعال باشند؛ برای بقیه مرخصی ثبت کنید.`;
 const fmtP=p=>(p||[]).map(x=>faDigits(x[0])+'–'+faDigits(x[1])).join('، ');
 
 async function init(){
   A.me=(await supabaseClient.auth.getUser()).data.user?.id; A.role=currentUserRole;
+  if(agt()){A.centers=[];A.sel=null;return}
   let ids=[];
   if(A.role==='center')ids=[A.me];
   else if(A.role==='leader'){const r=await supabaseClient.from('leader_centers').select('center_id').eq('leader_id',A.me);ids=(r.data||[]).map(x=>x.center_id)}
@@ -8813,6 +8857,7 @@ async function nextCount(ids){
 const nextBar=()=>A.nextN>0?`<div class="att-req"><span>برای <b>هفته‌ی بعد</b> ${faDigits(A.nextN)} ردیف حضور و غیاب ثبت شده است (سنترها معمولاً هفته‌ی بعد را پر می‌کنند).</span><span class="att-sp"></span><button class="kb-btn" id="a-gonext" type="button">نمایش هفته‌ی بعد</button></div>`:'';
 function bindNext(H){const b=H.querySelector('#a-gonext');if(b)b.onclick=()=>{A.week=add(A.week,7);loadWeek()}}
 async function loadWeek(){
+  if(agt()){await loadAgentWeek();return}
   const h=await supabaseClient.from(TH).select('*'); A.hol={}; (h.data||[]).forEach(x=>A.hol[x.day]=x.title||'تعطیل رسمی');
   const c=A.sel;
   if(c){
@@ -9096,10 +9141,119 @@ async function holModal(){
     m.close();await loadWeek();holModal()};
   m.ov.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{await supabaseClient.from(TH).delete().eq('day',b.dataset.d);m.close();await loadWeek();holModal()});
 }
+// ===== نمای ایجنت: ثبت حضور و غیاب توسط خود کارشناس =====
+// قفل روز، سقف جمعه/تعطیل، حداقل ۸ ساعت و تعلیق سمت دیتابیس هم از طریق توابع att_agent_* اعمال می‌شوند (فایل attendance_agent.sql).
+const rpcErr=r=>{const m=String((r.error&&r.error.message)||''),c=String((r.error&&r.error.code)||'');return /PGRST202|42883|Could not find the function|schema cache/i.test(c+' '+m)?'امکان ثبت حضور هنوز در دیتابیس فعال نشده؛ فایل attendance_agent.sql را در Supabase اجرا کنید.':m};
+async function loadAgentWeek(){
+  const r=await supabaseClient.rpc('att_agent_week',{p_week:A.week,p_center:A.sel||null});
+  if(r.error){A.ag=null;A.agErr=rpcErr(r)}
+  else{A.ag=r.data;A.agErr='';A.centers=(r.data&&r.data.centers)||[];A.sel=(r.data&&r.data.center)||null}
+  renderAgent();
+}
+function agValid(st,win,per){
+  if(st==='present'){
+    if(dur(win[0],win[1])<REQ)return{err:'ساعت حضور کمتر از ۸ ساعت است؛ برای این حالت «مرخصی ساعتی» ثبت کنید.'};
+    return{periods:[win.slice()]};
+  }
+  if(st==='hourly'){
+    const periods=per.filter(p=>p[0]&&p[1]).map(p=>p.slice()).sort((a,b)=>toM(a[0])-toM(b[0]));
+    if(!periods.length)return{err:'حداقل یک بازه‌ی حضور وارد کنید.'};
+    let tot=0;
+    for(let i=0;i<periods.length;i++){
+      if(toM(periods[i][0])>=toE(periods[i][1]))return{err:'ساعت پایان هر بازه باید بعد از شروع آن باشد (۰۰:۰۰ یعنی پایان شبانه‌روز).'};
+      if(i&&toM(periods[i][0])<toE(periods[i-1][1]))return{err:'بازه‌ها نباید هم‌پوشانی داشته باشند.'};
+      tot+=toE(periods[i][1])-toM(periods[i][0]);
+    }
+    if(tot>=REQ)return{err:'مجموع ساعت حضور ۸ ساعت یا بیشتر است؛ وضعیت «حضور» را انتخاب کنید.'};
+    return{periods};
+  }
+  return{periods:null};
+}
+async function agSet(day,status,shift,periods){
+  const r=await supabaseClient.rpc('att_agent_set',{p_center:A.sel,p_day:day,p_status:status,p_shift:shift,p_periods:periods});
+  if(r.error)toast(rpcErr(r));else toast('ثبت شد');
+  await loadWeek();
+}
+async function agClear(day){
+  if(!confirm('ثبت این روز حذف شود؟'))return;
+  const r=await supabaseClient.rpc('att_agent_clear',{p_center:A.sel,p_day:day});
+  if(r.error)toast(rpcErr(r));else toast('حذف شد');
+  await loadWeek();
+}
+function renderAgent(){
+  const H=A.host; if(!H)return;
+  const g=A.ag, w1=add(A.week,6), t=todayI();
+  const nav=x=>`<div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="g-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="g-next" type="button">هفته بعد</button></div>${x||''}</div>`;
+  const bindNav=()=>{const p=H.querySelector('#g-prev'),n=H.querySelector('#g-next');if(p)p.onclick=()=>{A.week=add(A.week,-7);loadWeek()};if(n)n.onclick=()=>{A.week=add(A.week,7);loadWeek()}};
+  if(!g){H.innerHTML=`<div class="att">${nav('')}<div class="empty-state">${e(A.agErr||'خطا در دریافت اطلاعات حضور و غیاب')}</div></div>`;bindNav();return}
+  if(!g.center){H.innerHTML='<div class="att"><div class="empty-state">شما هنوز به هیچ سنتری اساین نشده‌اید؛ با سرگروه خود هماهنگ کنید.</div></div>';return}
+  const days=g.days||[], nOpen=days.filter(d=>d.open).length;
+  const badge=nOpen===0?'<span class="att-badge lock">🔒 قفل</span>':nOpen<days.length?'<span class="att-badge wait">بعضی روزها قفل است</span>':'<span class="att-badge open">قابل ویرایش</span>';
+  const csel=(A.centers||[]).length>1?`<span class="att-sp"></span><select id="g-c">${A.centers.map(c=>`<option value="${e(c.id)}">${e(c.name)}</option>`).join('')}</select>`:'<span class="att-sp"></span>';
+  const cnt={}; days.forEach(d=>{if(d.mine)cnt[d.mine.status]=(cnt[d.mine.status]||0)+1});
+  const none=days.filter(d=>!d.mine).length;
+  const sum=Object.keys(ST).filter(k=>cnt[k]).map(k=>`<span class="as-pill" style="--c:${ST[k][1]}">${ST[k][0]} ${faDigits(cnt[k])}</span>`).join('')+(none?`<span class="as-pill" style="--c:#B0892B">ثبت‌نشده ${faDigits(none)}</span>`:'');
+  const rules=`<details class="ag-rules"><summary>قوانین ثبت حضور</summary><ul><li>فقط روزهایی که قفل نیستند قابل ثبت‌اند (هفته‌ی بعد به‌صورت پیش‌فرض باز است؛ برای باز شدن بقیه با سنتر خود هماهنگ کنید).</li><li>در جمعه و تعطیلات رسمی حداکثر ${faDigits(Math.round(PCT*100))}٪ نفرات سنتر (${faDigits(g.cap)} نفر از ${faDigits(g.agents)} نفر) می‌توانند فعال باشند؛ برای بقیه مرخصی ثبت کنید.</li><li>«حضور» حداقل ۸ ساعت است؛ کمتر از آن «مرخصی ساعتی» محسوب می‌شود.</li><li>تعلیق را فقط سرگروه تغییر می‌دهد.</li></ul></details>`;
+  const cards=days.map((d,i)=>{
+    const m=d.mine, sus=!!m&&m.status==='suspended', myAct=!!m&&ACT.includes(m.status), full=d.capped&&!myAct&&d.active>=g.cap;
+    const sh=m?(m.shift||'morning'):'morning';
+    const per=m?(m.periods&&m.periods.length?m.periods:(m.status==='present'?[SHD[sh]]:null)):null;
+    const st=m?`<span class="as-pill" style="--c:${ST[m.status][1]}">${ST[m.status][0]}</span><span>${sh==='night'?'🌙 شب':'☀ صبح'}${per&&(m.status==='present'||m.status==='hourly')?' · '+(m.status==='hourly'?'حضور ':'')+fmtP(per):''}</span>`:'<span class="as-pill" style="--c:#B0892B">ثبت‌نشده</span>';
+    let act='';
+    if(sus)act='<span class="ag-note">تعلیق — فقط سرگروه</span>';
+    else if(!d.open)act='<span class="ag-note">🔒 قفل</span>';
+    else if(!m)act=`<button class="kb-btn ghost" type="button" data-q="${d.day}|morning" ${full?'disabled title="ظرفیت تکمیل است"':''}>☀ صبح</button><button class="kb-btn ghost" type="button" data-q="${d.day}|night" ${full?'disabled title="ظرفیت تکمیل است"':''}>🌙 شب</button><button class="kb-btn ghost" type="button" data-m="${d.day}">سایر</button>`;
+    else act=`<button class="kb-btn ghost" type="button" data-m="${d.day}">ویرایش</button><button class="kb-btn del" type="button" data-x="${d.day}">حذف</button>`;
+    const hol=d.holiday?`<em>${e(d.holiday)}</em>`:i===6?'<em>جمعه</em>':'';
+    const cp=d.capped?`<small class="${d.active>=g.cap?'full':''}">${faDigits(d.active)} از ${faDigits(g.cap)} فعال</small>`:'';
+    return `<div class="ag-day${d.holiday?' hol':''}${d.day===t?' today':''}" style="${m?'--c:'+ST[m.status][1]:''}"><div class="ag-d"><b>${DN[i]}</b><span>${fdate(d.day)}</span>${hol}${cp}</div><div class="ag-st">${st}</div><div class="ag-act">${act}</div></div>`;
+  }).join('');
+  H.innerHTML=`<div class="att">${nav(badge+csel)}<div class="ag-top">${sum}</div>${rules}<div class="ag-list">${cards}</div></div>`;
+  bindNav();
+  const cs=H.querySelector('#g-c'); if(cs){cs.value=A.sel;cs.onchange=ev=>{A.sel=ev.target.value;loadWeek()}}
+  H.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{const[dd,sh]=b.dataset.q.split('|');agSet(dd,'present',sh,null)});
+  H.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>agentModal(b.dataset.m));
+  H.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>agClear(b.dataset.x));
+}
+function agentModal(day){
+  const g=A.ag, di=g.days.findIndex(x=>x.day===day), d=g.days[di], en=d.mine;
+  if(!d.open){toast('این روز قفل است');return}
+  if(en&&en.status==='suspended'){toast('شما در این روز تعلیق شده‌اید و فقط سرگروه می‌تواند آن را تغییر دهد');return}
+  let sh=en?(en.shift||'morning'):'morning';
+  const sts=['present','hourly','leave','weekly_off'], myAct=!!en&&ACT.includes(en.status), full=d.capped&&!myAct&&d.active>=g.cap;
+  const m=overlay(`<b>${DN[di]} ${fdate(day)}</b>
+   <div class="rw"><span>شیفت:</span><label><input type="radio" name="x-sh" value="morning" ${sh==='morning'?'checked':''}>☀ صبح</label><label><input type="radio" name="x-sh" value="night" ${sh==='night'?'checked':''}>🌙 شب</label></div>
+   <div class="ag-sts">${sts.map(k=>`<label><input type="radio" name="x-s" value="${k}" ${(en?en.status:'present')===k?'checked':''}>${ST[k][0]}</label>`).join('')}</div>
+   <div id="x-w" style="display:none"><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">ساعت حضور (حداقل ۸ ساعت، ساعت‌ها ۲۴ ساعته است)</div><div id="x-wr" class="rw"></div></div>
+   <div id="x-p" style="display:none"><div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">بازه‌های حضور در این روز (بقیه‌ی شیفت مرخصی ساعتی محسوب می‌شود)</div><div id="x-rows"></div><button class="kb-btn ghost" id="x-add" type="button">+ بازه‌ی دیگر</button></div>
+   <div class="azki-error" id="x-err"></div>
+   <div class="acts"><button class="kb-btn" id="x-ok" type="button">ذخیره</button><button class="kb-btn ghost" id="x-x" type="button">انصراف</button>${en?'<button class="kb-btn del" id="x-del" type="button">حذف از این روز</button>':''}</div>`);
+  const per=(en&&en.status==='hourly'&&en.periods&&en.periods.length?en.periods:[['08:00','12:00']]).map(x=>x.slice());
+  const win=((en&&en.status==='present'&&en.periods&&en.periods.length)?en.periods[0]:SHD[sh]).slice();
+  const wr=()=>{m.q('#x-wr').innerHTML='از '+tp(win[0],'data-w="1" data-k="0"')+' تا '+tp(win[1],'data-w="1" data-k="1"')};
+  const rows=()=>{m.q('#x-rows').innerHTML=per.map((p,i)=>`<div class="rw" style="margin-bottom:6px">از ${tp(p[0],`data-i="${i}" data-k="0"`)} تا ${tp(p[1],`data-i="${i}" data-k="1"`)}${per.length>1?`<button class="kb-btn ghost" type="button" data-rm="${i}">✕</button>`:''}</div>`).join('');
+    m.q('#x-rows').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{per.splice(+b.dataset.rm,1);rows()})};
+  m.ov.addEventListener('change',ev=>{const t=ev.target.closest&&ev.target.closest('.tp'); if(!t)return; if(t.dataset.w)win[+t.dataset.k]=tpv(t); else per[+t.dataset.i][+t.dataset.k]=tpv(t)});
+  const cur=()=>m.q('input[name=x-s]:checked').value, sync=()=>{m.q('#x-p').style.display=cur()==='hourly'?'':'none';m.q('#x-w').style.display=cur()==='present'?'':'none'};
+  m.ov.querySelectorAll('input[name=x-s]').forEach(i=>i.onchange=sync);
+  m.ov.querySelectorAll('input[name=x-sh]').forEach(i=>i.onchange=()=>{sh=i.value;win[0]=SHD[sh][0];win[1]=SHD[sh][1];wr()});
+  wr(); rows(); sync();
+  m.q('#x-add').onclick=()=>{per.push(['14:00','16:00']);rows()}; m.q('#x-x').onclick=m.close;
+  if(m.q('#x-del'))m.q('#x-del').onclick=()=>{m.close();agClear(day)};
+  m.q('#x-ok').onclick=async()=>{
+    const st=cur(), fail=t=>{m.q('#x-err').textContent=t;m.q('#x-err').style.display='block'};
+    if(full&&ACT.includes(st))return fail(capMsg(g.cap));
+    const v=agValid(st,win,per); if(v.err)return fail(v.err);
+    const b=m.q('#x-ok'); b.disabled=true;
+    const r=await supabaseClient.rpc('att_agent_set',{p_center:A.sel,p_day:day,p_status:st,p_shift:sh,p_periods:v.periods});
+    if(r.error){b.disabled=false;return fail(rpcErr(r))}
+    m.close(); toast('ثبت شد'); loadWeek();
+  };
+}
 window.attOpen=async function(host){
-  A.host=host; if(!host.innerHTML.trim())host.innerHTML='<div class="loading-state">در حال بارگذاری...</div>';
+  A.host=host; host.classList.add('att-host'); if(!host.innerHTML.trim())host.innerHTML='<div class="loading-state">در حال بارگذاری...</div>';
   if(!A.centers)await init();
-  if(!A.week)A.week=wstart(add(todayI(),A.role==='center'?7:0));
+  if(!A.week)A.week=wstart(add(todayI(),(A.role==='center'||agt())?7:0));
   await loadWeek();
 };
 })();
