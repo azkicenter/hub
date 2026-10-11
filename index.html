@@ -2150,6 +2150,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
       <div class="list-card" id="center-perf-table" style="margin-top:14px;"></div>
+      <div class="list-card" id="center-perf-agents" style="margin-top:14px;"></div>
     </div>
 
     <div class="panel" id="panel-center-bugs">
@@ -7939,22 +7940,28 @@ async function loadCenterPayroll() {
 
     // تعداد صدور سنتر: از گزارش مالی؛ اگه ردیفی با نام سنتر نخورد از جمع کارشناس‌ها
     const matched = centerPayrollMatchRows(breakdownRes.data || [], ownName, otherKeys);
-    const matchedKeys = [...new Set(matched.map(r => normCenterKey(r.center_name)))];
-    const sla = await fetchCenterPayrollSla(bounds, [normCenterKey(ownName), ...matchedKeys], agentIds);
-    if (seq !== centerPayrollState.seq) return;
-
-    let count, rate, fromReport = matched.length > 0;
+    // محاسبه دقیقاً مثل داشبورد سرپرست: همان SLA مراکز (fetchAzkiPayrollCenterSla) و همان computeAzkiPayrollCenterData
+    // روی ردیف‌های گزارش مالی همین سنتر؛ جمع تعداد و مبلغ همه‌ی ردیف‌های متعلق به سنتر.
+    let count, rate, sla = null, amount, fromReport = matched.length > 0;
     if (fromReport) {
-      const slaMap = {};
-      if (sla != null) [normCenterKey(ownName), ...matchedKeys].forEach(k => { if (k) slaMap[k] = sla; });
-      const centerData = computeAzkiPayrollCenterData(matched, slaMap);
+      const slaRes = await fetchAzkiPayrollCenterSla(bounds).catch(() => ({ byCenterKey: {} }));
+      if (seq !== centerPayrollState.seq) return;
+      const centerData = computeAzkiPayrollCenterData(matched, slaRes.byCenterKey || {});
       count = centerData.reduce((s0, c) => s0 + c.count, 0);
-      rate = centerData[0] ? centerData[0].rate : azkiPayrollRateForAvgMinutes(sla);
+      amount = centerData.reduce((s0, c) => s0 + c.amount, 0);
+      rate = count ? Math.round(amount / count) : (centerData[0] ? centerData[0].rate : 0);
+      const withSla = centerData.filter(c => c.hasSla && c.count > 0);
+      const wSum = withSla.reduce((s0, c) => s0 + c.count, 0);
+      sla = wSum ? round2(withSla.reduce((s0, c) => s0 + c.avgMin * c.count, 0) / wSum) : null;
     } else {
+      // ردیفی با نام سنتر در گزارش مالی نیست: از جمع صدور کارشناس‌ها
+      sla = await fetchCenterPayrollSla(bounds, [normCenterKey(ownName)], agentIds);
+      if (seq !== centerPayrollState.seq) return;
       count = sumAgents;
       rate = azkiPayrollRateForAvgMinutes(sla);
+      amount = rate * count;
     }
-    const center = { count, amount: rate * count, rate, avgMin: sla, hasSla: sla != null, fromReport };
+    const center = { count, amount, rate, avgMin: sla, hasSla: sla != null, fromReport };
 
     // ریز کارشناس‌ها: فعال‌ها و پنل آموزش همیشه (حتی با صدور صفر)، غیرفعال فقط اگه تو بازه صدور داشته باشه
     const agents = agentProfiles.map(p => {
@@ -7978,8 +7985,7 @@ async function loadCenterPayroll() {
       fail('برای این بازه گزارش صدوری برای سنتر شما ثبت نشده است.');
       return;
     }
-    noteEl.textContent = fromReport ? '' :
-      'برای این بازه ردیفی با نام سنتر شما در گزارش مالی پیدا نشد؛ تعداد صدور از جمع صدور کارشناس‌ها محاسبه شده است.';
+    noteEl.textContent = '';
 
     Object.assign(centerPayrollState, { bounds, name: ownName, center, agents, rest, days: dayRows, loaded: true });
     renderCenterPayroll();
@@ -8092,7 +8098,28 @@ document.getElementById('center-payroll-export').addEventListener('click', expor
 // منبع: azki_center_breakdown_report (همون گزارشی که محاسبه حقوق ازش خونده می‌شه)؛ ردیف‌های scope هر شرکت
 // + scope «کل». اختلاف «کل» با جمع شرکت‌ها (اگه شرکتی تو لیست فیلتر نباشه) به‌صورت ستون «سایر» میاد.
 // ============================================================
-const centerPerfState = { loaded: false, seq: 0, gran: 'daily', rows: [], bounds: null, name: '', model: null };
+const centerPerfState = { loaded: false, seq: 0, gran: 'daily', rows: [], agentRows: null, agentErr: '', bounds: null, name: '', model: null, agentModel: null };
+const TABLE_AZKI_AGENT_COMPANY = 'azki_center_agent_company'; // صدور هر کارشناس به تفکیک شرکت بیمه (از ورک‌فلوی n8n)
+
+async function fetchCenterAgentCompanyRows(bounds) {
+  return fetchAllRows((from, to) =>
+    supabaseClient.from(TABLE_AZKI_AGENT_COMPANY).select('*')
+      .gte('report_date', bounds.startDate).lte('report_date', bounds.endDate)
+      .order('report_date', { ascending: true }).order('id', { ascending: true }).range(from, to));
+}
+
+// کارشناس × شرکت روی کل بازه‌ی انتخابی
+function buildCenterPerfAgentModel(rows) {
+  const ag = {}, comp = {};
+  rows.forEach(r => {
+    const n = Number(r.orders_count) || 0, a = String(r.agent_name || '—'), c = String(r.company || 'نامشخص');
+    const o = ag[a] || (ag[a] = { name: a, by: {}, total: 0 });
+    o.by[c] = (o.by[c] || 0) + n; o.total += n; comp[c] = (comp[c] || 0) + n;
+  });
+  const companies = Object.keys(comp).filter(k => comp[k] > 0).sort((a, b) => comp[b] - comp[a] || a.localeCompare(b, 'fa'));
+  const agents = Object.values(ag).filter(x => x.total > 0).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'fa'));
+  return { agents, companies, compTotals: comp, grand: agents.reduce((t, x) => t + x.total, 0) };
+}
 
 function buildCenterPerfModel(rows, gran) {
   const comp = {};                 // نام شرکت -> جمع کل بازه
@@ -8138,14 +8165,17 @@ async function loadCenterPerf() {
   ['total', 'companies', 'top'].forEach(k => { document.getElementById('center-perf-' + k).textContent = '—'; });
 
   try {
-    const [res, otherKeys] = await Promise.all([
+    const [res, otherKeys, agRes] = await Promise.all([
       fetchAzkiBreakdownRows([...AZKI_COMPANIES, 'کل'], bounds),
       centerGetOtherKeys().catch(() => []),
+      fetchCenterAgentCompanyRows(bounds).catch(e => ({ data: null, error: { message: e.message } })),
     ]);
     if (seq !== centerPerfState.seq) return;
     if (res.error) throw new Error(res.error.message);
     const matched = centerPayrollMatchRows(res.data || [], ownName, otherKeys);
     centerPerfState.rows = matched;
+    centerPerfState.agentRows = agRes.error ? null : centerPayrollMatchRows(agRes.data || [], ownName, otherKeys);
+    centerPerfState.agentErr = agRes.error ? agRes.error.message : '';
     centerPerfState.bounds = bounds;
     centerPerfState.name = ownName;
     centerPerfState.loaded = true;
@@ -8154,6 +8184,31 @@ async function loadCenterPerf() {
     if (seq !== centerPerfState.seq) return;
     shareEl.innerHTML = `<div class="empty-state">خطا در دریافت اطلاعات: ${escHtml(e.message)}</div>`;
   }
+}
+
+function renderCenterPerfAgents() {
+  const st = centerPerfState, el = document.getElementById('center-perf-agents');
+  if (!el) return;
+  if (st.agentRows === null) {
+    st.agentModel = null;
+    el.innerHTML = '<div class="empty-state">تفکیک کارشناسان هنوز در دسترس نیست' + (st.agentErr ? ' (' + escHtml(st.agentErr) + ')' : '') + '</div>';
+    return;
+  }
+  const am = buildCenterPerfAgentModel(st.agentRows);
+  st.agentModel = am;
+  if (!am.agents.length) { el.innerHTML = '<div class="empty-state">برای این بازه صدور کارشناسان سنتر شما به تفکیک شرکت ثبت نشده است.</div>'; return; }
+  const th = am.companies.map(n => `<th>${escHtml(n)}</th>`).join('');
+  const body = am.agents.map(a => `<tr><td>${escHtml(a.name)}</td>${am.companies.map(n => { const v = a.by[n] || 0; return `<td class="${v ? '' : 'is-zero'}">${v ? formatNumber(v) : '—'}</td>`; }).join('')}<td class="is-total">${formatNumber(a.total)}</td></tr>`).join('');
+  const foot = am.companies.map(n => `<td>${formatNumber(am.compTotals[n])}</td>`).join('');
+  el.innerHTML = `
+    <div class="azki-group-title" style="font-weight:800;margin-bottom:10px">صدور کارشناس‌ها به تفکیک شرکت بیمه <small style="font-weight:500;color:var(--ink-soft)">(کل بازه‌ی انتخابی)</small></div>
+    <div class="center-perf-scroll">
+      <table class="center-perf-table">
+        <thead><tr><th>کارشناس</th>${th}<th class="is-total">جمع</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr><td>جمع کل</td>${foot}<td>${formatNumber(am.grand)}</td></tr></tfoot>
+      </table>
+    </div>`;
 }
 
 function renderCenterPerf() {
@@ -8169,6 +8224,7 @@ function renderCenterPerf() {
   const topName = m.companies[0];
   document.getElementById('center-perf-top').textContent = topName ? `${topName} (${formatNumber(m.compTotals[topName])})` : '—';
 
+  renderCenterPerfAgents();
   if (!m.periods.length || !m.grand) {
     shareEl.innerHTML = '<div class="empty-state">برای این بازه صدوری برای سنتر شما ثبت نشده است.</div>';
     tableEl.innerHTML = '';
@@ -8239,7 +8295,20 @@ async function exportCenterPerfExcel() {
       headers, rows, total,
       widths: headers.map((h, i) => i === 0 ? 24 : 14), fmts: headers.map((h, i) => i === 0 ? 'text' : 'int'),
     });
-    azkiXlsxSave([['بررسی عملکرد', ws]], 'بررسی-عملکرد', st.bounds);
+    const sheets = [['بررسی عملکرد', ws]];
+    const am = st.agentModel;
+    if (am && am.agents.length) {
+      const h2 = ['کارشناس', ...am.companies, 'جمع'];
+      const ws2 = azkiXlsxSheet({
+        title: 'بررسی عملکرد — صدور کارشناس‌ها به تفکیک شرکت بیمه', bounds: st.bounds,
+        metaLine2: `سنتر: ${st.name || ''}   |   کل بازه`,
+        headers: h2, rows: am.agents.map(a => [a.name, ...am.companies.map(n => a.by[n] || 0), a.total]),
+        total: ['جمع کل', ...am.companies.map(n => am.compTotals[n]), am.grand],
+        widths: h2.map((h, i) => i === 0 ? 24 : 14), fmts: h2.map((h, i) => i === 0 ? 'text' : 'int'),
+      });
+      sheets.push(['به تفکیک کارشناس', ws2]);
+    }
+    azkiXlsxSave(sheets, 'بررسی-عملکرد', st.bounds);
   } catch (e) {
     alert('خروجی اکسل با خطا مواجه شد: ' + e.message);
   } finally {
