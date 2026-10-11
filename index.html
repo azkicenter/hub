@@ -9659,19 +9659,32 @@ async function umDelete(id, btn) {
   catch (e) { btn.disabled = false; umToast('حذف نشد: ' + e.message); }
 }
 
+// قانون رمز جدید: حداقل ۸ کاراکتر، حرف کوچک و بزرگ انگلیسی، عدد و یک علامت؛ بدون فاصله و فقط کاراکترهای انگلیسی
+function umPassErr(pw) {
+  if (pw.length < 8) return 'رمز باید حداقل ۸ کاراکتر باشد';
+  if (!/^[\x21-\x7E]+$/.test(pw)) return 'رمز فقط از حروف و علامت‌های انگلیسی تشکیل شود (بدون فاصله و حروف فارسی)';
+  if (!/[a-z]/.test(pw)) return 'رمز باید حداقل یک حرف کوچک انگلیسی داشته باشد';
+  if (!/[A-Z]/.test(pw)) return 'رمز باید حداقل یک حرف بزرگ انگلیسی داشته باشد';
+  if (!/[0-9]/.test(pw)) return 'رمز باید حداقل یک عدد داشته باشد';
+  if (!/[^A-Za-z0-9]/.test(pw)) return 'رمز باید حداقل یک علامت داشته باشد (مثل ! @ # $ % & *)';
+  return '';
+}
+
 function umPassModal(id, isCenter) {
   const who = isCenter ? (UM.centers.find(c => c.id === id) || {}) : (UM.agents.find(a => a.id === id) || {});
   const m = umModal(`
     <div class="um-title">تغییر رمز عبور</div>
     <div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px">${isCenter ? 'سنتر' : 'کاربر'}: <b>${umEsc(who.full_name || who.name || '—')}</b>${who.backoffice_id ? ' — ' + umEsc(who.backoffice_id) : ''}</div>
-    <label>رمز عبور جدید (حداقل ۶ کاراکتر)<input id="um-np" class="ltr" type="text" autocomplete="off"></label>
+    <label>رمز عبور جدید<input id="um-np" class="ltr" type="text" autocomplete="off"></label>
+    <div style="font-size:12px;color:var(--ink-soft);margin:-4px 0 8px">حداقل ۸ کاراکتر، شامل حرف کوچک و بزرگ انگلیسی، عدد و یک علامت (مثل ! @ # $ % & *)</div>
     <div class="azki-error" id="um-ne" style="display:none"></div>
     <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت رمز جدید</button></div>`);
   const q = s => m.querySelector(s);
   q('#um-np').addEventListener('input', e => { e.target.value = e.target.value.replace(/\s/g, ''); });
   q('#um-ok').onclick = async () => {
     const pw = q('#um-np').value, err = q('#um-ne');
-    if (pw.length < 6) { err.textContent = 'رمز باید حداقل ۶ کاراکتر باشد'; err.style.display = 'block'; return; }
+    const pe = umPassErr(pw);
+    if (pe) { err.textContent = pe; err.style.display = 'block'; return; }
     const b = q('#um-ok'); b.disabled = true;
     try { await umCall({ action: 'set_password', user_id: id, password: pw }); m.remove(); umToast('رمز عبور تغییر کرد'); }
     catch (e) { b.disabled = false; err.textContent = 'انجام نشد: ' + e.message; err.style.display = 'block'; }
