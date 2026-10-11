@@ -9072,7 +9072,7 @@ const sup=()=>A.role==='supervisor';
 const ldr=()=>A.role==='leader';
 const mgr=()=>sup()||ldr();
 const agt=()=>!['center','leader','supervisor','admin'].includes(A.role);
-const cOpen=d=>{const L=A.locks[d];return L?!L.locked:(isNext()||unlocked())};
+const cOpen=d=>{const L=A.locks[d];return L?!L.locked:true};
 const dayOpen=d=>mgr()?true:(A.role==='center'&&cOpen(d));
 const canEdit=()=>mgr()||(A.role==='center'&&DN.some((_,i)=>cOpen(add(A.week,i))));
 const REQ=480,SHD={morning:['08:00','16:00'],night:['16:00','00:00']},SHN={morning:'شیفت صبح',night:'شیفت شب'};
@@ -9238,7 +9238,7 @@ function renderStatus(){
   if(!(A.st.day>=A.week&&A.st.day<=w1))A.st.day=(t>=A.week&&t<=w1)?t:A.week;
   const day=A.st.day, wk=A.st.mode==='week';
   const idx={}; D.entries.forEach(x=>{(idx[x.center_id+'|'+x.day]=idx[x.center_id+'|'+x.day]||{})[x.agent_id]=x});
-  const stOpen=(c,d)=>{const L=D.locks[c+'|'+d];return L?!L.locked:(isNext()||!!D.unl[c])};
+  const stOpen=(c,d)=>{const L=D.locks[c+'|'+d];return L?!L.locked:true};
   const calc=(c,d)=>{const list=A.agents[c]||[],m=idx[c+'|'+d]||{},r={total:list.length,present:0,hourly:0,leave:0,weekly_off:0,suspended:0,none:0,mo:0,ni:0,reg:0};
     list.forEach(a=>{const x=m[a.id]; if(!x){r.none++;return} r.reg++; r[x.status]++; if(ACT.includes(x.status)){if((x.shift||'morning')==='night')r.ni++;else r.mo++}});
     r.act=r.present+r.hourly; r.cap=Math.max(1,Math.floor(r.total*PCT)); r.over=r.total>0&&(new Date(d+'T00:00:00Z').getUTCDay()===5||!!A.hol[d])&&r.act>r.cap; return r};
@@ -9461,7 +9461,7 @@ function renderAgent(){
   const cnt={}; days.forEach(d=>{if(d.mine)cnt[d.mine.status]=(cnt[d.mine.status]||0)+1});
   const none=days.filter(d=>!d.mine).length;
   const sum=Object.keys(ST).filter(k=>cnt[k]).map(k=>`<span class="as-pill" style="--c:${ST[k][1]}">${ST[k][0]} ${faDigits(cnt[k])}</span>`).join('')+(none?`<span class="as-pill" style="--c:#B0892B">ثبت‌نشده ${faDigits(none)}</span>`:'');
-  const rules=`<details class="ag-rules"><summary>قوانین ثبت حضور</summary><ul><li>فقط روزهایی که قفل نیستند قابل ثبت‌اند (هفته‌ی بعد به‌صورت پیش‌فرض باز است؛ برای باز شدن بقیه با سنتر خود هماهنگ کنید).</li><li>در جمعه و تعطیلات رسمی حداکثر ${faDigits(Math.round(PCT*100))}٪ نفرات سنتر (${faDigits(g.cap)} نفر از ${faDigits(g.agents)} نفر) می‌توانند فعال باشند؛ برای بقیه مرخصی ثبت کنید.</li><li>«حضور» یعنی مجموع حداقل ۸ ساعت؛ لازم نیست پیوسته باشد (مثلاً ۰۸ تا ۱۲ و ۲۰ تا ۲۴). کمتر از آن «مرخصی ساعتی» است.</li><li>تعلیق را فقط سرگروه تغییر می‌دهد.</li></ul></details>`;
+  const rules=`<details class="ag-rules"><summary>قوانین ثبت حضور</summary><ul><li>فقط روزهایی که قفل نیستند قابل ثبت‌اند (روزها به‌صورت پیش‌فرض باز هستند و فقط در صورت قفل‌شدن توسط سرگروه بسته می‌شوند؛ برای باز شدن با سنتر خود هماهنگ کنید).</li><li>در جمعه و تعطیلات رسمی حداکثر ${faDigits(Math.round(PCT*100))}٪ نفرات سنتر (${faDigits(g.cap)} نفر از ${faDigits(g.agents)} نفر) می‌توانند فعال باشند؛ برای بقیه مرخصی ثبت کنید.</li><li>«حضور» یعنی مجموع حداقل ۸ ساعت؛ لازم نیست پیوسته باشد (مثلاً ۰۸ تا ۱۲ و ۲۰ تا ۲۴). کمتر از آن «مرخصی ساعتی» است.</li><li>تعلیق را فقط سرگروه تغییر می‌دهد.</li></ul></details>`;
   const cards=days.map((d,i)=>{
     const m=d.mine, sus=!!m&&m.status==='suspended', myAct=!!m&&ACT.includes(m.status), full=d.capped&&!myAct&&d.active>=g.cap;
     const sh=m?(m.shift||'morning'):'morning';
@@ -9613,6 +9613,7 @@ function umRender() {
         <span class="um-name">${umEsc(a.full_name || '—')}</span>
         <span class="um-user">${umEsc(a.backoffice_id || '')}</span>
         <span class="um-badge">${off ? 'غیرفعال' : 'فعال'}</span>
+        <button class="um-btn ghost sm" type="button" data-um-pass="${a.id}">🔑 تغییر رمز</button>
         <button class="um-btn sm ${off ? '' : 'ghost'}" type="button" data-um-toggle="${a.id}" data-um-to="${off ? 'active' : 'disabled'}">${off ? 'فعال کردن' : 'غیرفعال کردن'}</button>
         ${umIsSup() ? `<button class="um-btn ghost sm danger" type="button" data-um-del="${a.id}">حذف کامل</button>` : ''}
       </div>`;
@@ -9622,6 +9623,7 @@ function umRender() {
     return `<div class="um-center list-card${open ? ' open' : ''}" data-um-c="${c.id}"><div class="um-center-h" data-um-head="${c.id}" role="button" tabindex="0" aria-expanded="${open ? 'true' : 'false'}">
         <div class="um-cwrap"><span class="um-caret"></span><div><div class="um-cname">${umEsc(c.name)}</div>${lead}</div></div>
         <div class="um-ch-end"><small>${faDigits(active)} فعال از ${faDigits(all.length)}</small>
+        <button class="um-btn ghost sm" type="button" data-um-pass="${c.id}" data-um-kind="center">🔑 رمز سنتر</button>
         ${umIsSup() ? `<button class="um-btn ghost sm" type="button" data-um-lead="${c.id}">تغییر سرگروه</button>` : ''}</div>
       </div><div class="um-body">${rows}</div></div>`;
   }).join('');
@@ -9629,8 +9631,9 @@ function umRender() {
 }
 
 function umListClick(e) {
-  const t = e.target.closest('[data-um-toggle],[data-um-del],[data-um-lead],[data-um-head]');
+  const t = e.target.closest('[data-um-toggle],[data-um-del],[data-um-lead],[data-um-pass],[data-um-head]');
   if (!t) return;
+  if (t.dataset.umPass) return umPassModal(t.dataset.umPass, t.dataset.umKind === 'center');
   if (t.dataset.umToggle) return umToggle(t.dataset.umToggle, t.dataset.umTo, t);
   if (t.dataset.umDel) return umDelete(t.dataset.umDel, t);
   if (t.dataset.umLead) return umLeadersModal(t.dataset.umLead);
@@ -9654,6 +9657,26 @@ async function umDelete(id, btn) {
   btn.disabled = true;
   try { await umCall({ action: 'delete_agent', agent_id: id }); umToast('کاربر کامل حذف شد'); await umLoad(); }
   catch (e) { btn.disabled = false; umToast('حذف نشد: ' + e.message); }
+}
+
+function umPassModal(id, isCenter) {
+  const who = isCenter ? (UM.centers.find(c => c.id === id) || {}) : (UM.agents.find(a => a.id === id) || {});
+  const m = umModal(`
+    <div class="um-title">تغییر رمز عبور</div>
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px">${isCenter ? 'سنتر' : 'کاربر'}: <b>${umEsc(who.full_name || who.name || '—')}</b>${who.backoffice_id ? ' — ' + umEsc(who.backoffice_id) : ''}</div>
+    <label>رمز عبور جدید (حداقل ۶ کاراکتر)<input id="um-np" class="ltr" type="text" autocomplete="off"></label>
+    <div class="azki-error" id="um-ne" style="display:none"></div>
+    <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت رمز جدید</button></div>`);
+  const q = s => m.querySelector(s);
+  q('#um-np').addEventListener('input', e => { e.target.value = e.target.value.replace(/\s/g, ''); });
+  q('#um-ok').onclick = async () => {
+    const pw = q('#um-np').value, err = q('#um-ne');
+    if (pw.length < 6) { err.textContent = 'رمز باید حداقل ۶ کاراکتر باشد'; err.style.display = 'block'; return; }
+    const b = q('#um-ok'); b.disabled = true;
+    try { await umCall({ action: 'set_password', user_id: id, password: pw }); m.remove(); umToast('رمز عبور تغییر کرد'); }
+    catch (e) { b.disabled = false; err.textContent = 'انجام نشد: ' + e.message; err.style.display = 'block'; }
+  };
+  q('#um-np').focus();
 }
 
 function umModal(inner) {
