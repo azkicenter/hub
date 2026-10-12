@@ -10086,18 +10086,22 @@ async function centerSettingsRender(host) {
 html.has-nav-drawer .nav-burger{display:inline-flex}
 /* برچسب تب فعلی: برون‌زدگی آویزان از نوار آبی (شبیه سربرگ پوشه) */
 .topbar-wrap{position:sticky}
-.nav-tab{display:none;position:absolute;top:calc(100% - 5px);right:44px;z-index:2;min-width:120px;max-width:min(60vw,360px);padding:9px 22px 10px;
+.nav-tab{display:none;position:absolute;top:calc(100% - 6px);right:44px;z-index:2;min-width:120px;max-width:min(60vw,360px);padding:9px 22px 10px;
   border-radius:0 0 16px 16px;color:#fff;font-size:13.5px;font-weight:700;line-height:1.5;text-align:center;white-space:nowrap;
   background:linear-gradient(180deg,var(--accent) 0%,var(--accent-deep) 135%);
   box-shadow:0 10px 22px -10px rgba(23,100,255,.65),inset 0 -1px 0 rgba(255,255,255,.25);
-  transform-origin:50% 0;transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+  transform-origin:50% 0;transition:top .28s cubic-bezier(.2,.8,.2,1),opacity .28s ease}
 .nav-tab::before,.nav-tab::after{content:"";position:absolute;top:0;width:14px;height:14px;pointer-events:none}
 .nav-tab::before{right:100%;background:radial-gradient(circle at 0 100%,transparent 13.5px,var(--accent) 14px)}
 .nav-tab::after{left:100%;background:radial-gradient(circle at 100% 100%,transparent 13.5px,var(--accent) 14px)}
 .nav-tab>span{display:block;overflow:hidden;text-overflow:ellipsis}
-html.has-nav-drawer .nav-tab:has(#nav-current:not(:empty)){display:block;animation:nav-tab-drop .6s cubic-bezier(.2,1.25,.4,1) both}
-.header-accent-bar.is-compact ~ .nav-tab{transform:translateY(-5px)}
+html.has-nav-drawer .nav-tab:has(#nav-current:not(:empty)){display:block;animation:nav-tab-drop .6s cubic-bezier(.2,1.25,.4,1) backwards}
+.header-accent-bar.is-compact ~ .nav-tab{top:calc(100% - 8px);opacity:.92}
 .nav-tab.swap>span{animation:nav-label-swap .45s cubic-bezier(.2,.9,.3,1) both}
+/* درخشش نوار آبی (همان glow برچسب تب) */
+.header-accent-bar{box-shadow:0 8px 22px -6px rgba(23,100,255,.65),0 0 16px rgba(23,169,255,.5),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .28s ease,box-shadow .28s ease}
+.header-accent-bar.is-compact{box-shadow:0 6px 14px -6px rgba(23,100,255,.55),0 0 10px rgba(23,169,255,.4)}
+html[data-theme="dark"] .header-accent-bar{box-shadow:0 8px 24px -6px rgba(23,140,255,.7),0 0 20px rgba(23,169,255,.55),inset 0 1px 0 rgba(255,255,255,.3)}
 @keyframes nav-tab-drop{0%{transform:translateY(-100%);opacity:0}100%{transform:translateY(0);opacity:1}}
 @keyframes nav-label-swap{0%{transform:translateY(-70%);opacity:0}100%{transform:none;opacity:1}}
 html.has-nav-drawer main{padding-top:50px}
