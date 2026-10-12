@@ -9927,7 +9927,13 @@ function rhFmtTime(iso) {
   catch (_) { return iso || '—'; }
 }
 
+// فقط ردیف‌های «مرکز صدور X | نام» (دارای نام سنتر)؛ ردیف‌های بدون پیشوند نمایش داده نمی‌شوند
+function rhOnlyCenters(details) {
+  return (details || []).filter(d => d && d.reason !== 'no_center_prefix' && d.center);
+}
+
 function rhTable(details) {
+  details = rhOnlyCenters(details);
   if (!details || !details.length) return '<div class="rh-meta" style="margin-top:8px">همه‌ی اسم‌ها وصل شدند.</div>';
   const rows = details.slice().sort((a, b) => (b.count || 0) - (a.count || 0)).map(d => `<tr>
       <td>${umEsc(d.date || '—')}</td>
@@ -9955,9 +9961,13 @@ async function runHistoryOpen(host) {
     host.innerHTML = '<div class="empty-state">هنوز هیچ اجرایی ثبت نشده است. بعد از اولین اجرای ورک‌فلو اینجا نمایش داده می‌شود.</div>';
     return;
   }
-  const pill = r => r.unmatched_count > 0
-    ? `<span class="rh-pill bad">${r.unmatched_count} مورد وصل نشد · ${r.unmatched_total} صدور</span>`
+  const pill = r => {
+    const det = rhOnlyCenters(r.details);
+    const cnt = det.length, tot = det.reduce((s, x) => s + (x.count || 0), 0);
+    return cnt > 0
+    ? `<span class="rh-pill bad">${cnt} مورد وصل نشد · ${tot} صدور</span>`
     : '<span class="rh-pill ok">همه وصل شد</span>';
+  };
   const [latest, ...older] = runs;
   host.innerHTML = `
     <div class="rh-head">
