@@ -688,6 +688,12 @@
   .admin-row-info { display: flex; flex-direction: column; gap: 2px; }
   .admin-row-name { font-size: 14px; font-weight: 600; color: var(--ink); }
   .admin-row-username { font-size: 12px; color: var(--ink-faint); }
+  .admin-company-box { grid-column: span 2; }
+  .admin-company-box-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-height: 110px; overflow-y: auto; font-size: 14px; font-weight: 400; color: #fff; }
+  .admin-company-count { display: inline-flex; gap: 5px; align-items: center; font-size: 12.5px; color: #fff; background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.35); padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .admin-company-count b { font-weight: 800; }
+  .admin-company-box .admin-company-empty { color: #fff; }
+  @media (max-width: 560px) { .admin-company-box { grid-column: 1 / -1; } }
   .admin-companies-col { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: flex-start; flex: 1 1 auto; margin: 0 12px; min-width: 0; }
   .admin-company-chip { font-size: 11.5px; font-weight: 600; color: var(--success); background: var(--success-soft); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
   .admin-company-empty { color: var(--ink); opacity: .35; }
@@ -2389,9 +2395,9 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
             <div class="label">آنلاین (در حال صدور)</div>
             <div class="value" id="azki-active-total-online">—</div>
           </div>
-          <div class="summary-card">
-            <div class="label">کل کاربران ثبت‌شده</div>
-            <div class="value" id="azki-active-total-all">—</div>
+          <div class="summary-card admin-company-box">
+            <div class="label">فعال و در حال صدور به تفکیک شرکت</div>
+            <div class="admin-company-box-list" id="azki-active-by-company">—</div>
           </div>
           <div class="summary-card">
             <div class="label">درصد فعال</div>
@@ -3578,7 +3584,7 @@ function renderAzkiActiveStatusView() {
     container.innerHTML = '<div class="empty-state">هنوز داده‌ای برای وضعیت فعال ثبت نشده<div style="margin-top:8px;font-size:12px;opacity:.75;">' + why + '</div></div>';
     document.getElementById('azki-active-total-active').textContent = '۰';
     document.getElementById('azki-active-total-online').textContent = '۰';
-    document.getElementById('azki-active-total-all').textContent = '۰';
+    document.getElementById('azki-active-by-company').textContent = '—';
     document.getElementById('azki-active-pct').textContent = '۰٪';
     return;
   }
@@ -3609,7 +3615,19 @@ function renderAzkiActiveStatusView() {
 
   document.getElementById('azki-active-total-active').textContent = formatNumber(totalActive);
   document.getElementById('azki-active-total-online').textContent = formatNumber(totalOnline);
-  document.getElementById('azki-active-total-all').textContent = formatNumber(rows.length);
+  // تعداد کارشناسانی که هم پنلشون فعاله هم آنلاین (در حال صدور) هستن، به تفکیک شرکت
+  {
+    const byComp = {};
+    rows.forEach(r => {
+      if (!(r.is_active && r.is_active_to_issue)) return;
+      String(r.companies || r.all_companies || '').split(/[،,]/).map(x => x.trim()).filter(Boolean)
+        .forEach(c => { byComp[c] = (byComp[c] || 0) + 1; });
+    });
+    const entries = Object.entries(byComp).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fa'));
+    document.getElementById('azki-active-by-company').innerHTML = entries.length
+      ? entries.map(([c, n]) => `<span class="admin-company-count"><b>${formatNumber(n)}</b> ${escHtml(c)}</span>`).join('')
+      : '<span class="admin-company-empty">—</span>';
+  }
   document.getElementById('azki-active-pct').textContent =
     faDigits(rows.length ? round2(totalActive / rows.length * 100) : 0) + '٪';
 
