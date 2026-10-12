@@ -688,6 +688,9 @@
   .admin-row-info { display: flex; flex-direction: column; gap: 2px; }
   .admin-row-name { font-size: 14px; font-weight: 600; color: var(--ink); }
   .admin-row-username { font-size: 12px; color: var(--ink-faint); }
+  .admin-companies-col { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: flex-start; flex: 1 1 auto; margin: 0 12px; min-width: 0; }
+  .admin-company-chip { font-size: 11.5px; font-weight: 600; color: var(--success); background: var(--success-soft); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .admin-company-empty { color: var(--ink); opacity: .35; }
   .admin-status-badge {
     font-size: 12.5px;
     font-weight: 700;
@@ -3614,6 +3617,12 @@ function renderAzkiActiveStatusView() {
     const rowsHtml = g.members.map(m => {
       const panelOn = !!m.is_active;
       const online = !!m.is_active_to_issue;
+      // شرکت‌های فعال: فقط وقتی کارشناس فعاله (پنل فعال + در حال صدور) شرکت‌هاش نشون داده می‌شه
+      const compList = String(m.companies || m.all_companies || '')
+        .split(/[،,]/).map(x => x.trim()).filter(Boolean);
+      const companiesHtml = (panelOn && online && compList.length)
+        ? compList.map(c => `<span class="admin-company-chip">${escHtml(c)}</span>`).join('')
+        : '<span class="admin-company-empty">—</span>';
       return `
         <div class="row-item">
           <div class="admin-row-name-wrap">
@@ -3622,6 +3631,7 @@ function renderAzkiActiveStatusView() {
               <span class="admin-row-name">${escHtml(m.full_name || '—')}</span>
             </div>
           </div>
+          <div class="admin-companies-col" title="شرکت‌های فعال">${companiesHtml}</div>
           <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
             <span class="admin-status-badge ${panelOn ? 'online' : ''}" title="وضعیت پنل کارشناس">${panelOn ? 'فعال' : 'غیرفعال'}</span>
             <span class="admin-status-badge ${online ? 'online' : ''}" title="در حال صدور">${online ? 'آنلاین' : 'آفلاین'}</span>
