@@ -9182,7 +9182,7 @@ async function loadWeek(){
       A.agents[c]=(p.data||[]).filter(x=>x.status!=='disabled').map(x=>({id:x.id,name:x.full_name||'—'})).sort((a,b)=>a.name.localeCompare(b.name,'fa'));
     }
     const er=await supabaseClient.from(TE).select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.entries=er.data||[]; if(er.error)toast('خواندن حضور و غیاب انجام نشد: '+er.error.message);
-    const ur=await supabaseClient.from(TU).select('*').eq('center_id',c).eq('week_start',A.week).maybeSingle(); A.unlock=ur.data||null;
+    A.unlock=null; // قفل فقط دستی است (att_locks)؛ جریان «درخواست باز کردن قفل» حذف شد
     const lr=await supabaseClient.from('att_locks').select('*').eq('center_id',c).gte('day',A.week).lte('day',add(A.week,6)); A.locks={}; (lr.data||[]).forEach(x=>A.locks[x.day]=x);
     // اگه برای کسی ورودی ثبت شده ولی تو لیست نفرات سنتر نیست (مثلاً دسترسی/اساین)، اسمش رو جدا می‌گیریم تا همه‌ی نقش‌ها یکسان ببینن
     const miss=[...new Set(A.entries.map(x=>x.agent_id))].filter(id=>!ags().some(a=>a.id===id)&&!A.names[id]);
@@ -9197,7 +9197,7 @@ async function loadWeek(){
       }
     }
   }
-  if(A.role!=='center'){let pq=supabaseClient.from(TU).select('*').eq('status','pending'); if(ldr())pq=pq.in('center_id',(A.centers||[]).map(c=>c.id)); const pr=await pq.order('requested_at');A.pending=pr.data||[]}
+  A.pending=[];
   if(mgr()&&A.view==='status')await loadStatus();
   await nextCount(A.view==='status'?(A.centers||[]).map(c=>c.id):(A.sel?[A.sel]:[]));
   render();
@@ -9216,10 +9216,9 @@ function renderSet(){
   if(!A.centers.length){H.innerHTML='<div class="att"><div class="empty-state">سنتری برای نمایش وجود ندارد</div></div>';return}
   const ed=canEdit(), w1=add(A.week,6), nm=id=>(A.centers.find(c=>c.id===id)||{}).name||'—';
   let badge='';
-  if(A.role==='center'){badge=ed?(!DN.every((_,i)=>cOpen(add(A.week,i)))?'<span class="att-badge wait">بعضی روزها قفل است</span>':unlocked()&&!isNext()?'<span class="att-badge open">باز شده با تأیید سرگروه</span>':'<span class="att-badge open">قابل ویرایش</span>'):'<span class="att-badge lock">🔒 قفل</span>';
-    if(!ed&&A.unlock&&A.unlock.status==='pending')badge+=' <span class="att-badge wait">درخواست در انتظار تأیید سرگروه</span>';
-    if(!ed&&A.unlock&&A.unlock.status==='rejected')badge+=' <span class="att-badge lock">درخواست رد شد</span>'}
-  const canReq=A.role==='center'&&!ed&&isCur()&&(!A.unlock||A.unlock.status==='rejected');
+  if(A.role==='center'){const nl=DN.filter((_,k)=>!cOpen(add(A.week,k))).length;
+    badge=!ed?'<span class="att-badge lock">🔒 قفل (توسط سرگروه/سرپرست)</span>':nl?'<span class="att-badge wait">'+faDigits(nl)+' روز قفل است</span>':'<span class="att-badge open">قابل ویرایش</span>'}
+  const canReq=false;
   const reqs=A.pending.map(r=>`<div class="att-req"><span>درخواست باز کردن قفل از <b>${e(nm(r.center_id))}</b> — هفته ${fdate(r.week_start)} تا ${fdate(add(r.week_start,6))}${r.reason?' — '+e(r.reason):''}</span><span class="att-sp"></span><button class="kb-btn" data-ap="${e(r.id)}" type="button">تأیید</button><button class="kb-btn ghost" data-rj="${e(r.id)}" type="button">رد</button></div>`).join('');
   const pool=ed?`<div class="att-pool"><b>${A.role!=='center'?`نیروهای «${e(nm(A.sel))}» (${faDigits(ags().length)} نفر)`:'نیروها'}<br>بکشید و در روز مورد نظر رها کنید</b>${ags().map(a=>`<span class="att-ch pool" data-ag="${e(a.id)}">${e(a.name)}</span>`).join('')||'<span class="kb-empty">نیرویی به این سنتر اساین نشده</span>'}</div>`:'';
   const chip=x=>`<div class="att-ch${(A.role==='center'&&x.status==='suspended')||!dayOpen(x.day)?' nodrag':''}" data-en="${e(x.id)}" style="--c:${ST[x.status][1]}">${e(aname(x.agent_id))}<small>${chipSub(x)}</small></div>`;
@@ -9240,13 +9239,6 @@ function renderSet(){
     const n=await carryWeek(A.sel,A.week,{});
     toast(n<0?'چیدمانی در ۴ هفته‌ی قبل برای کپی پیدا نشد':n===0?'مورد جدیدی برای اعمال نبود':`${faDigits(n)} ردیف از هفته‌ی قبل اعمال شد`);
     await loadWeek()};
-  if(q('#a-req'))q('#a-req').onclick=async()=>{const reason=prompt('دلیل درخواست باز کردن قفل را بنویسید:');if(reason===null)return;
-    if(A.unlock)await supabaseClient.from(TU).delete().eq('id',A.unlock.id);
-    const r=await supabaseClient.from(TU).insert({center_id:A.me,week_start:A.week,reason:reason.trim()||null});
-    if(r.error)toast('ثبت درخواست انجام نشد: '+r.error.message);else toast('درخواست برای سرگروه ارسال شد');loadWeek()};
-  H.querySelectorAll('[data-ap],[data-rj]').forEach(b=>b.onclick=async()=>{const ok=!!b.dataset.ap;
-    const r=await supabaseClient.from(TU).update({status:ok?'approved':'rejected',decided_by:A.me,decided_at:new Date().toISOString()}).eq('id',b.dataset.ap||b.dataset.rj);
-    if(r.error)toast('انجام نشد: '+r.error.message);loadWeek()});
   H.querySelectorAll('[data-lk]').forEach(b=>b.onclick=()=>{const d=b.dataset.lk;setLock([d],cOpen(d),A.lkAll)});
   if(q('#a-lkall'))q('#a-lkall').onchange=ev=>{A.lkAll=ev.target.checked};
   if(q('#a-lkw'))q('#a-lkw').onclick=()=>setLock(wdays(),true,A.lkAll);
@@ -9266,8 +9258,7 @@ async function loadStatus(){
   ids.forEach(c=>{A.agents[c]=(ca.data||[]).filter(x=>x.center_id===c&&pm[x.agent_id]).map(x=>pm[x.agent_id]).sort((a,b)=>a.name.localeCompare(b.name,'fa'))});
   const er=await fetchAllRows((f,t)=>supabaseClient.from(TE).select('*').in('center_id',ids).gte('day',A.week).lte('day',w1).order('id').range(f,t));
   const lr=await supabaseClient.from('att_locks').select('*').in('center_id',ids).gte('day',A.week).lte('day',w1);
-  const ur=await supabaseClient.from(TU).select('center_id').in('center_id',ids).eq('week_start',A.week).eq('status','approved');
-  const locks={},unl={}; (lr.data||[]).forEach(x=>locks[x.center_id+'|'+x.day]=x); (ur.data||[]).forEach(x=>unl[x.center_id]=true);
+  const locks={},unl={}; (lr.data||[]).forEach(x=>locks[x.center_id+'|'+x.day]=x);
   A.st.data={entries:er.data||[],locks,unl}; if(er.error)toast('خواندن حضور و غیاب انجام نشد: '+er.error.message);
   // نفراتی که برای‌شون ورودی ثبت شده ولی تو لیست اساین اون سنتر نیستن هم نمایش داده می‌شن (مثل پنل خود سنتر)
   const ent=er.data||[], have={}; ids.forEach(c=>{have[c]=new Set((A.agents[c]||[]).map(a=>a.id))});
@@ -9757,6 +9748,7 @@ function umAddModal() {
     <div class="um-title">افزودن کاربر جدید</div>
     <label>سنتر<select id="um-c">${umCenterOpts()}</select></label>
     <label>نام و نام خانوادگی<input id="um-n" autocomplete="off"></label>
+    <div style="font-size:12px;color:var(--ink-soft);margin:-4px 0 8px">نام را دقیقاً مطابق نام کارشناس در بک‌آفیس (ستون «نام اپراتور») وارد کنید؛ صدور بر اساس همین نام به کارشناس وصل می‌شود.</div>
     <label>نام کاربری (انگلیسی)<input id="um-u" class="ltr" autocomplete="off"></label>
     <label>رمز عبور (حداقل ۶ کاراکتر)<input id="um-p" class="ltr" type="text" autocomplete="off"></label>
     <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت کاربر</button></div>`);
@@ -9765,6 +9757,15 @@ function umAddModal() {
   q('#um-ok').onclick = async () => {
     const body = { action: 'create', center_id: q('#um-c').value, full_name: q('#um-n').value.trim(), username: q('#um-u').value.trim(), password: q('#um-p').value };
     if (!body.full_name || !body.username || body.password.length < 6) { umToast('نام، نام کاربری و رمز (حداقل ۶ کاراکتر) را کامل وارد کنید'); return; }
+    // جلوگیری از پروفایل هم‌نام: صدور بر اساس نام به پروفایل وصل می‌شود و نام تکراری باعث ۰ ماندن یکی از آن‌ها می‌شود
+    const nk = x => String(x || '').replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+    const dup = UM.agents.filter(a => nk(a.full_name) === nk(body.full_name));
+    const dupHere = dup.find(a => a.center_id === body.center_id);
+    if (dupHere) { umToast('کاربری با همین نام قبلاً در این سنتر ثبت شده' + (dupHere.status === 'disabled' ? ' (غیرفعال است؛ آن را فعال کنید)' : '') + '؛ کاربر تکراری ساخته نمی‌شود'); return; }
+    if (dup.length) {
+      const where = dup.map(a => ((UM.centers.find(c => c.id === a.center_id) || {}).name || '—')).join('، ');
+      if (!confirm('کاربری با همین نام در سنتر «' + where + '» وجود دارد.\nاگر این یک نفر دیگر با همان نام است ادامه دهید؛ اگر همان فرد است، به‌جای ساخت کاربر جدید او را جابه‌جا/فعال کنید.\n\nادامه می‌دهید؟')) return;
+    }
     q('#um-ok').disabled = true;
     try { await umCall(body); m.remove(); umToast('کاربر ساخته شد'); await umLoad(); }
     catch (e) { q('#um-ok').disabled = false; umToast('ثبت نشد: ' + e.message); }
