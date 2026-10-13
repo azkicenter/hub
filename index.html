@@ -10288,6 +10288,126 @@ html.nav-open .nav-burger{transform:rotate(90deg)}
   tryIt();
 })();
 </script>
+<style id="topbar-polish">
+/* =====================================================================
+   پولیش ظاهر: هدر مات (blur کامل هنگام اسکرول)، حذف کادر آبی دور اسم،
+   انیمیشن ساده‌تر منوی کشویی و کمی ظرافت بیشتر در ظاهر
+   ===================================================================== */
+
+/* ---- ۱) هدر: مات کامل زیر محتوا هنگام اسکرول ---- */
+.topbar-wrap{
+  z-index:900;
+  background:rgba(244,249,255,.74);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
+  backdrop-filter:blur(28px) saturate(180%);
+  box-shadow:0 12px 32px -22px rgba(15,72,150,.45);
+}
+html[data-theme="dark"] .topbar-wrap{
+  background:rgba(10,15,28,.66);
+  box-shadow:0 12px 32px -20px rgba(0,0,0,.7);
+}
+header.topbar{
+  background:transparent;
+  border-bottom:1px solid rgba(23,169,255,.16);
+}
+html[data-theme="dark"] header.topbar{ border-bottom-color:rgba(255,255,255,.08); }
+
+/* ---- ۲) حذف کادر آبی دور اسم کاربر ---- */
+.who .user-chip{
+  background:none !important;
+  border:0 !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  border-radius:0 !important;
+  color:var(--ink);
+  font-weight:700;
+  font-size:13px;
+}
+.who{ gap:14px; }
+
+/* دکمه‌ی خروج: دایره‌ی ظریف با هاور ملایم */
+.logout-link{
+  width:34px; height:34px; justify-content:center; border-radius:50%;
+  color:var(--ink-soft);
+  transition:background .2s ease, color .2s ease;
+}
+.logout-link:hover{ background:var(--danger-soft); color:var(--danger); }
+
+/* کارت «آخرین آپدیت» سبک‌تر */
+.last-update-card{ font-weight:600; color:var(--ink-soft); letter-spacing:0; }
+
+/* ---- ۳) دکمه‌ی سه‌خط: بدون چرخش و جهش ---- */
+.nav-burger{
+  width:40px; height:40px; border-radius:12px;
+  box-shadow:0 4px 14px -8px rgba(15,72,150,.35);
+  transition:background .18s ease, border-color .18s ease;
+}
+.nav-burger:hover{ transform:none; }
+html.nav-open .nav-burger{ transform:none; }
+.nav-burger:not(:disabled):active{ transform:scale(.97); }
+
+/* ---- ۴) منوی کشویی: باز/بسته شدن سریع و ساده ---- */
+#nav-drawer{
+  width:min(300px,84vw);
+  transform:translateX(100%);
+  transition:transform .22s cubic-bezier(.3,.7,.3,1), visibility 0s .22s;
+  border-radius:22px 0 0 22px;
+}
+html.nav-open #nav-drawer{ transform:none; transition-delay:0s; }
+#nav-overlay{
+  background:rgba(10,20,45,.28);
+  -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+  transition:opacity .2s ease, visibility 0s .2s;
+}
+html.nav-open #nav-overlay{ transition-delay:0s; }
+/* حذف ورود پله‌ای آیتم‌ها و جابه‌جایی هاور */
+html.nav-open #nav-drawer .tab-btn{ animation:none !important; }
+#nav-drawer .tab-btn:hover{ transform:none; }
+#nav-drawer .tab-btn{ border-radius:12px; padding:11px 14px; }
+.nav-drawer-head{ font-weight:700; }
+
+/* برچسب تب فعلی: افتادن ملایم به‌جای فنر */
+html.has-nav-drawer .nav-tab:has(#nav-current:not(:empty)){
+  animation:nav-tab-soft .3s ease-out backwards;
+}
+@keyframes nav-tab-soft{ from{ transform:translateY(-40%); opacity:0; } to{ transform:none; opacity:1; } }
+.nav-tab.swap>span{ animation:nav-label-soft .25s ease-out both; }
+@keyframes nav-label-soft{ from{ opacity:0; transform:translateY(-30%); } to{ opacity:1; transform:none; } }
+
+/* ---- ۵) نوار آبی زیر هدر: درخشش کمتر ---- */
+.header-accent-bar{
+  box-shadow:0 6px 16px -8px rgba(23,100,255,.5), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.header-accent-bar.is-compact{ box-shadow:0 4px 10px -6px rgba(23,100,255,.4); }
+html[data-theme="dark"] .header-accent-bar{
+  box-shadow:0 6px 18px -8px rgba(23,140,255,.55), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.nav-tab{ box-shadow:0 8px 18px -10px rgba(23,100,255,.55), inset 0 -1px 0 rgba(255,255,255,.25); }
+
+/* ---- ۶) ظرافت‌های عمومی ---- */
+html{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility; }
+::selection{ background:rgba(23,169,255,.28); }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:8px; }
+
+/* هاور کارت‌ها: ملایم‌تر (بدون بزرگ‌شدن) */
+.summary-card:hover{ transform:translateY(-3px); box-shadow:0 16px 34px -18px rgba(22,86,245,.5), inset 0 1px 0 rgba(255,255,255,.5); }
+.row-item:hover{ transform:translateX(-2px); }
+.subtab-btn:hover,.azki-seg-btn:hover{ transform:none; }
+
+/* اسکرول‌بار باریک و هماهنگ */
+*{ scrollbar-width:thin; scrollbar-color:rgba(23,169,255,.35) transparent; }
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:rgba(23,169,255,.35); border-radius:999px; }
+::-webkit-scrollbar-thumb:hover{ background:rgba(23,169,255,.55); }
+::-webkit-scrollbar-track{ background:transparent; }
+.tabs::-webkit-scrollbar{ display:none; }
+
+@media (max-width:640px){
+  .topbar-wrap{ -webkit-backdrop-filter:blur(22px) saturate(170%); backdrop-filter:blur(22px) saturate(170%); }
+  .who .user-chip{ font-size:12.5px; }
+}
+</style>
+
 </body>
 </html>
 
