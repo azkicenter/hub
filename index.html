@@ -9638,6 +9638,27 @@ window.attOpen=async function(host){
 const UM = { host: null, centers: [], agents: [], leaders: [], q: '', open: new Set() };
 const umEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const umIsSup = () => currentUserRole === 'supervisor';
+// ---- دسترسی‌های نقش‌ها (سرپرست همیشه همه‌چیز را دارد؛ سرگروه طبق تنظیمات تب «تنظیمات» سرپرست) ----
+const UM_PERM_DEFS = [['delete_agent', 'حذف کامل کاربر (کارشناس)'], ['rename_agent', 'تغییر نام کاربر (کارشناس)'], ['rename_center', 'تغییر نام سنتر']];
+const UM_PERM_DEFAULT = { leader: { delete_agent: true, rename_agent: true, rename_center: true } };
+function umPermsMerge(d) {
+  const out = { leader: Object.assign({}, UM_PERM_DEFAULT.leader) };
+  const l = d && d.leader;
+  if (l && typeof l === 'object') UM_PERM_DEFS.forEach(([k]) => { if (typeof l[k] === 'boolean') out.leader[k] = l[k]; });
+  return out;
+}
+async function umLoadPerms() {
+  try {
+    const r = await supabaseClient.rpc('role_permissions_get');
+    if (r.error) throw r.error;
+    UM.perms = umPermsMerge(r.data);
+  } catch (e) { if (!UM.perms) UM.perms = umPermsMerge(null); }
+}
+function umCan(action) {
+  if (umIsSup()) return true;
+  const p = (UM.perms || UM_PERM_DEFAULT)[currentUserRole];
+  return !!(p && p[action]);
+}
 function umToast(m) {
   const t = document.createElement('div'); t.className = 'kb-toast'; t.textContent = m; t.onclick = () => t.remove();
   document.body.appendChild(t); setTimeout(() => t.remove(), 6000);
@@ -9683,7 +9704,7 @@ async function umLoad() {
   const list = UM.host.querySelector('#um-list');
   if (!UM.loaded) list.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
   try {
-    const d = await umCall({ action: 'list' });
+    const [d] = await Promise.all([umCall({ action: 'list' }), umLoadPerms()]);
     UM.loaded = true;
     UM.leaders = (d.leaders || []).map(l => ({ id: l.id, name: l.full_name || '—' })).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
     UM.centers = (d.centers || []).map(c => ({ id: c.id, name: c.full_name || '—', leaderIds: c.leader_ids || [] })).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
@@ -9721,7 +9742,8 @@ function umRender() {
         <span class="um-badge">${off ? 'غیرفعال' : 'فعال'}</span>
         <button class="um-btn ghost sm" type="button" data-um-pass="${a.id}">🔑 تغییر رمز</button>
         <button class="um-btn sm ${off ? '' : 'ghost'}" type="button" data-um-toggle="${a.id}" data-um-to="${off ? 'active' : 'disabled'}">${off ? 'فعال کردن' : 'غیرفعال کردن'}</button>
-        ${umIsSup() ? `<button class="um-btn ghost sm danger" type="button" data-um-del="${a.id}">حذف کامل</button>` : ''}
+        ${umCan('rename_agent') ? `<button class="um-btn ghost sm" type="button" data-um-rename="${a.id}">✏️ تغییر نام</button>` : ''}
+        ${umCan('delete_agent') ? `<button class="um-btn ghost sm danger" type="button" data-um-del="${a.id}">حذف کامل</button>` : ''}
       </div>`;
     }).join('') || '<div class="empty-state">نیرویی در این سنتر نیست</div>';
     const lead = lnames.length ? `<div class="um-lead">سرگروه: ${lnames.map(umEsc).join('، ')}</div>` : `<div class="um-lead none">سرگروه: تعیین نشده</div>`;
@@ -9730,6 +9752,7 @@ function umRender() {
         <div class="um-cwrap"><span class="um-caret"></span><div><div class="um-cname">${umEsc(c.name)}</div>${lead}</div></div>
         <div class="um-ch-end"><small>${faDigits(active)} فعال از ${faDigits(all.length)}</small>
         <button class="um-btn ghost sm" type="button" data-um-pass="${c.id}" data-um-kind="center">🔑 رمز سنتر</button>
+        ${umCan('rename_center') ? `<button class="um-btn ghost sm" type="button" data-um-rename="${c.id}" data-um-kind="center">✏️ تغییر نام</button>` : ''}
         ${umIsSup() ? `<button class="um-btn ghost sm" type="button" data-um-lead="${c.id}">تغییر سرگروه</button>` : ''}</div>
       </div><div class="um-body">${rows}</div></div>`;
   }).join('');
@@ -9737,9 +9760,10 @@ function umRender() {
 }
 
 function umListClick(e) {
-  const t = e.target.closest('[data-um-toggle],[data-um-del],[data-um-lead],[data-um-pass],[data-um-head]');
+  const t = e.target.closest('[data-um-toggle],[data-um-del],[data-um-lead],[data-um-pass],[data-um-rename],[data-um-head]');
   if (!t) return;
   if (t.dataset.umPass) return umPassModal(t.dataset.umPass, t.dataset.umKind === 'center');
+  if (t.dataset.umRename) return umRenameModal(t.dataset.umRename, t.dataset.umKind === 'center');
   if (t.dataset.umToggle) return umToggle(t.dataset.umToggle, t.dataset.umTo, t);
   if (t.dataset.umDel) return umDelete(t.dataset.umDel, t);
   if (t.dataset.umLead) return umLeadersModal(t.dataset.umLead);
@@ -9763,6 +9787,28 @@ async function umDelete(id, btn) {
   btn.disabled = true;
   try { await umCall({ action: 'delete_agent', agent_id: id }); umToast('کاربر کامل حذف شد'); await umLoad(); }
   catch (e) { btn.disabled = false; umToast('حذف نشد: ' + e.message); }
+}
+
+function umRenameModal(id, isCenter) {
+  const who = isCenter ? (UM.centers.find(c => c.id === id) || {}) : (UM.agents.find(a => a.id === id) || {});
+  const cur = who.full_name || who.name || '';
+  const m = umModal(`
+    <div class="um-title">تغییر نام ${isCenter ? 'سنتر' : 'کاربر'}</div>
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px">نام فعلی: <b>${umEsc(cur || '—')}</b>${who.backoffice_id ? ' — ' + umEsc(who.backoffice_id) : ''}</div>
+    <label>نام جدید<input id="um-rn" autocomplete="off" value="${umEsc(cur)}"></label>
+    <div style="font-size:12px;color:var(--ink-soft);margin:-4px 0 8px">توجه: ورک‌فلو گزارش، کارشناس‌ها را با نام به پروفایل وصل می‌کند؛ نام جدید باید با نام در فایل/گزارش یکی باشد. نام کاربری (ورود) تغییر نمی‌کند.</div>
+    <div class="azki-error" id="um-rne" style="display:none"></div>
+    <div class="um-actions"><button class="um-btn ghost" id="um-x" type="button">انصراف</button><button class="um-btn" id="um-ok" type="button">ثبت نام جدید</button></div>`);
+  const q = s => m.querySelector(s);
+  q('#um-rn').focus(); q('#um-rn').select();
+  q('#um-ok').onclick = async () => {
+    const nm = q('#um-rn').value.replace(/\s+/g, ' ').trim(), err = q('#um-rne');
+    if (!nm) { err.textContent = 'نام نمی‌تواند خالی باشد'; err.style.display = 'block'; return; }
+    if (nm === cur) { m.remove(); return; }
+    const b = q('#um-ok'); b.disabled = true;
+    try { await umCall({ action: 'rename_user', user_id: id, full_name: nm }); m.remove(); umToast('نام تغییر کرد'); await umLoad(); }
+    catch (e) { b.disabled = false; err.textContent = 'انجام نشد: ' + e.message; err.style.display = 'block'; }
+  };
 }
 
 // قانون رمز جدید: حداقل ۸ کاراکتر، حرف کوچک و بزرگ انگلیسی، عدد و یک علامت؛ بدون فاصله و فقط کاراکترهای انگلیسی
@@ -10012,8 +10058,53 @@ async function settingsOpen(host) {
     catch (e) { umToast('ذخیره نشد: ' + e.message); }
     save.disabled = false;
   };
+  permSettingsRender(host);
   agentSettingsRender(host);
   centerSettingsRender(host);
+}
+
+// ============================================================
+// دسترسی‌های نقش‌ها (حذف / تغییر نام) — تنظیم توسط سرپرست
+// ذخیره از طریق توابع role_permissions_get/set (فایل role_permissions.sql)؛ اعمال سمت سرور در edge function ‏leader-users
+// ============================================================
+async function permSettingsRender(host) {
+  const card = document.createElement('div');
+  card.className = 'um-settings list-card';
+  card.id = 'st-perms';
+  card.style.cssText = 'padding:18px';
+  card.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
+  host.appendChild(card);
+  let perms;
+  try {
+    const r = await supabaseClient.rpc('role_permissions_get');
+    if (r.error) throw r.error;
+    perms = umPermsMerge(r.data);
+  } catch (e) {
+    const missing = /PGRST202|42883|Could not find the function|schema cache/i.test(String((e && (e.code || '')) + ' ' + (e && e.message || '')));
+    card.innerHTML = '<div class="empty-state">' + (missing ? 'دسترسی نقش‌ها هنوز در دیتابیس فعال نشده؛ فایل role_permissions.sql را در Supabase اجرا کنید.' : 'خواندن دسترسی‌ها انجام نشد: ' + umEsc(e.message)) + '</div>';
+    return;
+  }
+  card.innerHTML = `<div class="um-title">دسترسی نقش‌ها (مدیریت کاربران)</div>
+    <div style="font-size:12px;color:var(--ink-soft)">تیک = مجاز. سرپرست همیشه همه‌ی دسترسی‌ها را دارد. سرگروه‌ها فقط روی کاربران و سنترهای اساین‌شده به خودشان اعمال می‌کنند.</div>
+    <div style="overflow-x:auto"><table class="rh-tbl" style="margin-top:10px;width:100%">
+      <thead><tr><th style="text-align:right">دسترسی</th><th>سرپرست</th><th>سرگروه</th></tr></thead>
+      <tbody>${UM_PERM_DEFS.map(([k, n]) => `<tr><td style="text-align:right">${umEsc(n)}</td>
+        <td style="text-align:center"><input type="checkbox" checked disabled title="سرپرست همیشه دسترسی دارد"></td>
+        <td style="text-align:center"><input type="checkbox" data-perm="${k}"${perms.leader[k] ? ' checked' : ''}></td></tr>`).join('')}</tbody>
+    </table></div>
+    <div class="um-actions"><button class="um-btn" id="st-perms-save" type="button">ذخیره</button></div>`;
+  const btn = card.querySelector('#st-perms-save');
+  btn.onclick = async () => {
+    const leader = {};
+    card.querySelectorAll('input[data-perm]').forEach(i => { leader[i.dataset.perm] = i.checked; });
+    btn.disabled = true;
+    try {
+      const r = await supabaseClient.rpc('role_permissions_set', { p_perms: { leader } });
+      if (r.error) throw r.error;
+      umToast('دسترسی‌ها ذخیره شد؛ سرگروه‌ها با باز کردن/رفرش بعدی تغییر را می‌بینند');
+    } catch (e) { umToast('ذخیره نشد: ' + e.message); }
+    btn.disabled = false;
+  };
 }
 
 // ============================================================
