@@ -10393,7 +10393,7 @@ html[data-theme="dark"] .header-accent-bar{
 .nav-tab{ box-shadow:0 8px 18px -10px rgba(23,100,255,.55), inset 0 -1px 0 rgba(255,255,255,.25); }
 
 /* ---- ۶) ظرافت‌های عمومی ---- */
-html{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility; }
+html{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 ::selection{ background:rgba(23,169,255,.28); }
 :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:8px; }
 
@@ -10403,7 +10403,6 @@ html{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; tex
 .subtab-btn:hover,.azki-seg-btn:hover{ transform:none; }
 
 /* اسکرول‌بار باریک و هماهنگ */
-*{ scrollbar-width:thin; scrollbar-color:rgba(23,169,255,.35) transparent; }
 ::-webkit-scrollbar{ width:8px; height:8px; }
 ::-webkit-scrollbar-thumb{ background:rgba(23,169,255,.35); border-radius:999px; }
 ::-webkit-scrollbar-thumb:hover{ background:rgba(23,169,255,.55); }
@@ -10578,7 +10577,6 @@ html.has-nav-drawer main{ padding-top:40px; }
 <style id="perf-and-join">
 /* ===== ۱) سبک‌سازی (رفع لگ) ===== */
 html{ text-rendering:auto; }
-*{ scrollbar-width:auto; scrollbar-color:auto; }
 html{ scrollbar-width:thin; scrollbar-color:rgba(23,169,255,.35) transparent; }
 :root{ --lg-drop:0 8px 18px -14px rgba(15,72,150,.28); }
 /* بلور فقط روی هدر و منوی باز؛ سبک‌تر از قبل */
@@ -10643,6 +10641,31 @@ button:not(:disabled):active,
   transform:none !important;
 }
 .subtab-btn.active,.azki-seg-btn.active{ transform:none !important; }
+</style>
+
+<style id="no-glow-lag">
+/* ===== حذف درخشش برجسته‌کننده هنگام هاور ===== */
+.leader-item:hover,.team-item:hover,.um-settings:hover,.list-card:hover,.row-item:hover,.bug-item:hover,
+.summary-card:hover,.admin-group-card:hover,.ticket-report-item:hover{
+  box-shadow:none !important;
+}
+.list-card:hover,.admin-group-card:hover,.ticket-report-item:hover,.um-settings:hover{ box-shadow:var(--shadow-card) !important; }
+.summary-card:hover,.summary-card{ box-shadow:inset 0 1px 2px rgba(255,255,255,.55), 0 0 0 .5px rgba(15,50,140,.18) !important; }
+.row-item:hover,.bug-item:hover{ background:transparent !important; }
+
+/* ===== رفع لگ ===== */
+/* ۱) بعد از ظاهر شدن، ترنسفورم کامل برداشته شود تا لایه‌ی گرافیکی جدا برای هر ردیف نماند */
+.glass-reveal.glass-in{ transform:none !important; }
+/* ۲) بلورهای ریز و تکراری خاموش (هر کدام یک لایه‌ی گران‌قیمت بودند) */
+.azki-rate-card,.azki-trend,.azki-trend-tip,.team-bugs-search,.shift-card,.sm-card,
+.um-btn,.um-search,.theme-toggle,.center-perf-table th,.center-perf-table td{
+  -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+}
+.um-modal{ -webkit-backdrop-filter:none; backdrop-filter:none; background:rgba(10,20,45,.40); }
+/* ستون چسبیده‌ی جدول: به‌جای بلور روی هر سلول، پس‌زمینه‌ی تقریباً مات */
+.center-perf-table th:first-child,.center-perf-table td:first-child{ background:rgba(240,247,255,.97); }
+html[data-theme="dark"] .center-perf-table th:first-child,
+html[data-theme="dark"] .center-perf-table td:first-child{ background:rgba(16,22,40,.97); }
 </style>
 
 </body>
