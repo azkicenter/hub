@@ -10294,23 +10294,31 @@ html.nav-open .nav-burger{transform:rotate(90deg)}
    انیمیشن ساده‌تر منوی کشویی و کمی ظرافت بیشتر در ظاهر
    ===================================================================== */
 
-/* ---- ۱) هدر: مات کامل زیر محتوا هنگام اسکرول ---- */
+/* ---- ۱) هدر شیشه‌ای (Liquid Glass iOS 27): بالای صفحه شفاف، با اسکرول مات می‌شود ---- */
 .topbar-wrap{
   z-index:900;
-  background:rgba(244,249,255,.74);
-  -webkit-backdrop-filter:blur(28px) saturate(180%);
-  backdrop-filter:blur(28px) saturate(180%);
-  box-shadow:0 12px 32px -22px rgba(15,72,150,.45);
+  background:linear-gradient(180deg,rgba(255,255,255,.46),rgba(255,255,255,.22));
+  -webkit-backdrop-filter:blur(14px) saturate(170%);
+  backdrop-filter:blur(14px) saturate(170%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(15,60,130,.10), 0 10px 30px -22px rgba(15,72,150,.35);
+  transition:background .3s ease, box-shadow .3s ease, -webkit-backdrop-filter .3s ease, backdrop-filter .3s ease;
+}
+/* وقتی صفحه اسکرول شد و متن‌ها زیر هدر می‌روند: شیشه‌ی مات و یکدست (diffuse) */
+.topbar-wrap.is-scrolled{
+  background:linear-gradient(180deg,rgba(246,250,255,.78),rgba(236,245,255,.62));
+  -webkit-backdrop-filter:blur(34px) saturate(200%) brightness(1.02);
+  backdrop-filter:blur(34px) saturate(200%) brightness(1.02);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(15,60,130,.14), 0 14px 34px -20px rgba(15,72,150,.5);
 }
 html[data-theme="dark"] .topbar-wrap{
-  background:rgba(10,15,28,.66);
-  box-shadow:0 12px 32px -20px rgba(0,0,0,.7);
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(0,0,0,.45), 0 10px 30px -20px rgba(0,0,0,.7);
 }
-header.topbar{
-  background:transparent;
-  border-bottom:1px solid rgba(23,169,255,.16);
+html[data-theme="dark"] .topbar-wrap.is-scrolled{
+  background:linear-gradient(180deg,rgba(14,20,38,.80),rgba(10,15,28,.64));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.26), inset 0 -1px 0 rgba(0,0,0,.55), 0 14px 34px -18px rgba(0,0,0,.8);
 }
-html[data-theme="dark"] header.topbar{ border-bottom-color:rgba(255,255,255,.08); }
+header.topbar{ background:transparent; border-bottom:0; }
 
 /* ---- ۲) حذف کادر آبی دور اسم کاربر ---- */
 .who .user-chip{
@@ -10406,8 +10414,90 @@ html{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; tex
   .topbar-wrap{ -webkit-backdrop-filter:blur(22px) saturate(170%); backdrop-filter:blur(22px) saturate(170%); }
   .who .user-chip{ font-size:12.5px; }
 }
+/* ---- ۷) تم Liquid Glass (iOS 27): لبه‌ی تیره‌تر + درخشش اسپکیولار روشن‌تر + عمق بیشتر ---- */
+:root{
+  --lg-edge:rgba(15,50,110,.14);
+  --lg-spec:rgba(255,255,255,.9);
+  --shadow-card:0 10px 30px -14px rgba(15,72,150,.30), 0 1px 0 rgba(255,255,255,.5),
+                inset 0 1px 0 var(--lg-spec), inset 0 -1px 0 rgba(15,60,130,.08), inset 0 0 0 1px rgba(255,255,255,.35);
+  --shadow-float:0 28px 60px -18px rgba(15,72,150,.35),
+                inset 0 1px 0 var(--lg-spec), inset 0 -1px 0 rgba(15,60,130,.10), inset 0 0 0 1px rgba(255,255,255,.4);
+  --radius-lg:22px; --radius:16px;
+}
+html[data-theme="dark"]{
+  --lg-edge:rgba(0,0,0,.5);
+  --lg-spec:rgba(255,255,255,.22);
+  --shadow-card:0 10px 32px -14px rgba(0,0,0,.65),
+                inset 0 1px 0 var(--lg-spec), inset 0 -1px 0 rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.05);
+  --shadow-float:0 28px 64px -18px rgba(0,0,0,.75),
+                inset 0 1px 0 rgba(255,255,255,.26), inset 0 -1px 0 rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.06);
+}
+/* سطح‌های شیشه‌ای: بدون کادر آبی پررنگ، فقط لبه‌ی ظریف شیشه */
+.summary-card,.list-card,.row-item,.bug-item,.ticket-primary-card,.ticket-hero-card,.ticket-report-item,
+.admin-group-card,.admin-login-chart-card,.um-settings,.login-card,.last-update-card{
+  border-color:rgba(255,255,255,.55);
+  box-shadow:var(--shadow-card);
+}
+html[data-theme="dark"] .summary-card,html[data-theme="dark"] .list-card,html[data-theme="dark"] .row-item,
+html[data-theme="dark"] .bug-item,html[data-theme="dark"] .admin-group-card,html[data-theme="dark"] .um-settings,
+html[data-theme="dark"] .login-card{ border-color:rgba(255,255,255,.12); }
+.login-card{ box-shadow:var(--shadow-float); }
+.last-update-card{ box-shadow:none; border-color:transparent; }
+
+/* دکمه‌ی سه‌خط و منوی کشویی: شیشه‌ی مات با لبه‌ی اسپکیولار */
+.nav-burger{
+  background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.38));
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:0 6px 16px -8px rgba(15,72,150,.4), inset 0 1px 0 var(--lg-spec), inset 0 -1px 0 rgba(15,60,130,.10);
+  -webkit-backdrop-filter:blur(18px) saturate(180%); backdrop-filter:blur(18px) saturate(180%);
+}
+html[data-theme="dark"] .nav-burger{
+  background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
+  border-color:rgba(255,255,255,.16);
+}
+#nav-drawer{
+  background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(236,245,255,.5));
+  -webkit-backdrop-filter:blur(36px) saturate(200%); backdrop-filter:blur(36px) saturate(200%);
+  border-left:1px solid rgba(255,255,255,.75);
+  box-shadow:-24px 0 60px -26px rgba(10,20,45,.5), inset 1px 0 0 var(--lg-spec), inset 0 1px 0 var(--lg-spec);
+}
+html[data-theme="dark"] #nav-drawer{
+  background:linear-gradient(180deg,rgba(24,32,54,.66),rgba(12,18,34,.62));
+  border-left-color:rgba(255,255,255,.14);
+}
+#nav-drawer .tab-btn.active{
+  background:linear-gradient(180deg,rgba(255,255,255,.65),rgba(255,255,255,.3));
+  box-shadow:0 4px 12px -6px rgba(15,72,150,.35), inset 0 1px 0 var(--lg-spec);
+}
+html[data-theme="dark"] #nav-drawer .tab-btn.active{
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));
+}
+
+/* پنجره‌های مودال و لیست‌های کشویی */
+.um-modal-box,.um-modal>div{ border:1px solid rgba(255,255,255,.55); box-shadow:var(--shadow-float); }
+
+/* تب‌ها و دکمه‌ها: قرص شیشه‌ای */
+.tab-btn.active,.subtab-btn.active,.azki-seg-btn.active{ text-shadow:none; }
+@media (prefers-reduced-transparency:reduce){
+  .topbar-wrap,.topbar-wrap.is-scrolled,#nav-drawer{ -webkit-backdrop-filter:none; backdrop-filter:none; background:var(--surface); }
+}
 </style>
 
+
+<script id="topbar-scroll-glass">
+(function(){
+  var wrap=document.querySelector('.topbar-wrap'); if(!wrap)return;
+  var t=false;
+  function f(){
+    var y=window.scrollY||window.pageYOffset||0;
+    if(y>12) wrap.classList.add('is-scrolled');
+    else if(y<=4) wrap.classList.remove('is-scrolled');
+    t=false;
+  }
+  window.addEventListener('scroll',function(){ if(!t){ requestAnimationFrame(f); t=true; } },{passive:true});
+  f();
+})();
+</script>
 </body>
 </html>
 
