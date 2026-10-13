@@ -10623,6 +10623,28 @@ html.nav-open #nav-drawer{ -webkit-backdrop-filter:blur(22px) saturate(160%); ba
 }
 </style>
 
+<style id="no-press-anim">
+/* حذف بزرگ/کوچک‌شدن هنگام کلیک و هاور؛ فقط انیمیشن ظاهر شدن به‌ترتیب هنگام اسکرول (glass-reveal) می‌ماند */
+button:not(:disabled):active,
+.btn-primary:hover,.btn-primary:active,
+.um-btn:hover,.um-btn:active,
+.theme-toggle:hover,.theme-toggle:active,
+.summary-card:hover,.summary-card:active,
+.row-item:hover,.row-item:active,
+.bug-item:hover,.team-item:hover,.leader-item:hover,.list-card:hover,
+.leader-header:hover,.leader-header:active,
+.team-header:hover,.team-header:active,
+.subtab-btn:hover,.subtab-btn:active,
+.azki-seg-btn:hover,.azki-seg-btn:active,
+.um-checks label:hover,
+.nav-burger:hover,.nav-burger:active,
+#nav-drawer .tab-btn:hover,#nav-drawer .tab-btn:active,
+.tab-btn:hover,.tab-btn:active{
+  transform:none !important;
+}
+.subtab-btn.active,.azki-seg-btn.active{ transform:none !important; }
+</style>
+
 </body>
 </html>
 
