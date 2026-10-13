@@ -10294,29 +10294,29 @@ html.nav-open .nav-burger{transform:rotate(90deg)}
    انیمیشن ساده‌تر منوی کشویی و کمی ظرافت بیشتر در ظاهر
    ===================================================================== */
 
-/* ---- ۱) هدر شیشه‌ای (Liquid Glass iOS 27): بالای صفحه شفاف، با اسکرول مات می‌شود ---- */
+/* ---- ۱) هدر شیشه‌ای (Liquid Glass iOS 27): بالای صفحه شفاف، با اسکرول مات‌ و بلور می‌شود ---- */
 .topbar-wrap{
   z-index:900;
-  background:linear-gradient(180deg,rgba(255,255,255,.46),rgba(255,255,255,.22));
-  -webkit-backdrop-filter:blur(14px) saturate(170%);
-  backdrop-filter:blur(14px) saturate(170%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(15,60,130,.10), 0 10px 30px -22px rgba(15,72,150,.35);
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.12));
+  -webkit-backdrop-filter:blur(10px) saturate(180%);
+  backdrop-filter:blur(10px) saturate(180%);
+  box-shadow:inset 0 .5px 1px rgba(255,255,255,.8), inset 0 -.5px 1px rgba(255,255,255,.5), 0 .5px 0 rgba(15,60,130,.10);
   transition:background .3s ease, box-shadow .3s ease, -webkit-backdrop-filter .3s ease, backdrop-filter .3s ease;
 }
-/* وقتی صفحه اسکرول شد و متن‌ها زیر هدر می‌روند: شیشه‌ی مات و یکدست (diffuse) */
+/* هنگام اسکرول: شیشه‌ی مات (diffuse) تا متن زیر هدر خوانا و یکدست شود */
 .topbar-wrap.is-scrolled{
-  background:linear-gradient(180deg,rgba(246,250,255,.78),rgba(236,245,255,.62));
-  -webkit-backdrop-filter:blur(34px) saturate(200%) brightness(1.02);
-  backdrop-filter:blur(34px) saturate(200%) brightness(1.02);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(15,60,130,.14), 0 14px 34px -20px rgba(15,72,150,.5);
+  background:linear-gradient(180deg,rgba(255,255,255,.46),rgba(240,247,255,.30));
+  -webkit-backdrop-filter:blur(36px) saturate(200%) brightness(1.05);
+  backdrop-filter:blur(36px) saturate(200%) brightness(1.05);
+  box-shadow:inset 0 .5px 1px rgba(255,255,255,.95), inset 0 -.5px 1px rgba(255,255,255,.6), 0 .5px 0 rgba(15,60,130,.14), 0 14px 32px -22px rgba(15,72,150,.5);
 }
 html[data-theme="dark"] .topbar-wrap{
-  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(0,0,0,.45), 0 10px 30px -20px rgba(0,0,0,.7);
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  box-shadow:inset 0 .5px 1px rgba(255,255,255,.2), 0 .5px 0 rgba(0,0,0,.5);
 }
 html[data-theme="dark"] .topbar-wrap.is-scrolled{
-  background:linear-gradient(180deg,rgba(14,20,38,.80),rgba(10,15,28,.64));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.26), inset 0 -1px 0 rgba(0,0,0,.55), 0 14px 34px -18px rgba(0,0,0,.8);
+  background:linear-gradient(180deg,rgba(22,30,54,.55),rgba(12,18,34,.40));
+  box-shadow:inset 0 .5px 1px rgba(255,255,255,.24), 0 .5px 0 rgba(0,0,0,.6), 0 14px 32px -20px rgba(0,0,0,.8);
 }
 header.topbar{ background:transparent; border-bottom:0; }
 
@@ -10414,72 +10414,116 @@ html{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; tex
   .topbar-wrap{ -webkit-backdrop-filter:blur(22px) saturate(170%); backdrop-filter:blur(22px) saturate(170%); }
   .who .user-chip{ font-size:12.5px; }
 }
-/* ---- ۷) تم Liquid Glass (iOS 27): لبه‌ی تیره‌تر + درخشش اسپکیولار روشن‌تر + عمق بیشتر ---- */
+/* ---- ۷) Liquid Glass iOS 27 (برگرفته از ionic-theme-ios27): شفافیت بیشتر + لبه‌ی اسپکیولار + بلور ---- */
 :root{
-  --lg-edge:rgba(15,50,110,.14);
-  --lg-spec:rgba(255,255,255,.9);
-  --shadow-card:0 10px 30px -14px rgba(15,72,150,.30), 0 1px 0 rgba(255,255,255,.5),
-                inset 0 1px 0 var(--lg-spec), inset 0 -1px 0 rgba(15,60,130,.08), inset 0 0 0 1px rgba(255,255,255,.35);
-  --shadow-float:0 28px 60px -18px rgba(15,72,150,.35),
-                inset 0 1px 0 var(--lg-spec), inset 0 -1px 0 rgba(15,60,130,.10), inset 0 0 0 1px rgba(255,255,255,.4);
-  --radius-lg:22px; --radius:16px;
+  /* مقادیر پایه‌ی تم ios27: glass-background / border / shadow */
+  --lg-bg-rgb:255,255,255;
+  --lg-spec-rgb:255,255,255;
+  --lg-shade-rgb:220,220,220;
+  --lg-text-rgb:15,27,51;
+  --surface:rgba(255,255,255,.52);
+  --lg-fill:rgba(var(--lg-bg-rgb),.40);
+  --lg-tint:linear-gradient(180deg,rgba(var(--lg-text-rgb),0) 4%,rgba(var(--lg-text-rgb),.01) 8%,rgba(var(--lg-text-rgb),.024) 16%,rgba(var(--lg-text-rgb),.027) 22%,rgba(var(--lg-text-rgb),.018) 36%,rgba(var(--lg-text-rgb),.011) 44%,rgba(var(--lg-text-rgb),.008) 58%,rgba(var(--lg-text-rgb),.006) 88%,rgba(var(--lg-text-rgb),0) 94%);
+  --lg-shadow:inset 0 0 0 .5px rgba(var(--lg-spec-rgb),.6), inset 0 0 1px 0 rgba(var(--lg-shade-rgb),.18),
+              inset 0 1px 2px 0 rgba(var(--lg-spec-rgb),.8), inset 0 -1px 2px 0 rgba(var(--lg-spec-rgb),.5),
+              0 .5px 1px 0 rgba(var(--lg-shade-rgb),.18);
+  --lg-drop:0 14px 34px -16px rgba(15,72,150,.30);
+  --shadow-card:var(--lg-shadow), var(--lg-drop);
+  --shadow-float:var(--lg-shadow), 0 28px 60px -18px rgba(15,72,150,.38);
+  --radius-lg:26px; --radius:18px;
 }
 html[data-theme="dark"]{
-  --lg-edge:rgba(0,0,0,.5);
-  --lg-spec:rgba(255,255,255,.22);
-  --shadow-card:0 10px 32px -14px rgba(0,0,0,.65),
-                inset 0 1px 0 var(--lg-spec), inset 0 -1px 0 rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.05);
-  --shadow-float:0 28px 64px -18px rgba(0,0,0,.75),
-                inset 0 1px 0 rgba(255,255,255,.26), inset 0 -1px 0 rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.06);
+  --lg-bg-rgb:255,255,255;
+  --lg-spec-rgb:255,255,255;
+  --lg-shade-rgb:0,0,0;
+  --lg-text-rgb:255,255,255;
+  --surface:rgba(255,255,255,.09);
+  --lg-fill:rgba(var(--lg-bg-rgb),.08);
+  --lg-tint:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01) 40%,rgba(255,255,255,0) 94%);
+  --lg-shadow:inset 0 0 0 .5px rgba(255,255,255,.16), inset 0 1px 2px 0 rgba(255,255,255,.22),
+              inset 0 -1px 2px 0 rgba(255,255,255,.08), 0 0 0 .5px rgba(0,0,0,.45);
+  --lg-drop:0 14px 36px -16px rgba(0,0,0,.7);
 }
-/* سطح‌های شیشه‌ای: بدون کادر آبی پررنگ، فقط لبه‌ی ظریف شیشه */
-.summary-card,.list-card,.row-item,.bug-item,.ticket-primary-card,.ticket-hero-card,.ticket-report-item,
-.admin-group-card,.admin-login-chart-card,.um-settings,.login-card,.last-update-card{
-  border-color:rgba(255,255,255,.55);
-  box-shadow:var(--shadow-card);
-}
-html[data-theme="dark"] .summary-card,html[data-theme="dark"] .list-card,html[data-theme="dark"] .row-item,
-html[data-theme="dark"] .bug-item,html[data-theme="dark"] .admin-group-card,html[data-theme="dark"] .um-settings,
-html[data-theme="dark"] .login-card{ border-color:rgba(255,255,255,.12); }
-.login-card{ box-shadow:var(--shadow-float); }
-.last-update-card{ box-shadow:none; border-color:transparent; }
 
-/* دکمه‌ی سه‌خط و منوی کشویی: شیشه‌ی مات با لبه‌ی اسپکیولار */
+/* کادرها و کارت‌های سفید: شیشه‌ی شفاف‌تر */
+.list-card,.azki-trend,.admin-group-card,.admin-login-chart-card,.ticket-report-item,
+.um-settings,.um-box,.login-card,.um-center{
+  background:var(--lg-tint), var(--lg-fill);
+  border:.5px solid rgba(255,255,255,.75);
+  border-right-color:rgba(255,255,255,.55); border-left-color:rgba(255,255,255,.4);
+  box-shadow:var(--shadow-card);
+  -webkit-backdrop-filter:blur(10px) saturate(170%);
+  backdrop-filter:blur(10px) saturate(170%);
+}
+html[data-theme="dark"] .list-card,html[data-theme="dark"] .azki-trend,html[data-theme="dark"] .admin-group-card,
+html[data-theme="dark"] .admin-login-chart-card,html[data-theme="dark"] .ticket-report-item,
+html[data-theme="dark"] .um-settings,html[data-theme="dark"] .um-box,html[data-theme="dark"] .login-card,
+html[data-theme="dark"] .um-center{ border-color:rgba(255,255,255,.14); }
+.login-card,.um-box{ box-shadow:var(--shadow-float); }
+.list-card,.um-center,.ticket-report-item,.admin-group-card,.admin-login-chart-card{
+  /* طبق تنظیمات عملکرد صفحه، بلور روی کارت‌های لیستی خاموش می‌ماند */
+  -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+}
+
+/* کارت‌های آبی (خلاصه / تیکت): شیشه‌ی رنگی با لبه‌ی اسپکیولار */
+.summary-card,.ticket-primary-card,.ticket-hero-card{
+  border:.5px solid rgba(255,255,255,.65);
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.55), inset 0 -1px 2px rgba(255,255,255,.25),
+             0 0 0 .5px rgba(15,50,140,.18), 0 16px 34px -16px rgba(22,86,245,.5);
+}
+.summary-card{ background:linear-gradient(135deg,rgba(22,86,245,.56) 0%,rgba(23,169,255,.56) 100%); }
+
+/* سطرها و لیست‌ها */
+.row-item,.bug-item{ border-bottom-color:rgba(var(--lg-text-rgb),.07); }
+.last-update-card{ background:none; box-shadow:none; border:0; }
+
+/* دکمه‌ی سه‌خط: دایره‌ی شیشه‌ای ۴۴px مثل ion-buttons در ios27 */
 .nav-burger{
-  background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.38));
-  border:1px solid rgba(255,255,255,.7);
-  box-shadow:0 6px 16px -8px rgba(15,72,150,.4), inset 0 1px 0 var(--lg-spec), inset 0 -1px 0 rgba(15,60,130,.10);
-  -webkit-backdrop-filter:blur(18px) saturate(180%); backdrop-filter:blur(18px) saturate(180%);
+  width:44px; height:44px; border-radius:50%;
+  background:var(--lg-tint), rgba(var(--lg-bg-rgb),.46);
+  border:.5px solid rgba(255,255,255,.8);
+  box-shadow:var(--lg-shadow), 0 0 0 .5px rgba(var(--lg-text-rgb),.12), 0 6px 16px -8px rgba(15,72,150,.4);
+  -webkit-backdrop-filter:blur(4px) saturate(260%); backdrop-filter:blur(4px) saturate(260%);
 }
-html[data-theme="dark"] .nav-burger{
-  background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
-  border-color:rgba(255,255,255,.16);
-}
+html[data-theme="dark"] .nav-burger{ border-color:rgba(255,255,255,.16); }
+.logout-link{ background:rgba(var(--lg-bg-rgb),.0); }
+
+/* منوی کشویی: شیشه‌ی شناور و شفاف (ion-menu / popover در ios27) */
 #nav-drawer{
-  background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(236,245,255,.5));
-  -webkit-backdrop-filter:blur(36px) saturate(200%); backdrop-filter:blur(36px) saturate(200%);
-  border-left:1px solid rgba(255,255,255,.75);
-  box-shadow:-24px 0 60px -26px rgba(10,20,45,.5), inset 1px 0 0 var(--lg-spec), inset 0 1px 0 var(--lg-spec);
+  top:10px; right:10px; bottom:10px;
+  width:min(300px,calc(100vw - 20px));
+  border-radius:30px;
+  padding:14px 10px 16px;
+  background:var(--lg-tint), rgba(var(--lg-bg-rgb),.34);
+  -webkit-backdrop-filter:blur(30px) saturate(190%) brightness(1.06);
+  backdrop-filter:blur(30px) saturate(190%) brightness(1.06);
+  border:.5px solid rgba(255,255,255,.8);
+  border-right-color:rgba(255,255,255,.55);
+  box-shadow:var(--lg-shadow), 0 24px 64px -16px rgba(10,20,45,.35);
+  transform:translateX(calc(100% + 24px));
 }
 html[data-theme="dark"] #nav-drawer{
-  background:linear-gradient(180deg,rgba(24,32,54,.66),rgba(12,18,34,.62));
-  border-left-color:rgba(255,255,255,.14);
+  background:var(--lg-tint), rgba(30,40,66,.38);
+  border-color:rgba(255,255,255,.16);
 }
+html.nav-open #nav-drawer{ transform:none; }
+#nav-overlay{ background:rgba(10,20,45,.18); -webkit-backdrop-filter:blur(1.5px); backdrop-filter:blur(1.5px); }
+.nav-drawer-head{ border-bottom-color:rgba(var(--lg-text-rgb),.1); }
+#nav-drawer .tab-btn{ border-radius:24px; min-height:48px; }
+#nav-drawer .tab-btn:hover{ background:rgba(var(--lg-bg-rgb),.38); }
 #nav-drawer .tab-btn.active{
-  background:linear-gradient(180deg,rgba(255,255,255,.65),rgba(255,255,255,.3));
-  box-shadow:0 4px 12px -6px rgba(15,72,150,.35), inset 0 1px 0 var(--lg-spec);
+  background:var(--lg-tint), rgba(var(--lg-bg-rgb),.55);
+  box-shadow:var(--lg-shadow), 0 0 0 .5px rgba(var(--lg-text-rgb),.08), 0 6px 14px -8px rgba(15,72,150,.3);
 }
-html[data-theme="dark"] #nav-drawer .tab-btn.active{
-  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));
-}
+html[data-theme="dark"] #nav-drawer .tab-btn.active{ background:var(--lg-tint), rgba(255,255,255,.14); }
 
-/* پنجره‌های مودال و لیست‌های کشویی */
-.um-modal-box,.um-modal>div{ border:1px solid rgba(255,255,255,.55); box-shadow:var(--shadow-float); }
+/* مودال‌ها و لیست‌های کشویی */
+.um-modal{ background:rgba(10,20,45,.22); }
 
-/* تب‌ها و دکمه‌ها: قرص شیشه‌ای */
-.tab-btn.active,.subtab-btn.active,.azki-seg-btn.active{ text-shadow:none; }
 @media (prefers-reduced-transparency:reduce){
-  .topbar-wrap,.topbar-wrap.is-scrolled,#nav-drawer{ -webkit-backdrop-filter:none; backdrop-filter:none; background:var(--surface); }
+  .topbar-wrap,.topbar-wrap.is-scrolled,#nav-drawer,.nav-burger{
+    -webkit-backdrop-filter:none; backdrop-filter:none; background:var(--surface);
+  }
 }
 </style>
 
@@ -10498,6 +10542,31 @@ html[data-theme="dark"] #nav-drawer .tab-btn.active{
   f();
 })();
 </script>
+
+<style id="topbar-compact">
+/* ===== هدر جمع‌وجورتر ===== */
+header.topbar{ padding:6px 16px; min-height:0; }
+.brand{ gap:8px; }
+.brand img{ height:21px; }
+.nav-burger{ width:38px; height:38px; }
+.nav-burger svg{ width:18px; height:18px; }
+.who{ gap:8px; font-size:12.5px; }
+.who .user-chip{ font-size:12.5px !important; }
+.logout-link{ width:30px; height:30px; }
+.last-update-card{ font-size:10.5px; padding:2px 4px; gap:6px; }
+.last-update-dot{ width:6px; height:6px; }
+/* نوار آبی نازک‌تر و برچسب تب فعلی کوچک‌تر */
+.header-accent-bar{ height:6px; margin:4px 18px 0; }
+.nav-tab{ top:calc(100% - 4px); padding:5px 18px 6px; font-size:12.5px; min-width:96px; }
+.header-accent-bar.is-compact ~ .nav-tab{ top:calc(100% - 5px); }
+html.has-nav-drawer main{ padding-top:40px; }
+@media (max-width:640px){
+  header.topbar{ padding:5px 12px; }
+  .brand img{ height:19px; }
+  .nav-tab{ right:14px; padding:4px 14px 5px; font-size:12px; }
+}
+</style>
+
 </body>
 </html>
 
