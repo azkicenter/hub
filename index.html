@@ -10567,6 +10567,14 @@ html.has-nav-drawer main{ padding-top:40px; }
 }
 </style>
 
+<style id="nav-tab-attach">
+/* چسباندن برچسب تب به نوار آبی: نوار هنگام فشرده شدن از پایین جمع می‌شود تا همیشه به برچسب بچسبد */
+.header-accent-bar{ transform-origin:50% 100%; }
+.nav-tab{ top:calc(100% - 4px); }
+.header-accent-bar.is-compact ~ .nav-tab{ top:calc(100% - 3px); opacity:1; }
+.nav-tab::before,.nav-tab::after{ top:-1px; height:15px; }
+</style>
+
 </body>
 </html>
 
