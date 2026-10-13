@@ -10575,6 +10575,54 @@ html.has-nav-drawer main{ padding-top:40px; }
 .nav-tab::before,.nav-tab::after{ top:-1px; height:15px; }
 </style>
 
+<style id="perf-and-join">
+/* ===== ۱) سبک‌سازی (رفع لگ) ===== */
+html{ text-rendering:auto; }
+*{ scrollbar-width:auto; scrollbar-color:auto; }
+html{ scrollbar-width:thin; scrollbar-color:rgba(23,169,255,.35) transparent; }
+:root{ --lg-drop:0 8px 18px -14px rgba(15,72,150,.28); }
+/* بلور فقط روی هدر و منوی باز؛ سبک‌تر از قبل */
+.topbar-wrap{
+  -webkit-backdrop-filter:blur(8px) saturate(150%); backdrop-filter:blur(8px) saturate(150%);
+  transition:background .25s ease, box-shadow .25s ease;
+  transform:translateZ(0);
+}
+.topbar-wrap.is-scrolled{
+  -webkit-backdrop-filter:blur(20px) saturate(160%); backdrop-filter:blur(20px) saturate(160%);
+}
+.nav-burger,.azki-trend,.um-settings,.um-center{
+  -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+}
+#nav-overlay{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+#nav-drawer{ -webkit-backdrop-filter:none; backdrop-filter:none; }
+html.nav-open #nav-drawer{ -webkit-backdrop-filter:blur(22px) saturate(160%); backdrop-filter:blur(22px) saturate(160%); }
+@media (max-width:640px){
+  .topbar-wrap.is-scrolled{ -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+}
+
+/* ===== ۲) نوار آبی + برچسب تب = یک تکه ===== */
+/* نوار دیگر هنگام اسکرول کوچک/کم‌رنگ نمی‌شود تا همیشه با برچسب هم‌اندازه و هم‌رنگ بماند */
+.header-accent-bar,
+.header-accent-bar.is-compact{
+  transform:none !important; opacity:1 !important;
+  height:6px;
+  /* سمت راست (جای برچسب) رنگ ثابت و یکدست */
+  background:linear-gradient(90deg,var(--accent-deep) 0%,var(--accent) 65%,var(--accent) 100%);
+  box-shadow:0 5px 12px -8px rgba(23,100,255,.45);
+}
+.nav-tab,
+.header-accent-bar.is-compact ~ .nav-tab{
+  top:calc(100% - 3px); opacity:1 !important;
+  background:linear-gradient(180deg,var(--accent) 0%,var(--accent) 30%,var(--accent-deep) 150%);
+  box-shadow:0 8px 14px -10px rgba(23,100,255,.55);
+}
+.nav-tab::before,.nav-tab::after{ top:-1px; height:15px; }
+.nav-tab{ border-radius:0 0 16px 16px; }
+@media (max-width:640px){
+  .header-accent-bar{ background:linear-gradient(90deg,var(--accent-deep) 0%,var(--accent) 45%,var(--accent) 100%); }
+}
+</style>
+
 </body>
 </html>
 
