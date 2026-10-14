@@ -2347,9 +2347,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
     <div class="panel" id="panel-center-training"></div>
     <div class="panel" id="panel-center-bugs">
       <div class="period-label" id="center-bugs-period-label"></div>
-      <div class="list-card" id="center-bugs-list">
-        <div class="loading-state">در حال بارگذاری...</div>
-      </div>
+      <div class="list-card" id="center-bugs-list" style="display:none"></div>
       <div id="disc-center-list" class="disc-host"></div>
     </div>
 
@@ -2761,9 +2759,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       </div>
     </div>
     <div class="panel" id="panel-bugs">
-      <div class="list-card" id="bugs-list">
-        <div class="loading-state">در حال بارگذاری...</div>
-      </div>
+      <div class="list-card" id="bugs-list" style="display:none"></div>
       <div id="disc-agent-list" class="disc-host"></div>
     </div>
   </main>
@@ -12101,47 +12097,22 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     return { id: cid || null, name: c ? (c.full_name || '—') : 'بدون سنتر' };
   }
 
+  /* نمایش لایه‌ای مثل تب صدور:
+     کارشناس ← فقط ردیف‌های خودش | سنتر ← کارشناس‌ها ← خطاها | سرگروه و سرپرست ← سنترها ← کارشناس‌ها ← خطاها */
   function renderCenter(list) { return agentBlocks(list, false); }
 
-  function renderLeader(list) {
+  function renderCenters(list) {
     var g = groupBy(list, function (r) { return centerOf(r).name; }), arr = [];
     g.forEach(function (rows, name) { arr.push({ name: name, rows: rows }); });
     arr.sort(function (a, b) { return faSort(a.name, b.name); });
     return arr.map(function (c) {
-      return '<details class="disc-grp disc-l1" open><summary><span class="disc-gname">سنتر: ' + esc(c.name) + '</span>' +
+      return '<details class="disc-grp disc-l1"' + (arr.length <= 3 ? ' open' : '') + '><summary><span class="disc-gname">سنتر: ' + esc(c.name) + '</span>' +
         '<span class="disc-gmeta">' + num(c.rows.length) + ' مورد · ' + num(sumAmt(c.rows)) + ' ریال</span></summary>' +
-        '<div class="disc-l2">' + c.rows.slice().sort(function (a, b) {
-          var ja = rowJ(a), jb = rowJ(b);
-          return (jb ? jKey(jb) : 0) - (ja ? jKey(ja) : 0) || faSort(agentName(a), agentName(b));
-        }).map(itemHtml).join('') + '</div></details>';
+        '<div class="disc-l2">' + agentBlocks(c.rows, false) + '</div></details>';
     }).join('');
   }
-
-  function leaderLabel(r) {
-    var c = centerOf(r);
-    if (!r.agent_id && !c.id) return 'نامشخص';
-    var ls = (c.id && S.hier.centerLeaders[c.id]) || [];
-    var names = ls.map(function (id) { return (S.hier.byId[id] || {}).full_name; }).filter(Boolean).sort(faSort);
-    return names.length ? names.join('، ') : 'بدون سرگروه';
-  }
-  function renderSup(list) {
-    var gl = groupBy(list, leaderLabel), L = [];
-    gl.forEach(function (rows, name) { L.push({ name: name, rows: rows }); });
-    L.sort(function (a, b) { return (a.name === 'نامشخص') - (b.name === 'نامشخص') || faSort(a.name, b.name); });
-    return L.map(function (l) {
-      var unknown = l.name === 'نامشخص';
-      var gc = groupBy(l.rows, function (r) { return unknown ? 'کاربر صدور با هیچ کارشناسی تطبیق نکرد' : centerOf(r).name; }), C = [];
-      gc.forEach(function (rows, name) { C.push({ name: name, rows: rows }); });
-      C.sort(function (a, b) { return faSort(a.name, b.name); });
-      var inner = C.map(function (c) {
-        return '<details class="disc-grp disc-l2"' + (C.length <= 3 ? ' open' : '') + '><summary><span class="disc-gname">' + (unknown ? '' : 'سنتر: ') + esc(c.name) + '</span>' +
-          '<span class="disc-gmeta">' + num(c.rows.length) + ' مورد · ' + num(sumAmt(c.rows)) + ' ریال</span></summary>' +
-          '<div class="disc-l2">' + agentBlocks(c.rows, false) + '</div></details>';
-      }).join('');
-      return '<details class="disc-grp disc-l1"' + (L.length <= 3 ? ' open' : '') + '><summary><span class="disc-gname">' + (unknown ? '' : 'سرگروه: ') + esc(l.name) + '</span>' +
-        '<span class="disc-gmeta">' + num(l.rows.length) + ' مورد · ' + num(sumAmt(l.rows)) + ' ریال</span></summary>' + inner + '</details>';
-    }).join('');
-  }
+  function renderLeader(list) { return renderCenters(list); }
+  function renderSup(list) { return renderCenters(list); }
 
   function errHtml(e) {
     var msg = (e && e.message) || String(e || '');
@@ -12246,4 +12217,3 @@ header.topbar{ padding-top:10px !important; padding-bottom:2px !important; }
 </style>
 </body>
 </html>
-
