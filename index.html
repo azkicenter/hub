@@ -1881,6 +1881,38 @@ html[data-theme="dark"] #tr-chat{--tr-bg:#000;--tr-in:#26252A;--tr-in-ink:#fff;-
 @media (prefers-reduced-motion:reduce){.tr-typing i{animation:none}}
 @media (max-width:640px){#tr-chat .tr-msg{max-width:84%}}
 </style>
+<style id="tr-layout-css">
+.tr-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;height:calc(100vh - 190px);min-height:560px;max-width:1180px;margin:0 auto}
+.tr-side{display:flex;flex-direction:column;min-height:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);overflow:hidden}
+.tr-side-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;font-weight:800;font-size:13px;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+.tr-live{font-size:11px;font-weight:600;color:var(--ink-faint)}
+.tr-live.live{color:var(--success)}
+.tr-live.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);margin-inline-end:5px;animation:tr-pulse 2s infinite}
+@keyframes tr-pulse{50%{opacity:.35}}
+.tr-tree{flex:1;overflow-y:auto;padding:8px 6px;min-height:0}
+.tr-folder-h{display:flex;align-items:center;gap:8px;width:100%;text-align:start;font-family:var(--font);font-size:14px;color:var(--ink);background:none;border:none;border-radius:8px;padding:8px 10px;cursor:pointer}
+.tr-folder-h:hover{background:var(--accent-soft)}
+.tr-folder-n{flex:1;min-width:0}
+.tr-folder-h small{font-size:11px;color:var(--ink-faint)}
+.tr-chev{width:13px;height:13px;flex:none;transition:transform .15s}
+.tr-folder.open>.tr-folder-h .tr-chev{transform:rotate(-90deg)}
+.tr-folder.lvl2>.tr-folder-h{font-size:13.5px}
+.tr-folder-b{display:none;margin-inline-start:14px;padding-inline-start:8px;border-inline-start:1px solid var(--line)}
+.tr-folder.open>.tr-folder-b{display:block}
+.tr-node-item{display:block;width:100%;text-align:start;font-family:var(--font);font-size:13px;line-height:1.6;color:var(--ink-soft);background:none;border:none;border-radius:8px;padding:6px 10px;cursor:pointer}
+.tr-node-item::before{content:"•";margin-inline-end:8px;opacity:.6}
+.tr-node-item:hover{background:var(--accent-soft);color:var(--ink)}
+.tr-node-item.on{background:var(--accent);color:#fff}
+.tr-empty{padding:16px;font-size:13px;color:var(--ink-soft);text-align:center}
+.tr-side .tr-fail{padding:8px 12px;border-top:1px solid var(--line)}
+.tr-col{display:flex;flex-direction:column;gap:10px;min-height:0;min-width:0}
+#tr-chat{flex:1;min-height:0;max-height:none!important}
+@media (max-width:860px){
+  .tr-layout{grid-template-columns:1fr;height:auto;min-height:0}
+  .tr-side{max-height:260px}
+  #tr-chat{height:62vh;flex:none}
+}
+</style>
 <style id="perf-overrides">
 .list-card,.row-item,.bug-item,.team-item,.leader-item,.summary-card,.ticket-primary-card,.ticket-hero-card,
 .ticket-report-item,.admin-group-card,.admin-login-chart-card,.last-update-card,.um-btn,.um-search,.um-center{
@@ -2682,25 +2714,19 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
 
     <div class="panel" id="panel-agent-attendance"></div>
     <div class="panel" id="panel-training">
-      <div class="tr-wrap">
-        <div class="tr-head">
-          <div>
-            <div class="tr-title">آموزش و راهنمای صدور</div>
-            <div class="tr-sub" id="tr-status">در حال آماده‌سازی...</div>
+      <div class="tr-layout">
+        <aside class="tr-side">
+          <div class="tr-side-h"><span>موضوعات</span><span class="tr-live" id="tr-status">در حال آماده‌سازی...</span></div>
+          <div class="tr-tree" id="tr-tree"></div>
+          <div class="tr-fail" id="tr-fail" hidden></div>
+        </aside>
+        <section class="tr-col">
+          <div class="list-card tr-chat" id="tr-chat" role="log" aria-live="polite"></div>
+          <div class="tr-input">
+            <input type="text" id="tr-q" placeholder="پیام بنویس…" autocomplete="off" maxlength="300">
+            <button type="button" class="sm-btn primary" id="tr-send" aria-label="ارسال"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
           </div>
-          <div class="tr-actions">
-            <button type="button" class="sm-btn" id="tr-refresh">به‌روزرسانی داده‌ها</button>
-            <button type="button" class="sm-btn" id="tr-clear">پاک کردن گفتگو</button>
-          </div>
-        </div>
-        <div class="tr-chips" id="tr-scope"></div>
-        <div class="tr-fail" id="tr-fail" hidden></div>
-        <div class="list-card tr-chat" id="tr-chat" role="log" aria-live="polite"></div>
-        <div class="tr-suggest" id="tr-suggest"></div>
-        <div class="tr-input">
-          <input type="text" id="tr-q" placeholder="سوالت را بنویس… مثلاً: حرف «ت» روی پلاک یعنی چه؟" autocomplete="off" maxlength="300">
-          <button type="button" class="sm-btn primary" id="tr-send" aria-label="ارسال"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
-        </div>
+        </section>
       </div>
     </div>
     <div class="panel" id="panel-bugs">
@@ -8966,27 +8992,57 @@ function trGreet() {
   trAddMsg('bot', 'سلام، چطوری می‌تونم کمکت کنم؟');
 }
 
-function trRenderScope() {
-  const el = document.getElementById('tr-scope');
-  const mk = (k, n) => `<button type="button" class="tr-chip${trainState.scope === k ? ' on' : ''}" data-s="${escHtml(k)}">${escHtml(n)}</button>`;
-  el.innerHTML = mk('__all', 'همه موضوعات') + trainState.sheets.map(s => mk(s, s)).join('');
+let trActiveId = null, trSignature = '', trPollTimer = null;
+const trOpenKeys = new Set();
+
+function trShort(s, n) { s = String(s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function trItemLabel(c) {
+  const f = c.fields; if (!f.length) return '';
+  let l = f[0].v;
+  if (c.kind === 'row' && f.length > 1 && l.length <= 4) l += ' — ' + f[1].v;
+  return trShort(l, 70);
 }
-function trRenderSuggest() {
-  const seen = new Set(), picks = [];
-  trainState.chunks.forEach(c => {
-    if (picks.length >= 4 || seen.has(c.sheet) || !c.fields.length) return;
-    const t = c.fields[0].v;
-    if (t.length >= 8 && t.length <= 60 && !/^https?:/i.test(t)) { seen.add(c.sheet); picks.push(t); }
+function trFolderHtml(key, name, body, lvl, count) {
+  const open = trOpenKeys.has(key);
+  return `<div class="tr-folder lvl${lvl}${open ? ' open' : ''}"><button type="button" class="tr-folder-h" data-key="${escHtml(key)}"><svg class="tr-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg><span class="tr-folder-n">${escHtml(name)}</span><small>${faDigits(count)}</small></button><div class="tr-folder-b">${body}</div></div>`;
+}
+function trRenderTree() {
+  const host = document.getElementById('tr-tree');
+  if (!host) return;
+  const keepTop = host.scrollTop;
+  const bySheet = new Map();
+  trainState.chunks.forEach(c => { if (c.isHeader) return; if (!bySheet.has(c.sheet)) bySheet.set(c.sheet, []); bySheet.get(c.sheet).push(c); });
+  const item = c => `<button type="button" class="tr-node-item${c.id === trActiveId ? ' on' : ''}" data-id="${c.id}">${escHtml(trItemLabel(c))}</button>`;
+  let html = '';
+  bySheet.forEach((list, sheet) => {
+    const titles = [...new Set(list.map(c => c.title).filter(Boolean))];
+    let body;
+    if (titles.length >= 2) {
+      body = titles.map(ti => { const sub = list.filter(c => c.title === ti); return trFolderHtml(sheet + '||' + ti, ti, sub.map(item).join(''), 2, sub.length); }).join('')
+        + list.filter(c => !c.title).map(item).join('');
+    } else body = list.map(item).join('');
+    html += trFolderHtml(sheet, sheet, body, 1, list.length);
   });
-  document.getElementById('tr-suggest').innerHTML = picks.map(p => `<button type="button" class="tr-chip" data-q="${escHtml(p)}">${escHtml(p)}</button>`).join('');
+  host.innerHTML = html || '<div class="tr-empty">موضوعی برای نمایش نیست</div>';
+  host.scrollTop = keepTop;
 }
 function trRenderStatus() {
   const st = document.getElementById('tr-status');
   const fail = document.getElementById('tr-fail');
-  if (!trainState.loaded) { st.textContent = 'در حال دریافت داده‌ها از شیت...'; fail.hidden = true; return; }
-  const t = trainState.fetchedAt ? new Date(trainState.fetchedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '';
-  st.textContent = `${faDigits(trainState.chunks.length)} مورد از ${faDigits(trainState.sheets.length)} برگه${t ? ' • آخرین به‌روزرسانی ' + t : ''}`;
+  if (!trainState.loaded) { st.textContent = 'در حال دریافت...'; st.classList.remove('live'); fail.hidden = true; return; }
+  const t = new Date(trainState.fetchedAt || Date.now()).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  st.textContent = 'زنده • ' + t;
+  st.classList.add('live');
   if (trainState.failed.length) { fail.hidden = false; fail.textContent = 'این برگه‌ها خوانده نشد: ' + trainState.failed.join('، '); } else fail.hidden = true;
+}
+
+function trShowChunk(id) {
+  const c = trainState.chunks.find(x => x.id === id);
+  if (!c) return;
+  trActiveId = id;
+  document.querySelectorAll('#tr-tree .tr-node-item').forEach(b => b.classList.toggle('on', Number(b.dataset.id) === id));
+  trAddMsg('user', escHtml(trItemLabel(c)));
+  trAddMsg('bot', trRenderChunk(c, null));
 }
 
 function trApplyData(sheetsData, failed, fetchedAt) {
@@ -8995,42 +9051,60 @@ function trApplyData(sheetsData, failed, fetchedAt) {
     const part = trBuildChunks(s.name, trParseCsv(s.csv));
     if (part.length) { names.push(s.name); chunks.push(...part); }
   });
+  chunks.forEach((c, i) => { c.id = i; });
   trainState.chunks = chunks; trainState.sheets = names; trainState.failed = failed; trainState.fetchedAt = fetchedAt; trainState.loaded = true;
-  if (trainState.scope !== '__all' && !names.includes(trainState.scope)) trainState.scope = '__all';
   trIndex(chunks);
-  trRenderScope(); trRenderSuggest(); trRenderStatus();
+  trRenderTree(); trRenderStatus();
 }
 
-async function trLoad(force) {
+async function trFetchAll() {
+  const first = await trFetchSheet(TRAIN_FIRST_SHEET.name, TRAIN_FIRST_SHEET.gid).then(csv => ({ name: TRAIN_FIRST_SHEET.name, csv })).catch(e => ({ err: e }));
+  const rest = await Promise.allSettled(TRAIN_SHEETS.map(n => trFetchSheet(n, null).then(csv => ({ name: n, csv }))));
+  const ok = [], failed = [];
+  if (first.err) failed.push(TRAIN_FIRST_SHEET.name); else ok.push(first);
+  rest.forEach((r, i) => {
+    // اگر نام برگه پیدا نشود گوگل برگه‌ی اول را برمی‌گرداند؛ این حالت را ناموفق حساب می‌کنیم
+    if (r.status !== 'fulfilled' || (!first.err && r.value.csv === first.csv)) failed.push(TRAIN_SHEETS[i]); else ok.push(r.value);
+  });
+  return { ok, failed, firstErr: first.err };
+}
+
+// هر بار فراخوانی = یک بار بررسی شیت؛ فقط اگر محتوا عوض شده باشد درخت و ایندکس به‌روز می‌شود
+async function trLoad() {
   if (trainState.loading) return trainState.loading;
   trainState.loading = (async () => {
-    let cache = null;
-    try { cache = JSON.parse(localStorage.getItem(TRAIN_CACHE_KEY) || 'null'); } catch (e) { }
-    if (!force && cache && Date.now() - cache.t < TRAIN_CACHE_TTL && cache.sheets && cache.sheets.length) {
-      trApplyData(cache.sheets, cache.failed || [], cache.t);
+    if (!trainState.loaded) {
+      let cache = null;
+      try { cache = JSON.parse(localStorage.getItem(TRAIN_CACHE_KEY) || 'null'); } catch (e) { }
+      if (cache && cache.sheets && cache.sheets.length) {
+        trSignature = cache.sheets.map(s => s.name + '\u0001' + s.csv).join('\u0002');
+        trApplyData(cache.sheets, cache.failed || [], cache.t);
+      } else trRenderStatus();
+    }
+    const r = await trFetchAll();
+    if (!r.ok.length) {
+      if (!trainState.loaded) document.getElementById('tr-status').textContent = 'دریافت ناموفق: ' + (r.firstErr ? r.firstErr.message : 'نامشخص');
       return;
     }
-    trainState.loaded = false; trRenderStatus();
-    const first = await trFetchSheet(TRAIN_FIRST_SHEET.name, TRAIN_FIRST_SHEET.gid).then(csv => ({ name: TRAIN_FIRST_SHEET.name, csv })).catch(e => ({ err: e }));
-    const rest = await Promise.allSettled(TRAIN_SHEETS.map(n => trFetchSheet(n, null).then(csv => ({ name: n, csv }))));
-    const ok = [], failed = [];
-    if (first.err) failed.push(TRAIN_FIRST_SHEET.name); else ok.push(first);
-    rest.forEach((r, i) => {
-      // اگر نام برگه پیدا نشود گوگل برگه‌ی اول را برمی‌گرداند؛ این حالت را ناموفق حساب می‌کنیم
-      if (r.status !== 'fulfilled' || (!first.err && r.value.csv === first.csv)) failed.push(TRAIN_SHEETS[i]); else ok.push(r.value);
-    });
-    if (!ok.length) {
-      if (cache && cache.sheets && cache.sheets.length) { trApplyData(cache.sheets, cache.failed || [], cache.t); return; }
-      const why = first.err ? first.err.message : 'نامشخص';
-      trainState.loaded = false;
-      document.getElementById('tr-status').textContent = 'دریافت داده‌ها ناموفق بود: ' + why;
-      return;
-    }
+    const sig = r.ok.map(s => s.name + '\u0001' + s.csv).join('\u0002');
     const now = Date.now();
-    trApplyData(ok, failed, now);
-    try { localStorage.setItem(TRAIN_CACHE_KEY, JSON.stringify({ t: now, sheets: ok, failed })); } catch (e) { }
+    if (sig !== trSignature || !trainState.loaded) {
+      trSignature = sig;
+      trApplyData(r.ok, r.failed, now);
+      try { localStorage.setItem(TRAIN_CACHE_KEY, JSON.stringify({ t: now, sheets: r.ok, failed: r.failed })); } catch (e) { }
+    } else {
+      trainState.fetchedAt = now; trainState.failed = r.failed; trRenderStatus();
+    }
   })().finally(() => { trainState.loading = null; });
   return trainState.loading;
+}
+
+const TRAIN_POLL_MS = 45000;
+function trPanelActive() { return document.getElementById('panel-training').classList.contains('active') && document.visibilityState === 'visible'; }
+function trPollStart() {
+  if (trPollTimer) return;
+  trPollTimer = setInterval(() => { if (trPanelActive()) trLoad(); }, TRAIN_POLL_MS);
+  document.addEventListener('visibilitychange', () => { if (trPanelActive()) trLoad(); });
 }
 
 async function trAsk(q) {
@@ -9065,25 +9139,24 @@ function trBind() {
   const send = () => { const v = input.value; input.value = ''; trAsk(v); };
   document.getElementById('tr-send').addEventListener('click', send);
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); send(); } });
-  document.getElementById('tr-refresh').addEventListener('click', async () => {
-    const btn = document.getElementById('tr-refresh'); btn.disabled = true;
-    await trLoad(true); btn.disabled = false;
-    if (trainState.loaded) trAddMsg('bot', 'داده‌ها از شیت به‌روز شد.');
+  document.getElementById('tr-tree').addEventListener('click', e => {
+    const h = e.target.closest('.tr-folder-h');
+    if (h) {
+      const key = h.dataset.key, box = h.parentElement;
+      if (trOpenKeys.has(key)) trOpenKeys.delete(key); else trOpenKeys.add(key);
+      box.classList.toggle('open', trOpenKeys.has(key));
+      return;
+    }
+    const it = e.target.closest('.tr-node-item');
+    if (it) trShowChunk(Number(it.dataset.id));
   });
-  document.getElementById('tr-clear').addEventListener('click', trGreet);
-  document.getElementById('tr-scope').addEventListener('click', e => {
-    const b = e.target.closest('[data-s]'); if (!b) return;
-    trainState.scope = b.dataset.s; trRenderScope(); input.focus();
-  });
-  document.getElementById('tr-suggest').addEventListener('click', e => {
-    const b = e.target.closest('[data-q]'); if (b) trAsk(b.dataset.q);
-  });
+  trPollStart();
 }
 
 function trainingOpen() {
   trBind();
   if (!document.getElementById('tr-chat').children.length) trGreet();
-  if (!trainState.loaded && !trainState.loading) trLoad(false);
+  trLoad();
 }
 
 let currentUserId = null;
