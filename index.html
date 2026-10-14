@@ -11835,7 +11835,7 @@ html[data-theme="dark"] .center-perf-table td:first-child{ background:rgba(16,22
 .disc-gname{ flex:1 1 auto; }
 .disc-gmeta{ font-size:12px; font-weight:600; color:var(--ink-soft); }
 .disc-lead{ font-size:11.5px; font-weight:500; color:var(--ink-faint); margin-inline-start:8px; }
-.disc-l1{ background:var(--accent-soft); }
+.disc-l1{ background:transparent; }
 .disc-l1>summary{ font-size:15px; }
 .disc-l2{ margin:0 10px 10px; }
 .disc-l3{ margin:0 10px 10px; }
@@ -12056,7 +12056,7 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
       '<div class="bug-top"><span class="bug-kind">سفارش: ' + order + '</span>' +
         '<span class="disc-pill ' + (PILL[st] || '') + '">' + esc(st || '—') + '</span></div>' +
       '<div class="disc-meta">کارشناس: <b>' + esc(agentName(r)) + '</b>' + ' · تاریخ: ' + (rowDateText(r) ? esc(rowDateText(r)) : '<span style="opacity:.6">ثبت نشده</span>') + '</div>' +
-      (r.description ? '<div class="bug-desc">' + esc(r.description) + '</div>' : '') +
+      ((r.description && (currentUserRole === 'leader' || currentUserRole === 'supervisor')) ? '<div class="bug-desc">' + esc(r.description) + '</div>' : '') +
       '<div class="disc-chips">' +
         '<span class="bug-price">مبلغ خطا: ' + num(r.amount) + ' ریال</span>' +
         (r.salary_deduction ? '<span class="disc-chip">کسر از حقوق: ' + esc(r.salary_deduction) + '</span>' : '') +
