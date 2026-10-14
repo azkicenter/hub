@@ -2253,19 +2253,18 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
 
     <div class="panel" id="panel-center">
       <div class="period-label" id="center-period-label"></div>
-      <div class="summary-row">
-        <div class="summary-card">
-          <div class="label">مجموع صدور</div>
-          <div class="value" id="center-period-total">—</div>
+      <div class="summary-card center-sum-card">
+        <div class="csum-row">
+          <span class="csum-label">مجموع کارشناسان فعال</span>
+          <span class="csum-val" id="center-agent-count">—</span>
         </div>
-        <div class="summary-card">
-          <div class="label">مجموع کارشناسان فعال</div>
-          <div class="value" id="center-agent-count">—</div>
+        <div class="csum-row">
+          <span class="csum-label">مجموع صدور</span>
+          <span class="csum-val" id="center-period-total">—</span>
         </div>
-        <div class="summary-card" title="منبع: گزارش SLA اپراتورها — میانگین کل دوره‌ی ۲۱ تا ۲۰">
-          <div class="label">میانگین زمان صدور سنتر (SLA)</div>
-          <div class="value" id="center-sla-avg">—</div>
-          <div class="sub" id="center-sla-note"></div>
+        <div class="csum-row" title="منبع: گزارش SLA اپراتورها — میانگین کل دوره‌ی ۲۱ تا ۲۰">
+          <span class="csum-label">میانگین زمان صدور سنتر (SLA)</span>
+          <span class="csum-val-wrap"><span class="csum-val" id="center-sla-avg">—</span><span class="csum-sub" id="center-sla-note"></span></span>
         </div>
       </div>
       <div class="list-card" id="center-list">
@@ -11843,6 +11842,17 @@ html[data-theme="dark"] .center-perf-table td:first-child{ background:rgba(16,22
 .disc-chips{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 .disc-chip{ font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--accent-soft); padding:4px 11px; border-radius:999px; }
 .disc-meta{ font-size:12.5px; color:var(--ink-soft); margin-bottom:6px; }
+.disc-card{ padding:4px 0; }
+.disc-card .leader-item:first-child, .disc-card .team-item:first-child{ border-top:none; }
+.disc-agent-rows{ padding:6px 20px 10px; }
+.disc-row{ flex-wrap:wrap; gap:6px 10px; }
+.disc-row-mid{ flex:1 1 auto; color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+.disc-row-side{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.disc-row .disc-desc{ flex-basis:100%; margin:0; }
+.disc-amt{ color:var(--danger); background:var(--danger-soft); border-color:transparent; white-space:nowrap; }
+.disc-host .team-total.disc-sum{ width:auto; min-width:64px; padding:4px 10px; }
+.disc-host .team-bug-total{ width:auto; min-width:56px; padding:4px 10px; }
+.disc-host .leader-count.disc-sum{ white-space:nowrap; }
 html[data-theme="dark"] .disc-pill.wait{ color:#ffcf7a; }
 html[data-theme="dark"] .disc-pill.ded{ color:#ffab85; }
 html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
@@ -11858,7 +11868,7 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   var STATUSES = ['در انتظار تخفیف', 'در انتظار کسر از حقوق', 'در انتظار تایید آموزش', 'بررسی مجدد - معلق', 'عدم تایید آموزش', 'تخفیف شد - کسر شد', 'پرداخت شد'];
   var PENDING = ['در انتظار تخفیف', 'در انتظار کسر از حقوق'];
   var PILL = { 'در انتظار تخفیف': 'wait', 'در انتظار کسر از حقوق': 'ded', 'تخفیف شد - کسر شد': 'done', 'پرداخت شد': 'done' };
-  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {}, centerByKey: {} }, status: 'pending', q: '', loading: false, error: null, syncedAt: null,
+  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {}, centerByKey: {}, agentByKey: {} }, status: 'pending', q: '', loading: false, error: null, syncedAt: null,
             from: null, to: null, calView: { from: [0, 0], to: [0, 0] } };
 
   var esc = function (v) { return window.escHtml(v); };
@@ -12016,8 +12026,10 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   }
 
   function agentName(r) {
-    var p = r.agent_id && S.hier.byId[r.agent_id];
-    return (p && (p.full_name || p.backoffice_id)) || r.issuer_user || '—';
+    var p = S.hier.byId[effAgentId(r)];
+    if (p) return p.full_name || p.backoffice_id || '—';
+    var iu = String(r.issuer_user || ''), i = iu.indexOf('|');
+    return (i >= 0 ? iu.slice(i + 1).trim() : iu.trim()) || '—';
   }
   function passes(r) {
     var st = (r.status || '').trim();
@@ -12043,37 +12055,68 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     return m;
   }
 
+  function fmtCenter(n) { return (typeof fmtCenterName === 'function') ? fmtCenterName(n) : n; }
+
+  /* ---- شناسایی کارشناسِ ردیف: اول agent_id، اگر خالی بود از روی نام داخل «کاربر صدور» ---- */
+  function effAgentId(r) {
+    if (r.agent_id) return r.agent_id;
+    if (r._aid !== undefined) return r._aid;
+    var out = null, map = S.hier.agentByKey || {}, iu = String(r.issuer_user == null ? '' : r.issuer_user);
+    var i = iu.indexOf('|');
+    var cands = [];
+    if (i >= 0) cands.push(compactKey(iu.slice(i + 1)));
+    cands.push(compactKey(iu));
+    for (var c = 0; c < cands.length && !out; c++) { if (cands[c] && map[cands[c]]) out = map[cands[c]]; }
+    if (!out) {
+      for (var c2 = 0; c2 < cands.length && !out; c2++) {
+        var k = cands[c2]; if (!k || k.length < 4) continue;
+        var hits = Object.keys(map).filter(function (m) { return m.length >= 4 && (m.indexOf(k) >= 0 || k.indexOf(m) >= 0); });
+        var ids = hits.map(function (h) { return map[h]; }).filter(function (v, ix, arr) { return arr.indexOf(v) === ix; });
+        if (ids.length === 1) out = ids[0];
+      }
+    }
+    r._aid = out;
+    return out;
+  }
+
+  /* مبلغ و تاریخ: هر ردیف خطا مثل ردیف روزِ تب «تعداد صدور» */
   function itemHtml(r) {
     var st = (r.status || '').trim();
-    var order = r.order_no
-      ? '<a class="bug-order-link" href="https://backoffice.azki.com/panels/tracking-panel/' + encodeURIComponent(r.order_no) + '" target="_blank" rel="noopener noreferrer">' + esc(r.order_no) + '</a>'
-      : '—';
-    return '<div class="bug-item disc-item">' +
-      '<div class="bug-top"><span class="bug-kind">سفارش: ' + order + '</span>' +
-        '<span class="disc-pill ' + (PILL[st] || '') + '">' + esc(st || '—') + '</span></div>' +
-      '<div class="disc-meta">کارشناس: <b>' + esc(agentName(r)) + '</b>' + ' · تاریخ: ' + (rowDateText(r) ? esc(rowDateText(r)) : '<span style="opacity:.6">ثبت نشده</span>') + '</div>' +
-      ((r.description && (currentUserRole === 'leader' || currentUserRole === 'supervisor')) ? '<div class="bug-desc">' + esc(r.description) + '</div>' : '') +
-      '<div class="disc-chips">' +
-        '<span class="bug-price">مبلغ خطا: ' + num(r.amount) + ' ریال</span>' +
+    var showDesc = r.description && (currentUserRole === 'leader' || currentUserRole === 'supervisor');
+    return '<div class="team-day-row disc-row">' +
+      '<span class="team-day-date">' + (rowDateText(r) ? esc(rowDateText(r)) : '<span style="opacity:.6">بدون تاریخ</span>') + '</span>' +
+      '<span class="disc-row-mid">' + (r.order_no ? 'سفارش: ' + esc(r.order_no) : '') + '</span>' +
+      '<span class="disc-row-side">' +
+        '<span class="disc-pill ' + (PILL[st] || '') + '">' + esc(st || '—') + '</span>' +
         (r.salary_deduction ? '<span class="disc-chip">کسر از حقوق: ' + esc(r.salary_deduction) + '</span>' : '') +
-      '</div>' +
+        '<span class="team-day-badge disc-amt">' + num(r.amount) + ' ریال</span>' +
+      '</span>' +
+      (showDesc ? '<div class="bug-desc disc-desc">' + esc(r.description) + '</div>' : '') +
     '</div>';
   }
 
-  function agentBlock(name, rows, open, cls) {
-    return '<details class="disc-grp ' + (cls || 'disc-l3') + '"' + (open ? ' open' : '') + '>' +
-      '<summary><span class="disc-gname">' + esc(name) + '</span><span class="disc-gmeta">' + num(rows.length) + ' مورد · ' + num(sumAmt(rows)) + ' ریال</span></summary>' +
-      rows.map(itemHtml).join('') + '</details>';
+  function chev(cls) {
+    return '<svg class="' + cls + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
   }
-  function agentGroups(list) {
-    return groupBy(list, function (r) { return r.agent_id || ('u:' + (r.issuer_user || '')); });
+  function sortRows(rows) {
+    return rows.slice().sort(function (a, b) { var ja = rowJ(a), jb = rowJ(b); return (jb ? jKey(jb) : 0) - (ja ? jKey(ja) : 0); });
+  }
+  /* سطح کارشناس (همان .team-item تب تعداد صدور) */
+  function agentBlock(name, rows, open) {
+    return '<div class="team-item' + (open ? ' open' : '') + '">' +
+      '<button class="team-header" type="button"><div class="team-name-wrap">' + chev('team-chevron') +
+        '<span class="team-name">' + esc(name) + '</span></div>' +
+        '<div class="team-right"><span class="team-bug-total">' + num(rows.length) + ' خطا</span>' +
+        '<span class="team-total disc-sum">' + num(sumAmt(rows)) + ' ریال</span></div></button>' +
+      '<div class="team-details"><div class="team-details-inner">' + sortRows(rows).map(itemHtml).join('') + '</div></div></div>';
   }
   function agentBlocks(list, openAll) {
-    var g = agentGroups(list), arr = [];
+    var g = groupBy(list, function (r) { return effAgentId(r) || ('u:' + (r.issuer_user || '')); }), arr = [];
     g.forEach(function (rows) { arr.push({ name: agentName(rows[0]), rows: rows }); });
     arr.sort(function (a, b) { return faSort(a.name, b.name); });
-    return arr.map(function (x) { return agentBlock(x.name, x.rows, openAll || arr.length <= 4, 'disc-l3'); }).join('');
+    return arr.map(function (x) { return agentBlock(x.name, x.rows, openAll || arr.length === 1); }).join('');
   }
+
   /* کلید فشرده‌ی نام سنتر: بدون «مرکز صدور»، بدون هر نوع فاصله/نیم‌فاصله، ي/ك یکسان → «مرکز صدور  کیانی» = «کیانی» = «کیـانی» */
   function compactKey(name) { return normCenterKey(name).replace(/[\s\u200c\u200b\u200e\u200f\u00a0]+/g, ''); }
   function issuerCenterKey(issuer) {
@@ -12091,28 +12134,33 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     return hits.length === 1 ? map[hits[0]] : null;
   }
   function centerOf(r) {
-    var cid = r.agent_id && S.hier.agentCenter[r.agent_id];
+    var aid = effAgentId(r);
+    var cid = aid && S.hier.agentCenter[aid];
     if (!cid) cid = centerByIssuer(r.issuer_user);
     var c = cid && S.hier.byId[cid];
     return { id: cid || null, name: c ? (c.full_name || '—') : 'بدون سنتر' };
   }
 
-  /* نمایش لایه‌ای مثل تب صدور:
-     کارشناس ← فقط ردیف‌های خودش | سنتر ← کارشناس‌ها ← خطاها | سرگروه و سرپرست ← سنترها ← کارشناس‌ها ← خطاها */
-  function renderCenter(list) { return agentBlocks(list, false); }
-
+  /* سنتر ← کارشناس ← خطاها (سرگروه و سرپرست؛ سرپرست همه‌ی سنترها را می‌بیند) */
   function renderCenters(list) {
     var g = groupBy(list, function (r) { return centerOf(r).name; }), arr = [];
     g.forEach(function (rows, name) { arr.push({ name: name, rows: rows }); });
     arr.sort(function (a, b) { return faSort(a.name, b.name); });
     return arr.map(function (c) {
-      return '<details class="disc-grp disc-l1"' + (arr.length <= 3 ? ' open' : '') + '><summary><span class="disc-gname">سنتر: ' + esc(c.name) + '</span>' +
-        '<span class="disc-gmeta">' + num(c.rows.length) + ' مورد · ' + num(sumAmt(c.rows)) + ' ریال</span></summary>' +
-        '<div class="disc-l2">' + agentBlocks(c.rows, false) + '</div></details>';
+      return '<div class="leader-item' + (arr.length === 1 ? ' open' : '') + '">' +
+        '<button class="leader-header" type="button"><div class="leader-name-wrap">' + chev('leader-chevron') +
+          '<span class="leader-name">' + esc(fmtCenter(c.name)) + '</span></div>' +
+          '<div class="leader-right"><span class="leader-count disc-sum">' + num(sumAmt(c.rows)) + ' ریال</span>' +
+          '<span class="leader-total">' + num(c.rows.length) + ' خطا</span></div></button>' +
+        '<div class="leader-details"><div class="leader-details-inner">' + agentBlocks(c.rows, false) + '</div></div></div>';
     }).join('');
   }
   function renderLeader(list) { return renderCenters(list); }
   function renderSup(list) { return renderCenters(list); }
+  /* سنتر: کارشناس‌های خودش */
+  function renderCenter(list) { return agentBlocks(list, false); }
+  /* کارشناس: فقط خطاهای خودش */
+  function renderAgent(list) { return '<div class="disc-agent-rows">' + sortRows(list).map(itemHtml).join('') + '</div>'; }
 
   function errHtml(e) {
     var msg = (e && e.message) || String(e || '');
@@ -12140,14 +12188,16 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     }
     if (!list.length) { body.innerHTML = '<div class="empty-state">خطایی با این مشخصات پیدا نشد</div>'; return; }
     var r = currentUserRole;
-    body.innerHTML = r === 'supervisor' ? renderSup(list)
+    body.innerHTML = '<div class="list-card disc-card">' + (r === 'supervisor' ? renderSup(list)
       : r === 'leader' ? renderLeader(list)
       : r === 'center' ? renderCenter(list)
-      : list.map(itemHtml).join('');
+      : renderAgent(list)) + '</div>';
+    if (typeof bindExpandableToggles === 'function') bindExpandableToggles(body);
+    if (window.refreshGlassReveals) window.refreshGlassReveals(body);
   }
 
   async function loadHier() {
-    var h = { byId: {}, agentCenter: {}, centerLeaders: {}, centerByKey: {} };
+    var h = { byId: {}, agentCenter: {}, centerLeaders: {}, centerByKey: {}, agentByKey: {} };
     var res = await Promise.all([
       fetchAllRows(function (f, t) { return supabaseClient.from('profiles').select('id, full_name, backoffice_id, role, status').in('role', ['agent', 'center', 'leader']).range(f, t); }),
       fetchAllRows(function (f, t) { return supabaseClient.from('center_agents').select('center_id, agent_id').range(f, t); }),
@@ -12157,6 +12207,11 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     (res[0].data || []).forEach(function (p) {
       h.byId[p.id] = p;
       if (p.role === 'center') { var k = compactKey(p.full_name); if (k && !h.centerByKey[k]) h.centerByKey[k] = p.id; }
+      if (p.role === 'agent') {
+        [p.full_name, p.backoffice_id].forEach(function (nm) {
+          var ak = compactKey(nm); if (ak && !h.agentByKey[ak]) h.agentByKey[ak] = p.id;
+        });
+      }
     });
     (res[1].data || []).forEach(function (l) { if (!h.agentCenter[l.agent_id]) h.agentCenter[l.agent_id] = l.center_id; });
     (res[2].data || []).forEach(function (l) { (h.centerLeaders[l.center_id] = h.centerLeaders[l.center_id] || []).push(l.leader_id); });
@@ -12190,6 +12245,35 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   window.DISC = { load: load };
 })();
 </script>
+
+<style id="center-summary-card">
+/* پنل سنتر: یک کارت افقی که سه آمار زیر هم هستن؛ فونت هم‌اندازه‌ی لیست‌های تب سرپرست */
+#panel-center .center-sum-card{
+  display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start;
+  width:100%; padding:6px 22px; gap:0; margin-bottom:18px; text-align:right;
+}
+#panel-center .csum-row{
+  position:relative; display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:13px 0; border-bottom:1px solid rgba(255,255,255,.28);
+}
+#panel-center .csum-row:last-child{ border-bottom:none; }
+#panel-center .csum-label{ font-size:15px; font-weight:700; color:rgba(255,255,255,.95); }
+#panel-center .csum-val-wrap{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+#panel-center .csum-val{ font-size:17px; font-weight:800; color:#fff; font-variant-numeric:tabular-nums; white-space:nowrap; }
+#panel-center .csum-val .unit{ font-size:13px; font-weight:600; opacity:.9; margin-inline-start:5px; }
+#panel-center .csum-sub{ font-size:11.5px; color:rgba(255,255,255,.85); }
+#panel-center .csum-sub:empty{ display:none; }
+
+/* خط «سنتر: ... — بازه‌ی انتخابی»: وسط، چسبیده زیر کادر تاریخ، با کادر آبی کم‌رنگ */
+#center-filter{ margin-bottom:8px; }
+#center-period-label{
+  display:block; width:fit-content; max-width:100%; margin:0 auto 16px; text-align:center;
+  padding:8px 18px; font-size:13px; font-weight:600; line-height:1.7; color:var(--accent-deep, #1656f5);
+  background:rgba(60,140,255,.10); border:1px solid rgba(60,140,255,.28); border-radius:14px;
+}
+#center-period-label:empty{ display:none; }
+html[data-theme="dark"] #center-period-label{ color:var(--ink); background:rgba(90,160,255,.14); border-color:rgba(120,180,255,.3); }
+</style>
 <style id="nav-drawer-slide">
 /* منوی کشویی: چسبیده به لبه‌ی راست، تمام‌قد، لغزیدن نرم از راست به چپ (بدون جابه‌جایی/کوچک شدن صفحه) */
 #nav-drawer{
