@@ -2187,10 +2187,10 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
     </div>
 
     <div class="panel" id="panel-team-bugs">
-      <div class="team-bugs-search-wrap">
+      <div class="team-bugs-search-wrap" style="display:none">
         <input type="text" id="team-bugs-search" class="team-bugs-search" placeholder="جستجو بر اساس یوزر بک‌آفیس کارشناس...">
       </div>
-      <div class="list-card" id="team-bugs-list">
+      <div class="list-card" id="team-bugs-list" style="display:none">
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
       <div id="disc-team-list" class="disc-host"></div>
@@ -12110,7 +12110,10 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     return arr.map(function (c) {
       return '<details class="disc-grp disc-l1" open><summary><span class="disc-gname">سنتر: ' + esc(c.name) + '</span>' +
         '<span class="disc-gmeta">' + num(c.rows.length) + ' مورد · ' + num(sumAmt(c.rows)) + ' ریال</span></summary>' +
-        '<div class="disc-l2">' + agentBlocks(c.rows, false) + '</div></details>';
+        '<div class="disc-l2">' + c.rows.slice().sort(function (a, b) {
+          var ja = rowJ(a), jb = rowJ(b);
+          return (jb ? jKey(jb) : 0) - (ja ? jKey(ja) : 0) || faSort(agentName(a), agentName(b));
+        }).map(itemHtml).join('') + '</div></details>';
     }).join('');
   }
 
