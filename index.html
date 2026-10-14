@@ -1846,6 +1846,41 @@
 .tr-fail{font-size:12px;color:var(--danger);margin-top:4px}
 @media (max-width:640px){.tr-dl>div{grid-template-columns:1fr;gap:2px}.tr-msg{max-width:100%}}
 </style>
+<style id="tr-imessage-css">
+#tr-chat{--tr-bg:#fff;--tr-out:#0A84FF;--tr-in:#E9E9EB;--tr-in-ink:#000;--tr-line:rgba(0,0,0,.12);
+  background:var(--tr-bg)!important;border:1px solid var(--line);border-radius:22px;padding:14px 22px 16px;gap:2px;direction:rtl}
+html[data-theme="dark"] #tr-chat{--tr-bg:#000;--tr-in:#26252A;--tr-in-ink:#fff;--tr-line:rgba(255,255,255,.16)}
+#tr-chat .tr-msg{position:relative;max-width:78%;margin-top:8px;padding:8px 14px;border-radius:18px;border:none;font-size:15px;line-height:1.7;box-shadow:none}
+#tr-chat .tr-msg.tail{margin-bottom:6px}
+#tr-chat .tr-msg.user{align-self:flex-start;background:var(--tr-out);color:#fff}
+#tr-chat .tr-msg.bot{align-self:flex-end;background:var(--tr-in);color:var(--tr-in-ink)}
+#tr-chat .tr-msg.user+.tr-msg.user,#tr-chat .tr-msg.bot+.tr-msg.bot{margin-top:2px}
+#tr-chat .tr-msg::before,#tr-chat .tr-msg::after{content:none}
+#tr-chat .tr-msg.tail::before,#tr-chat .tr-msg.tail::after{content:"";position:absolute;bottom:0;height:18px}
+#tr-chat .tr-msg.user.tail::before{right:-7px;width:20px;background:var(--tr-out);border-bottom-left-radius:16px 14px}
+#tr-chat .tr-msg.user.tail::after{right:-26px;width:26px;background:var(--tr-bg);border-bottom-left-radius:10px}
+#tr-chat .tr-msg.bot.tail::before{left:-7px;width:20px;background:var(--tr-in);border-bottom-right-radius:16px 14px}
+#tr-chat .tr-msg.bot.tail::after{left:-26px;width:26px;background:var(--tr-bg);border-bottom-right-radius:10px}
+#tr-chat .tr-msg a{color:#0A84FF}
+#tr-chat .tr-msg.user a{color:#fff}
+#tr-chat .tr-scope-tag{color:rgba(255,255,255,.8)}
+#tr-chat .tr-src{color:inherit;opacity:.6}
+#tr-chat .tr-dl>div{border-bottom-color:var(--tr-line)}
+#tr-chat .tr-dl dt{color:inherit;opacity:.65}
+#tr-chat .tr-more summary{color:#0A84FF}
+#tr-chat .tr-more .tr-alt{background:rgba(127,127,127,.14);border:none}
+.tr-stamp{align-self:center;font-size:11.5px;color:var(--ink-faint);margin:2px 0 6px;font-weight:600}
+.tr-typing{display:flex;gap:4px;align-items:center;padding:12px 14px!important}
+.tr-typing i{width:8px;height:8px;border-radius:50%;background:#8E8E93;animation:tr-dot 1.2s infinite ease-in-out}
+.tr-typing i:nth-child(2){animation-delay:.18s}.tr-typing i:nth-child(3){animation-delay:.36s}
+@keyframes tr-dot{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.tr-input{align-items:center}
+.tr-input input{border-radius:999px;padding:10px 18px;background:var(--surface);border:1px solid var(--line)}
+.tr-input #tr-send{width:36px;height:36px;padding:0;border-radius:50%;display:grid;place-items:center;flex:none;background:#0A84FF;border-color:#0A84FF}
+.tr-input #tr-send svg{width:18px;height:18px}
+@media (prefers-reduced-motion:reduce){.tr-typing i{animation:none}}
+@media (max-width:640px){#tr-chat .tr-msg{max-width:84%}}
+</style>
 <style id="perf-overrides">
 .list-card,.row-item,.bug-item,.team-item,.leader-item,.summary-card,.ticket-primary-card,.ticket-hero-card,
 .ticket-report-item,.admin-group-card,.admin-login-chart-card,.last-update-card,.um-btn,.um-search,.um-center{
@@ -2664,7 +2699,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         <div class="tr-suggest" id="tr-suggest"></div>
         <div class="tr-input">
           <input type="text" id="tr-q" placeholder="سوالت را بنویس… مثلاً: حرف «ت» روی پلاک یعنی چه؟" autocomplete="off" maxlength="300">
-          <button type="button" class="sm-btn primary" id="tr-send">ارسال</button>
+          <button type="button" class="sm-btn primary" id="tr-send" aria-label="ارسال"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
         </div>
       </div>
     </div>
@@ -8906,15 +8941,29 @@ function trRenderChunk(c, qt) {
 
 function trAddMsg(who, html, scopeTag) {
   const chat = document.getElementById('tr-chat');
+  const prev = chat.lastElementChild;
+  if (prev && prev.classList.contains('tr-msg') && prev.classList.contains(who)) prev.classList.remove('tail');
   const el = document.createElement('div');
-  el.className = 'tr-msg ' + who;
+  el.className = 'tr-msg ' + who + ' tail';
   el.innerHTML = (scopeTag ? `<div class="tr-scope-tag">${escHtml(scopeTag)}</div>` : '') + html;
   chat.appendChild(el);
   chat.scrollTop = chat.scrollHeight;
+  return el;
+}
+function trTyping(on) {
+  const chat = document.getElementById('tr-chat');
+  const old = chat.querySelector('.tr-typing');
+  if (old) old.remove();
+  if (!on) return;
+  const el = trAddMsg('bot', '<i></i><i></i><i></i>');
+  el.classList.add('tr-typing');
 }
 function trGreet() {
-  document.getElementById('tr-chat').innerHTML = '';
-  trAddMsg('bot', 'سلام! من از روی شیت «قوانین ثالث / center» جواب می‌دم. سوالت رو بنویس؛ می‌تونی از دکمه‌های بالا فقط یک موضوع (مثلاً یک شرکت) رو هم انتخاب کنی.');
+  const chat = document.getElementById('tr-chat');
+  chat.innerHTML = '';
+  const time = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+  chat.insertAdjacentHTML('beforeend', `<div class="tr-stamp">امروز ${escHtml(time)}</div>`);
+  trAddMsg('bot', 'سلام، چطوری می‌تونم کمکت کنم؟');
 }
 
 function trRenderScope() {
@@ -8989,7 +9038,12 @@ async function trAsk(q) {
   if (!q) return;
   const scope = trainState.scope;
   trAddMsg('user', escHtml(q), scope !== '__all' ? 'در: ' + scope : '');
+  trTyping(true);
+  const t0 = Date.now();
   if (!trainState.loaded) await trLoad(false);
+  const wait = 500 - (Date.now() - t0);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  trTyping(false);
   if (!trainState.loaded) { trAddMsg('bot', 'هنوز داده‌ها از شیت نیامده. اینترنت را چک کن و «به‌روزرسانی داده‌ها» را بزن.'); return; }
   const res = trSearch(q, scope);
   if (!res.length || res[0].score < 1) {
