@@ -1916,7 +1916,8 @@ html[data-theme="dark"] #tr-chat{--tr-bg:#000;--tr-in:#26252A;--tr-in-ink:#fff;-
 <style id="tr-v2-css">
 .tr-folder.lvl1>.tr-folder-h{font-weight:800;font-size:14.5px}
 .tr-folder.lvl2>.tr-folder-h{font-weight:700}
-.tr-folder.lvl3>.tr-folder-h{font-size:13px;color:var(--ink-soft)}
+.tr-folder.lvl3>.tr-folder-h{font-size:13px}
+.tr-folder.lvl4>.tr-folder-h{font-size:12.5px;color:var(--ink-soft)}
 .tr-ans{line-height:1.9}
 .tr-ans+.tr-ans{margin-top:6px}
 .tr-ans-k{opacity:.7}
@@ -8831,10 +8832,11 @@ const TRAIN_SHEETS = [
 // برگه‌ای که اینجا نباشد خودکار می‌رود زیر «سایر». برای تغییر ترتیب/نام فقط همین فهرست را ویرایش کنید.
 const TRAIN_GROUPS = [
   { name: 'قوانین شرکت‌ها', sheets: [['شرکت رازی', 'قوانین صدور رازی'], ['شرکت سینا', 'قوانین صدور سینا'], ['شرکت تعاون', 'قوانین صدور تعاون'], ['مجوزی ها - رازی', 'مجوزی‌ها - رازی']] },
-  { name: 'خطاها و رفع توقیف', sheets: [['خطاها - ارورها', 'خطاها و ارورها'], ['شیت خطای ورود به فناوران ها', 'خطای ورود به فناوران'], ['رفع توقیف - همه شرکت ها', 'رفع توقیف (همه شرکت‌ها)']] },
-  { name: 'راهنمای عمومی', sheets: [['حروف پلاک و کاربری آن ها', 'حروف پلاک و کاربری'], ['انتقال تخفیف', 'انتقال تخفیف'], ['سررسید', 'سررسید'], ['اختلاف قیمت', 'اختلاف قیمت'], ['سوالات هوشمند', 'سوالات هوشمند']] }
+  { name: 'راهنمای عمومی',
+    sheets: [['حروف پلاک و کاربری آن ها', 'حروف پلاک و کاربری'], ['انتقال تخفیف', 'انتقال تخفیف'], ['سررسید', 'سررسید'], ['اختلاف قیمت', 'اختلاف قیمت'], ['سوالات هوشمند', 'سوالات هوشمند']],
+    subs: [{ name: 'خطاها و رفع توقیف', sheets: [['خطاها - ارورها', 'خطاها و ارورها'], ['شیت خطای ورود به فناوران ها', 'خطای ورود به فناوران'], ['رفع توقیف - همه شرکت ها', 'رفع توقیف (همه شرکت‌ها)']] }] }
 ];
-const TRAIN_LABELS = new Map(TRAIN_GROUPS.flatMap(g => g.sheets));
+const TRAIN_LABELS = new Map(TRAIN_GROUPS.flatMap(g => [...g.sheets, ...(g.subs || []).flatMap(sg => sg.sheets)]));
 function trLabel(sheet) { return TRAIN_LABELS.get(sheet) || sheet; }
 const TRAIN_CACHE_KEY = 'trainingSheetCache_v2';
 const TRAIN_CACHE_TTL = 30 * 60 * 1000;
@@ -8990,8 +8992,9 @@ function trSearch(question, scope) {
     single.forEach(t => { if (c.cells.has(t)) { score += 6; hit++; } });
     if (qTok.length > 1 && c.text.includes(phrase)) score += 3;
     if (c.qKey && c.qKey === phrase) score += 25;
-    if (!hit) return;
-    const cover = hit / (qTok.length + single.length);
+    const total = qTok.length + single.length;
+    if (!hit || hit < Math.ceil(0.75 * total)) return; // جواب فقط وقتی که تقریباً همه‌ی کلمات سوال تو یک رکورد باشه
+    const cover = hit / total;
     score *= 0.5 + 0.5 * cover;
     if (c.isHeader) score *= 0.35;
     res.push({ c, score });
@@ -9079,24 +9082,33 @@ function trRenderTree() {
   const bySheet = new Map();
   trainState.chunks.forEach(c => { if (c.isHeader) return; if (!bySheet.has(c.sheet)) bySheet.set(c.sheet, []); bySheet.get(c.sheet).push(c); });
   const item = c => `<button type="button" class="tr-node-item${c.id === trActiveId ? ' on' : ''}" data-id="${c.id}">${escHtml(trItemLabel(c))}</button>`;
-  const sheetHtml = (gname, sheet) => {
+  const sheetHtml = (path, sheet, lvl) => {
     const list = bySheet.get(sheet);
-    const key = gname + '||' + sheet;
+    const key = path + '||' + sheet;
     const titles = [...new Set(list.map(c => c.title).filter(Boolean))];
     let body;
     if (titles.length >= 2) {
-      body = titles.map(ti => { const sub = list.filter(c => c.title === ti); return trFolderHtml(key + '||' + ti, ti, sub.map(item).join(''), 3, sub.length); }).join('')
+      body = titles.map(ti => { const sub = list.filter(c => c.title === ti); return trFolderHtml(key + '||' + ti, ti, sub.map(item).join(''), lvl + 1, sub.length); }).join('')
         + list.filter(c => !c.title).map(item).join('');
     } else body = list.map(item).join('');
-    return trFolderHtml(key, trLabel(sheet), body, 2, list.length);
+    return trFolderHtml(key, trLabel(sheet), body, lvl, list.length);
   };
-  const groups = TRAIN_GROUPS.map(g => ({ name: g.name, sheets: g.sheets.map(x => x[0]) }));
-  const known = new Set(groups.flatMap(g => g.sheets));
+  const countOf = shs => shs.reduce((n, sh) => n + bySheet.get(sh).length, 0);
+  const groups = TRAIN_GROUPS.map(g => ({
+    name: g.name,
+    sheets: g.sheets.map(x => x[0]).filter(sh => bySheet.has(sh)),
+    subs: (g.subs || []).map(sg => ({ name: sg.name, sheets: sg.sheets.map(x => x[0]).filter(sh => bySheet.has(sh)) })).filter(sg => sg.sheets.length)
+  }));
+  const known = new Set(TRAIN_LABELS.keys());
   const rest = [...bySheet.keys()].filter(sh => !known.has(sh));
-  if (rest.length) groups.push({ name: 'سایر', sheets: rest });
-  const shown = groups.map(g => ({ name: g.name, sheets: g.sheets.filter(sh => bySheet.has(sh)) })).filter(g => g.sheets.length);
+  if (rest.length) groups.push({ name: 'سایر', sheets: rest, subs: [] });
+  const shown = groups.filter(g => g.sheets.length || g.subs.length);
   if (!trTreeSeeded && shown.length) { trOpenKeys.add(shown[0].name); trTreeSeeded = true; }
-  const html = shown.map(g => trFolderHtml(g.name, g.name, g.sheets.map(sh => sheetHtml(g.name, sh)).join(''), 1, g.sheets.reduce((n, sh) => n + bySheet.get(sh).length, 0))).join('');
+  const html = shown.map(g => {
+    const body = g.sheets.map(sh => sheetHtml(g.name, sh, 2)).join('')
+      + g.subs.map(sg => trFolderHtml(g.name + '||' + sg.name, sg.name, sg.sheets.map(sh => sheetHtml(g.name + '||' + sg.name, sh, 3)).join(''), 2, countOf(sg.sheets))).join('');
+    return trFolderHtml(g.name, g.name, body, 1, countOf(g.sheets) + g.subs.reduce((n, sg) => n + countOf(sg.sheets), 0));
+  }).join('');
   host.innerHTML = html || '<div class="tr-empty">موضوعی برای نمایش نیست</div>';
   host.scrollTop = keepTop;
 }
@@ -9196,7 +9208,7 @@ async function trAsk(q) {
   if (!trainState.loaded) { trAddMsg('bot', 'هنوز داده‌ها از شیت نیامده. اینترنت را چک کن و چند لحظه بعد دوباره امتحان کن.'); return; }
   const res = trSearch(q, '__all');
   if (!res.length || res[0].score < 1) {
-    trAddMsg('bot', 'جوابی برای این سوال تو شیت پیدا نکردم. سوال را با کلمه‌های دیگری بنویس؛ اگر هنوز جواب نگرفتی از سرگروه بپرس.');
+    trAddMsg('bot', 'متاسفانه منم این رو نمی‌دونم، منم باید برم یاد بگیرمش. فعلاً از سرگروه بپرس.');
     return;
   }
   trAddMsg('bot', trRenderChunk(res[0].c, trTokens(q)));
