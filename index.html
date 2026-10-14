@@ -11822,6 +11822,9 @@ html[data-theme="dark"] .center-perf-table td:first-child{ background:rgba(16,22
 .disc-q:focus,.disc-sel:focus{ border-color:var(--accent); }
 .disc-refresh{ font:inherit; font-size:13px; font-weight:700; color:var(--accent-deep,var(--accent)); background:var(--accent-soft); border:1px solid var(--line); border-radius:12px; padding:8px 14px; cursor:pointer; }
 .disc-sync{ font-size:11.5px; color:var(--ink-faint); margin-inline-start:auto; }
+.disc-daterow{ align-items:flex-end; }
+.disc-range-note{ font-size:12px; color:var(--ink-soft); padding-bottom:9px; }
+.disc-clear-date{ margin-bottom:0; }
 .disc-title{ font-size:14px; font-weight:800; color:var(--ink); margin:0 2px 10px; }
 .disc-body{ display:flex; flex-direction:column; gap:10px; }
 .disc-grp{ border:1px solid var(--line); border-radius:16px; overflow:hidden; }
@@ -11859,7 +11862,8 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   var STATUSES = ['در انتظار تخفیف', 'در انتظار کسر از حقوق', 'در انتظار تایید آموزش', 'بررسی مجدد - معلق', 'عدم تایید آموزش', 'تخفیف شد - کسر شد', 'پرداخت شد'];
   var PENDING = ['در انتظار تخفیف', 'در انتظار کسر از حقوق'];
   var PILL = { 'در انتظار تخفیف': 'wait', 'در انتظار کسر از حقوق': 'ded', 'تخفیف شد - کسر شد': 'done', 'پرداخت شد': 'done' };
-  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {} }, status: 'pending', q: '', loading: false, error: null, syncedAt: null };
+  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {} }, status: 'pending', q: '', loading: false, error: null, syncedAt: null,
+            from: null, to: null, calView: { from: [0, 0], to: [0, 0] } };
 
   var esc = function (v) { return window.escHtml(v); };
   var num = function (v) { return faDigits((Number(v) || 0).toLocaleString('en-US')); };
@@ -11868,6 +11872,70 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   function hostId() {
     var r = currentUserRole;
     return r === 'supervisor' ? 'sup-view-bugs' : r === 'leader' ? 'disc-team-list' : r === 'center' ? 'disc-center-list' : 'disc-agent-list';
+  }
+
+  /* ---- تاریخ ردیف: متن شمسی (yyyy/mm/dd) یا ISO/میلادی → [jy, jm, jd] ---- */
+  var DISC_TZ_FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tehran', year: 'numeric', month: '2-digit', day: '2-digit' });
+  function rowJ(r) {
+    if (r._dj !== undefined) return r._dj;
+    var out = null, v = r.report_date;
+    if (v !== undefined && v !== null && String(v).trim() !== '') {
+      var s = String(v).trim().replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); });
+      var m;
+      if (/^\d{4}-\d{2}-\d{2}T/.test(s) && /(Z|[+-]\d{2}:?\d{2})$/.test(s) && !isNaN(new Date(s).getTime())) {
+        var g = DISC_TZ_FMT.format(new Date(s)).split('-').map(Number);
+        out = gregorianToJalali(g[0], g[1], g[2]);
+      } else if ((m = /(\d{4})\s*[-\/.]\s*(\d{1,2})\s*[-\/.]\s*(\d{1,2})/.exec(s))) {
+        var y = +m[1], mo = +m[2], d = +m[3];
+        out = y < 1700 ? [y, mo, d] : gregorianToJalali(y, mo, d);
+      }
+    }
+    r._dj = out;
+    return out;
+  }
+  function jKey(t) { return t[0] * 10000 + t[1] * 100 + t[2]; }
+  function jFmt(t) { return faDigits(t[0] + '/' + pad2(t[1]) + '/' + pad2(t[2])); }
+  function rowDateText(r) { var j = rowJ(r); return j ? jFmt(j) : (r.report_date ? toJalaliDisplay(r.report_date) : ''); }
+
+  function calHtml(key) {
+    var vy = S.calView[key][0], vm = S.calView[key][1];
+    var sel = S[key], today = tehranTodayJalali();
+    var len = azkiJalaliMonthLength(vy, vm), offset = azkiWeekdayIndex(vy, vm, 1);
+    var yMin = Math.min(today[0] - 4, vy), yMax = Math.max(today[0] + 1, vy), yo = '', y, d;
+    for (y = yMin; y <= yMax; y++) yo += '<option value="' + y + '"' + (y === vy ? ' selected' : '') + '>' + faDigits(y) + '</option>';
+    var mo = JALALI_MONTHS_FA.map(function (n, i) { return '<option value="' + (i + 1) + '"' + (i + 1 === vm ? ' selected' : '') + '>' + n + '</option>'; }).join('');
+    var cells = '';
+    for (var i = 0; i < offset; i++) cells += '<span></span>';
+    for (d = 1; d <= len; d++) {
+      var isSel = sel && sel[0] === vy && sel[1] === vm && sel[2] === d;
+      var isToday = today[0] === vy && today[1] === vm && today[2] === d;
+      cells += '<button type="button" class="azki-cal-day' + (isSel ? ' sel' : '') + (isToday ? ' today' : '') + '" data-day="' + d + '">' + faDigits(d) + '</button>';
+    }
+    return '<div class="azki-cal-head">' +
+        '<button type="button" class="azki-cal-nav" data-nav="-1" aria-label="ماه قبل">‹</button>' +
+        '<select data-role="m" aria-label="ماه">' + mo + '</select><select data-role="y" aria-label="سال">' + yo + '</select>' +
+        '<button type="button" class="azki-cal-nav" data-nav="1" aria-label="ماه بعد">›</button></div>' +
+      '<div class="azki-cal-grid">' + AZKI_WEEKDAYS.map(function (w) { return '<span class="azki-cal-wd">' + w + '</span>'; }).join('') + cells + '</div>' +
+      '<div class="azki-pop-foot"><button type="button" class="sm-btn" data-today="1">امروز</button><button type="button" class="sm-btn" data-close="1">بستن</button></div>';
+  }
+  function dateFld(key, label) {
+    return '<div class="azki-fld disc-date-fld"><span class="azki-fld-label">' + label + '</span>' +
+      '<button type="button" class="azki-ctl" data-disc-date="' + key + '"><span data-disc-datetext="' + key + '">' + (S[key] ? jFmt(S[key]) : 'همه') + '</span>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></button>' +
+      '<div class="azki-pop azki-cal" data-disc-cal="' + key + '" hidden></div></div>';
+  }
+  function setDate(host, key, t) {
+    S[key] = t;
+    var el = host.querySelector('[data-disc-datetext="' + key + '"]');
+    if (el) el.textContent = t ? jFmt(t) : 'همه';
+    // اگر «از» بعد از «تا» شد، دیگری هم‌راستا می‌شود
+    if (S.from && S.to && jKey(S.from) > jKey(S.to)) {
+      var other = key === 'from' ? 'to' : 'from';
+      S[other] = t;
+      var o = host.querySelector('[data-disc-datetext="' + other + '"]');
+      if (o) o.textContent = jFmt(t);
+    }
+    render();
   }
 
   function shell(host) {
@@ -11886,6 +11954,11 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
           '<button class="disc-refresh" data-disc="refresh" type="button">بروزرسانی</button>' +
           '<span class="disc-sync"></span>' +
         '</div>' +
+        '<div class="disc-bar disc-daterow">' +
+          dateFld('from', 'از تاریخ') + dateFld('to', 'تا تاریخ') +
+          '<button class="disc-refresh disc-clear-date" data-disc="clear-date" type="button">حذف فیلتر تاریخ</button>' +
+          '<span class="disc-range-note"></span>' +
+        '</div>' +
         '<div class="disc-body"></div>' +
       '</div>';
     host.addEventListener('change', function (e) {
@@ -11893,6 +11966,55 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     });
     host.addEventListener('input', function (e) {
       if (e.target.matches('[data-disc="q"]')) { S.q = e.target.value.trim().toLowerCase(); render(); }
+    });
+    // ---- انتخاب بازه‌ی تاریخ (تقویم شمسی مثل بقیه‌ی تب‌ها) ----
+    host.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-disc-date]');
+      if (btn) {
+        var key = btn.getAttribute('data-disc-date');
+        var pop = host.querySelector('[data-disc-cal="' + key + '"]');
+        var willOpen = pop.hidden;
+        azkiClosePops();
+        if (!willOpen) { pop.hidden = true; return; }
+        var cur = S[key] || tehranTodayJalali();
+        S.calView[key] = [cur[0], cur[1]];
+        pop.innerHTML = calHtml(key);
+        pop.hidden = false;
+        azkiPlacePop(pop);
+        return;
+      }
+      if (e.target.closest('[data-disc="clear-date"]')) {
+        S.from = null; S.to = null;
+        ['from', 'to'].forEach(function (k) { var el = host.querySelector('[data-disc-datetext="' + k + '"]'); if (el) el.textContent = 'همه'; });
+        render();
+        return;
+      }
+      var pop2 = e.target.closest('[data-disc-cal]');
+      if (!pop2) return;
+      var k2 = pop2.getAttribute('data-disc-cal');
+      var nav = e.target.closest('[data-nav]'), day = e.target.closest('[data-day]');
+      if (nav) {
+        var vy = S.calView[k2][0], vm = S.calView[k2][1] + parseInt(nav.getAttribute('data-nav'), 10);
+        if (vm < 1) { vm = 12; vy--; } else if (vm > 12) { vm = 1; vy++; }
+        S.calView[k2] = [vy, vm];
+        pop2.innerHTML = calHtml(k2);
+      } else if (day) {
+        pop2.hidden = true;
+        setDate(host, k2, [S.calView[k2][0], S.calView[k2][1], parseInt(day.getAttribute('data-day'), 10)]);
+      } else if (e.target.closest('[data-today]')) {
+        pop2.hidden = true;
+        setDate(host, k2, tehranTodayJalali());
+      } else if (e.target.closest('[data-close]')) {
+        pop2.hidden = true;
+      }
+    });
+    host.addEventListener('change', function (e) {
+      var role = e.target.getAttribute && e.target.getAttribute('data-role');
+      var pop = e.target.closest && e.target.closest('[data-disc-cal]');
+      if (!role || !pop) return;
+      var k = pop.getAttribute('data-disc-cal'), v = parseInt(e.target.value, 10);
+      if (role === 'm') S.calView[k][1] = v; else S.calView[k][0] = v;
+      pop.innerHTML = calHtml(k);
     });
     return host.querySelector('.disc-body');
   }
@@ -11905,6 +12027,13 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     var st = (r.status || '').trim();
     if (S.status === 'pending') { if (PENDING.indexOf(st) < 0) return false; }
     else if (S.status !== 'all' && st !== S.status) return false;
+    if (S.from || S.to) {
+      var j = rowJ(r);
+      if (!j) return false;               // ردیف بدون تاریخ، وقتی بازه فعال است نمایش داده نمی‌شود
+      var k = jKey(j);
+      if (S.from && k < jKey(S.from)) return false;
+      if (S.to && k > jKey(S.to)) return false;
+    }
     if (S.q) {
       var hay = [agentName(r), r.issuer_user, r.order_no, r.description, r.summary].join(' ').toLowerCase();
       if (hay.indexOf(S.q) < 0) return false;
@@ -11926,7 +12055,7 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     return '<div class="bug-item disc-item">' +
       '<div class="bug-top"><span class="bug-kind">سفارش: ' + order + '</span>' +
         '<span class="disc-pill ' + (PILL[st] || '') + '">' + esc(st || '—') + '</span></div>' +
-      '<div class="disc-meta">کارشناس: <b>' + esc(agentName(r)) + '</b>' + (r.report_date ? ' · تاریخ: ' + esc(toJalaliDisplay(r.report_date)) : '') + '</div>' +
+      '<div class="disc-meta">کارشناس: <b>' + esc(agentName(r)) + '</b>' + ' · تاریخ: ' + (rowDateText(r) ? esc(rowDateText(r)) : '<span style="opacity:.6">ثبت نشده</span>') + '</div>' +
       (r.description ? '<div class="bug-desc">' + esc(r.description) + '</div>' : '') +
       '<div class="disc-chips">' +
         '<span class="bug-price">مبلغ خطا: ' + num(r.amount) + ' ریال</span>' +
@@ -12011,6 +12140,13 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     if (S.loading && !S.rows.length) { body.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>'; return; }
     if (S.error) { body.innerHTML = errHtml(S.error); return; }
     var list = S.rows.filter(passes);
+    var noteEl = host.querySelector('.disc-range-note');
+    if (noteEl) {
+      var noDate = S.rows.filter(function (x) { return !rowJ(x); }).length;
+      noteEl.textContent = (S.from || S.to)
+        ? 'بازه: ' + (S.from ? jFmt(S.from) : 'ابتدا') + ' تا ' + (S.to ? jFmt(S.to) : 'امروز') + ' — ' + num(list.length) + ' مورد' + (noDate ? ' (' + num(noDate) + ' مورد بدون تاریخ نمایش داده نمی‌شود)' : '')
+        : '';
+    }
     if (!list.length) { body.innerHTML = '<div class="empty-state">خطایی با این مشخصات پیدا نشد</div>'; return; }
     var r = currentUserRole;
     body.innerHTML = r === 'supervisor' ? renderSup(list)
