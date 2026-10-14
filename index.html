@@ -9034,6 +9034,34 @@ function trRenderChunk(c, qt) {
   return src + c.fields.map(f => `<div>${trLines(f.v)}</div>`).join('');
 }
 
+// ---- لاگ سوال و جواب‌ها در گوگل شیت (از طریق وب‌اپ Apps Script؛ فایل apps-script-training-log.gs) ----
+// تا وقتی TRAIN_LOG_URL خالی باشه هیچ لاگی ارسال نمی‌شه.
+const TRAIN_LOG_URL = '';   // آدرس وب‌اپ Apps Script (…/exec)
+const TRAIN_LOG_TOKEN = ''; // همان TOKEN داخل اسکریپت
+function trPlain(c) {
+  if (!c) return '';
+  const f = c.q != null ? c.fields.filter((x, i) => i !== c.qi) : c.fields;
+  return f.map(x => x.v).join('\n').slice(0, 3000);
+}
+function trLog(method, question, status, c) {
+  if (!TRAIN_LOG_URL) return;
+  try {
+    const label = document.getElementById('user-label');
+    fetch(TRAIN_LOG_URL, {
+      method: 'POST', mode: 'no-cors', keepalive: true,
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        token: TRAIN_LOG_TOKEN,
+        user: label ? label.textContent.trim() : '',
+        role: (typeof currentUserRole !== 'undefined' && currentUserRole) || '',
+        method, question: String(question || '').slice(0, 1000), status,
+        source: c ? trLabel(c.sheet) + (c.title && c.title !== c.sheet ? ' • ' + c.title : '') : '',
+        answer: trPlain(c)
+      })
+    }).catch(() => { });
+  } catch (e) { }
+}
+
 function trAddMsg(who, html, scopeTag) {
   const chat = document.getElementById('tr-chat');
   const prev = chat.lastElementChild;
@@ -9129,6 +9157,7 @@ function trShowChunk(id) {
   document.querySelectorAll('#tr-tree .tr-node-item').forEach(b => b.classList.toggle('on', Number(b.dataset.id) === id));
   trAddMsg('user', escHtml(c.q || trItemLabel(c)));
   trAddMsg('bot', trRenderChunk(c, null));
+  trLog('منو', c.q || trItemLabel(c), 'پاسخ داده شد', c);
 }
 
 function trApplyData(sheetsData, failed, fetchedAt) {
@@ -9209,9 +9238,11 @@ async function trAsk(q) {
   const res = trSearch(q, '__all');
   if (!res.length || res[0].score < 1) {
     trAddMsg('bot', 'متاسفانه منم این رو نمی‌دونم، منم باید برم یاد بگیرمش. فعلاً از سرگروه بپرس.');
+    trLog('سوال', q, 'نامشخص', null);
     return;
   }
   trAddMsg('bot', trRenderChunk(res[0].c, trTokens(q)));
+  trLog('سوال', q, 'پاسخ داده شد', res[0].c);
 }
 
 function trBind() {
