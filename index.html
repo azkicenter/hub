@@ -1913,6 +1913,14 @@ html[data-theme="dark"] #tr-chat{--tr-bg:#000;--tr-in:#26252A;--tr-in-ink:#fff;-
   #tr-chat{height:62vh;flex:none}
 }
 </style>
+<style id="tr-v2-css">
+.tr-folder.lvl1>.tr-folder-h{font-weight:800;font-size:14.5px}
+.tr-folder.lvl2>.tr-folder-h{font-weight:700}
+.tr-folder.lvl3>.tr-folder-h{font-size:13px;color:var(--ink-soft)}
+.tr-ans{line-height:1.9}
+.tr-ans+.tr-ans{margin-top:6px}
+.tr-ans-k{opacity:.7}
+</style>
 <style id="perf-overrides">
 .list-card,.row-item,.bug-item,.team-item,.leader-item,.summary-card,.ticket-primary-card,.ticket-hero-card,
 .ticket-report-item,.admin-group-card,.admin-login-chart-card,.last-update-card,.um-btn,.um-search,.um-center{
@@ -2101,6 +2109,10 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg>
         حضور و غیاب
       </button>
+      <button class="tab-btn" data-team-tab="training" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+        آموزش
+      </button>
       <button class="tab-btn" data-team-tab="users" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg>
         مدیریت کاربران
@@ -2185,6 +2197,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
     <div class="panel" id="panel-kanban"></div>
     <div class="panel" id="panel-attendance"></div>
     <div class="panel" id="panel-users"></div>
+    <div class="panel" id="panel-team-training"></div>
     <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
     <div class="panel" id="panel-azki-oct"></div>
@@ -2213,6 +2226,10 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       <button class="tab-btn" data-center-tab="center-perf" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
         بررسی عملکرد
+      </button>
+      <button class="tab-btn" data-center-tab="training" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+        آموزش
       </button>
     </div>
 
@@ -2325,6 +2342,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       <div class="list-card" id="center-perf-agents" style="margin-top:14px;"></div>
     </div>
 
+    <div class="panel" id="panel-center-training"></div>
     <div class="panel" id="panel-center-bugs">
       <div class="period-label" id="center-bugs-period-label"></div>
       <div class="list-card" id="center-bugs-list">
@@ -2371,7 +2389,11 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
           تاریخچه گزارش
         </button>
-        <button class="tab-btn" data-sup-tab="settings" type="button">
+        <button class="tab-btn" data-sup-tab="training" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+        آموزش
+      </button>
+      <button class="tab-btn" data-sup-tab="settings" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           تنظیمات
         </button>
@@ -2629,6 +2651,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       <div id="sup-view-users" style="display:none;"></div>
       <div id="sup-view-run-history" style="display:none;"></div>
       <div id="sup-view-settings" style="display:none;"></div>
+      <div id="sup-view-training" style="display:none;"></div>
 
       <div id="sup-view-azki-payroll" style="display:none;">
         <div class="period-label" id="azki-payroll-label"></div>
@@ -2716,8 +2739,8 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
     <div class="panel" id="panel-training">
       <div class="tr-layout">
         <aside class="tr-side">
-          <div class="tr-side-h"><span>موضوعات</span><span class="tr-live" id="tr-status">در حال آماده‌سازی...</span></div>
-          <div class="tr-tree" id="tr-tree"></div>
+          <div class="tr-side-h"><span>موضوعات</span></div>
+          <div class="tr-tree" id="tr-tree"><div class="tr-empty">در حال دریافت…</div></div>
           <div class="tr-fail" id="tr-fail" hidden></div>
         </aside>
         <section class="tr-col">
@@ -2831,7 +2854,7 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'agent-attendance') attOpen(document.getElementById('panel-agent-attendance'));
-    if (btn.dataset.tab === 'training') trainingOpen();
+    if (btn.dataset.tab === 'training') { trMount(document.getElementById('panel-training')); trainingOpen(); }
     if (btn.dataset.tab === 'bugs') {
       markBugsSeen(lastBugsKeys);
     }
@@ -2859,11 +2882,11 @@ function teamShowTab(tab) {
   }
   document.getElementById('panel-team').classList.remove('active');
   document.getElementById('panel-team-bugs').classList.remove('active');
-  ['panel-azki-compare', 'panel-azki-oct', 'panel-azki-chart', 'panel-azki-outage', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll', 'panel-kanban', 'panel-attendance', 'panel-users'].forEach(id => {
+  ['panel-azki-compare', 'panel-azki-oct', 'panel-azki-chart', 'panel-azki-outage', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll', 'panel-kanban', 'panel-attendance', 'panel-users', 'panel-team-training'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
-  const panelEl = document.getElementById('panel-' + tab);
+  const panelEl = document.getElementById(tab === 'training' ? 'panel-team-training' : 'panel-' + tab);
   panelEl.classList.add('active');
   const azkiFilterEl = document.getElementById('azki-filter');
   // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
@@ -2882,6 +2905,7 @@ function teamShowTab(tab) {
   if (tab === 'kanban') kbOpen(document.getElementById('panel-kanban'));
   if (tab === 'attendance') attOpen(document.getElementById('panel-attendance'));
   if (tab === 'users') usersOpen(document.getElementById('panel-users'));
+  if (tab === 'training') { trMount(panelEl); trainingOpen(); }
   if (window.refreshGlassReveals) window.refreshGlassReveals();
 }
 document.querySelectorAll('#team-tabs .tab-btn').forEach(btn => {
@@ -2901,13 +2925,16 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     document.getElementById('panel-center-payroll').classList.remove('active');
     document.getElementById('panel-center-perf').classList.remove('active');
     document.getElementById('panel-attendance').classList.remove('active');
+    document.getElementById('panel-center-training').classList.remove('active');
     btn.classList.add('active');
-    document.getElementById('panel-' + btn.dataset.centerTab).classList.add('active');
+    const centerPanel = document.getElementById(btn.dataset.centerTab === 'training' ? 'panel-center-training' : 'panel-' + btn.dataset.centerTab);
+    centerPanel.classList.add('active');
     // تب حضور و غیاب فیلتر تاریخ نمی‌خواد (خودش ناوبری هفته داره)
-    document.getElementById('center-filter').style.display = btn.dataset.centerTab === 'attendance' ? 'none' : '';
+    document.getElementById('center-filter').style.display = (btn.dataset.centerTab === 'attendance' || btn.dataset.centerTab === 'training') ? 'none' : '';
     if (btn.dataset.centerTab === 'center-payroll' && !centerPayrollState.loaded) loadCenterPayroll();
     if (btn.dataset.centerTab === 'center-perf' && !centerPerfState.loaded) loadCenterPerf();
     if (btn.dataset.centerTab === 'attendance') attOpen(document.getElementById('panel-attendance'));
+    if (btn.dataset.centerTab === 'training') { trMount(centerPanel); trainingOpen(); }
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   });
 });
@@ -3247,6 +3274,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-users').style.display = which === 'users' ? '' : 'none';
     $('sup-view-run-history').style.display = which === 'run-history' ? '' : 'none';
     $('sup-view-settings').style.display = which === 'settings' ? '' : 'none';
+    $('sup-view-training').style.display = which === 'training' ? '' : 'none';
     // وضعیت پنل کارشناسان بازه‌ی تاریخی نداره، پس فیلتر تاریخ/شرکت براش نشون داده نمیشه
     $('azki-filter').style.display = (which.startsWith('azki-') && which !== 'azki-active') ? '' : 'none';
     document.querySelector('main').classList.toggle('sm-wide', which === 'map');
@@ -3266,6 +3294,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'users') usersOpen($('sup-view-users'));
     if (which === 'run-history') runHistoryOpen($('sup-view-run-history'));
     if (which === 'settings') settingsOpen($('sup-view-settings'));
+    if (which === 'training') { trMount($('sup-view-training')); trainingOpen(); }
     if (window.refreshGlassReveals) window.refreshGlassReveals();
   }
   window.supShowTab = supShowTab;
@@ -8798,7 +8827,16 @@ const TRAIN_SHEETS = [
   'شرکت رازی', 'شرکت سینا', 'شرکت تعاون', 'انتقال تخفیف', 'مجوزی ها - رازی', 'سوالات هوشمند',
   'خطاها - ارورها', 'سررسید', 'شیت خطای ورود به فناوران ها', 'رفع توقیف - همه شرکت ها', 'اختلاف قیمت'
 ];
-const TRAIN_CACHE_KEY = 'trainingSheetCache_v1';
+// دسته‌بندی برگه‌ها در منوی کنار صفحه: [نام برگه در شیت، عنوان نمایشی]
+// برگه‌ای که اینجا نباشد خودکار می‌رود زیر «سایر». برای تغییر ترتیب/نام فقط همین فهرست را ویرایش کنید.
+const TRAIN_GROUPS = [
+  { name: 'قوانین شرکت‌ها', sheets: [['شرکت رازی', 'قوانین صدور رازی'], ['شرکت سینا', 'قوانین صدور سینا'], ['شرکت تعاون', 'قوانین صدور تعاون'], ['مجوزی ها - رازی', 'مجوزی‌ها - رازی']] },
+  { name: 'خطاها و رفع توقیف', sheets: [['خطاها - ارورها', 'خطاها و ارورها'], ['شیت خطای ورود به فناوران ها', 'خطای ورود به فناوران'], ['رفع توقیف - همه شرکت ها', 'رفع توقیف (همه شرکت‌ها)']] },
+  { name: 'راهنمای عمومی', sheets: [['حروف پلاک و کاربری آن ها', 'حروف پلاک و کاربری'], ['انتقال تخفیف', 'انتقال تخفیف'], ['سررسید', 'سررسید'], ['اختلاف قیمت', 'اختلاف قیمت'], ['سوالات هوشمند', 'سوالات هوشمند']] }
+];
+const TRAIN_LABELS = new Map(TRAIN_GROUPS.flatMap(g => g.sheets));
+function trLabel(sheet) { return TRAIN_LABELS.get(sheet) || sheet; }
+const TRAIN_CACHE_KEY = 'trainingSheetCache_v2';
 const TRAIN_CACHE_TTL = 30 * 60 * 1000;
 const trainState = { chunks: [], sheets: [], failed: [], loaded: false, loading: null, scope: '__all', idf: {}, avgLen: 1, bound: false, fetchedAt: 0 };
 
@@ -8852,6 +8890,24 @@ async function trFetchSheet(name, gid) {
   } finally { clearTimeout(timer); }
 }
 
+// سوال/جواب‌هایی که چند جدول کنار هم دارند (ستون‌های «سوال | راه حل | سوال | پاسخ») هر کدام یک رکورد جدا می‌شوند؛
+// وقتی عنوان یک ستون در همان ردیف تکرار شد یعنی رکورد بعدی شروع شده. ستونِ «سوال» جدا نگه داشته می‌شود تا در جواب تکرار نشود.
+const TR_Q_LABEL = /سوال|پرسش/;
+function trPushRow(out, sheet, title, fields, hasHeader) {
+  const segs = []; let cur = [], seen = new Set();
+  fields.forEach(f => {
+    if (hasHeader && f.k && seen.has(f.k) && cur.length) { segs.push(cur); cur = []; seen = new Set(); }
+    cur.push(f); if (f.k) seen.add(f.k);
+  });
+  if (cur.length) segs.push(cur);
+  segs.forEach(seg => {
+    const chunk = { sheet, title, kind: 'row', fields: seg };
+    const qi = seg.findIndex(f => TR_Q_LABEL.test(f.k));
+    if (qi >= 0 && seg.length > 1) { chunk.q = seg[qi].v; chunk.qi = qi; }
+    out.push(chunk);
+  });
+}
+
 // ساخت تکه‌های دانش از یک برگه: جدول → هر ردیف یک تکه (با عنوان ستون‌ها)، متن آزاد → بلوک‌های پشت‌سرهم
 function trBuildChunks(sheet, grid) {
   const out = [];
@@ -8883,7 +8939,7 @@ function trBuildChunks(sheet, grid) {
       out.push({ sheet, title, kind: 'row', isHeader: true, fields: cells.map(c => ({ k: '', v: c.v })) });
       continue;
     }
-    out.push({ sheet, title, kind: 'row', fields: cells.map(c => ({ k: header ? (header[c.i] || '') : '', v: c.v })) });
+    trPushRow(out, sheet, title, cells.map(c => ({ k: header ? (header[c.i] || '') : '', v: c.v })), !!header);
   }
   flush();
   return out;
@@ -8892,12 +8948,14 @@ function trBuildChunks(sheet, grid) {
 function trIndex(chunks) {
   const df = {}; let total = 0;
   chunks.forEach(c => {
-    const parts = [c.sheet, c.title, ...c.fields.map(f => f.k), ...c.fields.map(f => f.v)];
+    const parts = [c.sheet, c.title, ...c.fields.map(f => f.k), ...c.fields.map(f => f.v), ...(c.q ? [c.q, c.q] : [])];
     c.text = trNorm(parts.join(' '));
     c.tf = {};
     c.tokens = trTokens(parts.join(' '));
     c.tokens.forEach(t => { c.tf[t] = (c.tf[t] || 0) + 1; });
     c.cells = new Set(c.fields.map(f => trWords(f.v).join(' ')).filter(Boolean));
+    c.qSet = c.q ? new Set(trTokens(c.q)) : null;
+    c.qKey = c.q ? trWords(c.q).filter(w => !TR_STOP.has(w)).join(' ') : '';
     Object.keys(c.tf).forEach(t => { df[t] = (df[t] || 0) + 1; });
     total += c.tokens.length;
   });
@@ -8927,9 +8985,11 @@ function trSearch(question, scope) {
       const idf = trainState.idf[t] || 1;
       score += idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * c.tokens.length / avg));
       if (c.cells.has(t)) score += 1.5;
+      if (c.qSet && c.qSet.has(t)) score += 1.2;
     });
     single.forEach(t => { if (c.cells.has(t)) { score += 6; hit++; } });
     if (qTok.length > 1 && c.text.includes(phrase)) score += 3;
+    if (c.qKey && c.qKey === phrase) score += 25;
     if (!hit) return;
     const cover = hit / (qTok.length + single.length);
     score *= 0.5 + 0.5 * cover;
@@ -8944,7 +9004,13 @@ function trLines(v) {
   return escHtml(v).replace(/\n/g, '<br>').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 }
 function trRenderChunk(c, qt) {
-  const src = `<div class="tr-src">${escHtml(c.sheet)}${c.title && c.title !== c.sheet ? ' • ' + escHtml(c.title) : ''}</div>`;
+  const src = `<div class="tr-src">${escHtml(trLabel(c.sheet))}${c.title && c.title !== c.sheet ? ' • ' + escHtml(c.title) : ''}</div>`;
+  if (c.q != null) {
+    // فقط پاسخ؛ خود سوال دوباره نشان داده نمی‌شود
+    const ans = c.fields.filter((f, i) => i !== c.qi);
+    const multi = ans.length > 1;
+    return src + ans.map(f => `<div class="tr-ans">${multi && f.k ? `<b class="tr-ans-k">${escHtml(f.k)}:</b> ` : ''}${trLines(f.v)}</div>`).join('');
+  }
   if (c.kind === 'row' && c.fields.some(f => f.k)) {
     return src + '<dl class="tr-dl">' + c.fields.map(f => `<div><dt>${escHtml(f.k || '—')}</dt><dd>${trLines(f.v)}</dd></div>`).join('') + '</dl>';
   }
@@ -8987,8 +9053,6 @@ function trTyping(on) {
 function trGreet() {
   const chat = document.getElementById('tr-chat');
   chat.innerHTML = '';
-  const time = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
-  chat.insertAdjacentHTML('beforeend', `<div class="tr-stamp">امروز ${escHtml(time)}</div>`);
   trAddMsg('bot', 'سلام، چطوری می‌تونم کمکت کنم؟');
 }
 
@@ -8997,6 +9061,7 @@ const trOpenKeys = new Set();
 
 function trShort(s, n) { s = String(s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 function trItemLabel(c) {
+  if (c.q) return trShort(c.q, 70);
   const f = c.fields; if (!f.length) return '';
   let l = f[0].v;
   if (c.kind === 'row' && f.length > 1 && l.length <= 4) l += ' — ' + f[1].v;
@@ -9006,6 +9071,7 @@ function trFolderHtml(key, name, body, lvl, count) {
   const open = trOpenKeys.has(key);
   return `<div class="tr-folder lvl${lvl}${open ? ' open' : ''}"><button type="button" class="tr-folder-h" data-key="${escHtml(key)}"><svg class="tr-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg><span class="tr-folder-n">${escHtml(name)}</span><small>${faDigits(count)}</small></button><div class="tr-folder-b">${body}</div></div>`;
 }
+let trTreeSeeded = false;
 function trRenderTree() {
   const host = document.getElementById('tr-tree');
   if (!host) return;
@@ -9013,27 +9079,35 @@ function trRenderTree() {
   const bySheet = new Map();
   trainState.chunks.forEach(c => { if (c.isHeader) return; if (!bySheet.has(c.sheet)) bySheet.set(c.sheet, []); bySheet.get(c.sheet).push(c); });
   const item = c => `<button type="button" class="tr-node-item${c.id === trActiveId ? ' on' : ''}" data-id="${c.id}">${escHtml(trItemLabel(c))}</button>`;
-  let html = '';
-  bySheet.forEach((list, sheet) => {
+  const sheetHtml = (gname, sheet) => {
+    const list = bySheet.get(sheet);
+    const key = gname + '||' + sheet;
     const titles = [...new Set(list.map(c => c.title).filter(Boolean))];
     let body;
     if (titles.length >= 2) {
-      body = titles.map(ti => { const sub = list.filter(c => c.title === ti); return trFolderHtml(sheet + '||' + ti, ti, sub.map(item).join(''), 2, sub.length); }).join('')
+      body = titles.map(ti => { const sub = list.filter(c => c.title === ti); return trFolderHtml(key + '||' + ti, ti, sub.map(item).join(''), 3, sub.length); }).join('')
         + list.filter(c => !c.title).map(item).join('');
     } else body = list.map(item).join('');
-    html += trFolderHtml(sheet, sheet, body, 1, list.length);
-  });
+    return trFolderHtml(key, trLabel(sheet), body, 2, list.length);
+  };
+  const groups = TRAIN_GROUPS.map(g => ({ name: g.name, sheets: g.sheets.map(x => x[0]) }));
+  const known = new Set(groups.flatMap(g => g.sheets));
+  const rest = [...bySheet.keys()].filter(sh => !known.has(sh));
+  if (rest.length) groups.push({ name: 'سایر', sheets: rest });
+  const shown = groups.map(g => ({ name: g.name, sheets: g.sheets.filter(sh => bySheet.has(sh)) })).filter(g => g.sheets.length);
+  if (!trTreeSeeded && shown.length) { trOpenKeys.add(shown[0].name); trTreeSeeded = true; }
+  const html = shown.map(g => trFolderHtml(g.name, g.name, g.sheets.map(sh => sheetHtml(g.name, sh)).join(''), 1, g.sheets.reduce((n, sh) => n + bySheet.get(sh).length, 0))).join('');
   host.innerHTML = html || '<div class="tr-empty">موضوعی برای نمایش نیست</div>';
   host.scrollTop = keepTop;
 }
+function trTreeMsg(msg) {
+  const host = document.getElementById('tr-tree');
+  if (host && !trainState.loaded) host.innerHTML = `<div class="tr-empty">${escHtml(msg)}</div>`;
+}
 function trRenderStatus() {
-  const st = document.getElementById('tr-status');
   const fail = document.getElementById('tr-fail');
-  if (!trainState.loaded) { st.textContent = 'در حال دریافت...'; st.classList.remove('live'); fail.hidden = true; return; }
-  const t = new Date(trainState.fetchedAt || Date.now()).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  st.textContent = 'زنده • ' + t;
-  st.classList.add('live');
-  if (trainState.failed.length) { fail.hidden = false; fail.textContent = 'این برگه‌ها خوانده نشد: ' + trainState.failed.join('، '); } else fail.hidden = true;
+  if (!fail) return;
+  if (trainState.loaded && trainState.failed.length) { fail.hidden = false; fail.textContent = 'این برگه‌ها خوانده نشد: ' + trainState.failed.join('، '); } else fail.hidden = true;
 }
 
 function trShowChunk(id) {
@@ -9041,7 +9115,7 @@ function trShowChunk(id) {
   if (!c) return;
   trActiveId = id;
   document.querySelectorAll('#tr-tree .tr-node-item').forEach(b => b.classList.toggle('on', Number(b.dataset.id) === id));
-  trAddMsg('user', escHtml(trItemLabel(c)));
+  trAddMsg('user', escHtml(c.q || trItemLabel(c)));
   trAddMsg('bot', trRenderChunk(c, null));
 }
 
@@ -9079,11 +9153,11 @@ async function trLoad() {
       if (cache && cache.sheets && cache.sheets.length) {
         trSignature = cache.sheets.map(s => s.name + '\u0001' + s.csv).join('\u0002');
         trApplyData(cache.sheets, cache.failed || [], cache.t);
-      } else trRenderStatus();
+      } else trTreeMsg('در حال دریافت…');
     }
     const r = await trFetchAll();
     if (!r.ok.length) {
-      if (!trainState.loaded) document.getElementById('tr-status').textContent = 'دریافت ناموفق: ' + (r.firstErr ? r.firstErr.message : 'نامشخص');
+      trTreeMsg('دریافت ناموفق: ' + (r.firstErr ? r.firstErr.message : 'نامشخص'));
       return;
     }
     const sig = r.ok.map(s => s.name + '\u0001' + s.csv).join('\u0002');
@@ -9100,7 +9174,9 @@ async function trLoad() {
 }
 
 const TRAIN_POLL_MS = 45000;
-function trPanelActive() { return document.getElementById('panel-training').classList.contains('active') && document.visibilityState === 'visible'; }
+function trPanelActive() { const l = document.querySelector('.tr-layout'); return !!l && l.offsetParent !== null && document.visibilityState === 'visible'; }
+// یک نمونه‌ی آموزش بین پنل کارشناس / سنتر / سرگروه / سرپرست جابه‌جا می‌شود
+function trMount(host) { const l = document.querySelector('.tr-layout'); if (l && host && l.parentElement !== host) host.appendChild(l); }
 function trPollStart() {
   if (trPollTimer) return;
   trPollTimer = setInterval(() => { if (trPanelActive()) trLoad(); }, TRAIN_POLL_MS);
@@ -9110,26 +9186,20 @@ function trPollStart() {
 async function trAsk(q) {
   q = String(q || '').trim();
   if (!q) return;
-  const scope = trainState.scope;
-  trAddMsg('user', escHtml(q), scope !== '__all' ? 'در: ' + scope : '');
+  trAddMsg('user', escHtml(q));
   trTyping(true);
   const t0 = Date.now();
-  if (!trainState.loaded) await trLoad(false);
+  if (!trainState.loaded) await trLoad();
   const wait = 500 - (Date.now() - t0);
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
   trTyping(false);
-  if (!trainState.loaded) { trAddMsg('bot', 'هنوز داده‌ها از شیت نیامده. اینترنت را چک کن و «به‌روزرسانی داده‌ها» را بزن.'); return; }
-  const res = trSearch(q, scope);
+  if (!trainState.loaded) { trAddMsg('bot', 'هنوز داده‌ها از شیت نیامده. اینترنت را چک کن و چند لحظه بعد دوباره امتحان کن.'); return; }
+  const res = trSearch(q, '__all');
   if (!res.length || res[0].score < 1) {
-    trAddMsg('bot', 'جوابی برای این سوال تو شیت پیدا نکردم. سوال را با کلمه‌های دیگری بنویس' + (scope !== '__all' ? ' یا موضوع را روی «همه موضوعات» بگذار' : '') + '؛ اگر هنوز جواب نگرفتی از سرگروه بپرس.');
+    trAddMsg('bot', 'جوابی برای این سوال تو شیت پیدا نکردم. سوال را با کلمه‌های دیگری بنویس؛ اگر هنوز جواب نگرفتی از سرگروه بپرس.');
     return;
   }
-  const top = res[0];
-  const qt = trTokens(q);
-  let html = trRenderChunk(top.c, qt);
-  const alts = res.slice(1).filter(r => r.score >= top.score * 0.55);
-  if (alts.length) html += `<details class="tr-more"><summary>موارد مرتبط (${faDigits(alts.length)})</summary>${alts.map(r => `<div class="tr-alt">${trRenderChunk(r.c, qt)}</div>`).join('')}</details>`;
-  trAddMsg('bot', html);
+  trAddMsg('bot', trRenderChunk(res[0].c, trTokens(q)));
 }
 
 function trBind() {
@@ -10657,7 +10727,7 @@ const LEADER_TAB_DEFS = [
   ['azki-shifts', 'گزارش ← تفکیک شیفت', 1], ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1],
   ['azki-chart', 'گزارش ← نمودار', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
-  ['attendance', 'حضور و غیاب'], ['users', 'مدیریت کاربران']
+  ['attendance', 'حضور و غیاب'], ['training', 'آموزش'], ['users', 'مدیریت کاربران']
 ];
 
 function applyLeaderHiddenTabs(hiddenList) {
@@ -10833,7 +10903,7 @@ const SUP_TAB_DEFS = [
   ['azki-period', 'گزارش ← گزارش دوره‌ای', 1], ['azki-centers', 'گزارش ← به تفکیک نام مرکز', 1], ['azki-shifts', 'گزارش ← تفکیک شیفت', 1],
   ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1], ['azki-chart', 'گزارش ← نمودار', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
-  ['attendance', 'حضور و غیاب'], ['users', 'مدیریت کاربران'], ['run-history', 'تاریخچه گزارش']
+  ['attendance', 'حضور و غیاب'], ['training', 'آموزش'], ['users', 'مدیریت کاربران'], ['run-history', 'تاریخچه گزارش']
 ];
 const SUP_REPORT_KEYS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare', 'azki-oct', 'azki-chart', 'azki-outage'];
 
@@ -11002,7 +11072,7 @@ async function agentSettingsRender(host) {
 // ذخیره در جدول center_tab_settings از طریق توابع center_tab_settings_get/set (فایل center_tab_settings.sql)
 // کلیدها همان data-center-tab دکمه‌های #center-tabs هستند
 // ============================================================
-const CENTER_TAB_DEFS = [['center', 'تعداد صدور'], ['center-bugs', 'خطا'], ['attendance', 'حضور و غیاب'], ['center-payroll', 'محاسبه حقوق'], ['center-perf', 'بررسی عملکرد']];
+const CENTER_TAB_DEFS = [['center', 'تعداد صدور'], ['center-bugs', 'خطا'], ['attendance', 'حضور و غیاب'], ['center-payroll', 'محاسبه حقوق'], ['center-perf', 'بررسی عملکرد'], ['training', 'آموزش']];
 
 function applyCenterHiddenTabs(hiddenList) {
   const hidden = new Set(hiddenList || []);
