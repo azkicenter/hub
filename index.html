@@ -2193,6 +2193,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       <div class="list-card" id="team-bugs-list">
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
+      <div id="disc-team-list" class="disc-host"></div>
     </div>
 
     <div class="panel" id="panel-kanban"></div>
@@ -2349,6 +2350,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       <div class="list-card" id="center-bugs-list">
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
+      <div id="disc-center-list" class="disc-host"></div>
     </div>
 
     <div class="panel" id="panel-supervisor">
@@ -2360,6 +2362,10 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         <button class="tab-btn" data-sup-tab="map" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
           نقشه سنتر
+        </button>
+        <button class="tab-btn" data-sup-tab="bugs" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
+          خطاها
         </button>
         <button class="tab-btn" data-sup-group="report" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
@@ -2647,6 +2653,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         <div id="azki-outage-root"><div class="loading-state">در حال بارگذاری...</div></div>
       </div>
 
+      <div id="sup-view-bugs" class="disc-host" style="display:none;"></div>
       <div id="sup-view-kanban" style="display:none;"></div>
       <div id="sup-view-attendance" style="display:none;"></div>
       <div id="sup-view-users" style="display:none;"></div>
@@ -2757,6 +2764,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       <div class="list-card" id="bugs-list">
         <div class="loading-state">در حال بارگذاری...</div>
       </div>
+      <div id="disc-agent-list" class="disc-host"></div>
     </div>
   </main>
 </div>
@@ -3270,6 +3278,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-azki-outage').style.display = which === 'azki-outage' ? '' : 'none';
     $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
     $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
+    $('sup-view-bugs').style.display = which === 'bugs' ? '' : 'none';
     $('sup-view-kanban').style.display = which === 'kanban' ? '' : 'none';
     $('sup-view-attendance').style.display = which === 'attendance' ? '' : 'none';
     $('sup-view-users').style.display = which === 'users' ? '' : 'none';
@@ -11035,7 +11044,7 @@ async function leaderTabsSettingsRender(host) {
 // ---- تب‌های سرپرست (خود سرپرست) ----
 // کلیدها همان data-sup-tab / data-sup-group دکمه‌های #supervisor-tabs و #supervisor-subtabs هستند؛ «تنظیمات» همیشه نمایش داده می‌شود
 const SUP_TAB_DEFS = [
-  ['targets', 'صدور'], ['map', 'نقشه سنتر'], ['report', 'گزارش (کل گروه)'],
+  ['targets', 'صدور'], ['map', 'نقشه سنتر'], ['bugs', 'خطاها'], ['report', 'گزارش (کل گروه)'],
   ['azki-period', 'گزارش ← گزارش دوره‌ای', 1], ['azki-centers', 'گزارش ← به تفکیک نام مرکز', 1], ['azki-shifts', 'گزارش ← تفکیک شیفت', 1],
   ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1], ['azki-chart', 'گزارش ← نمودار', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
@@ -11803,6 +11812,253 @@ html[data-theme="dark"] .center-perf-table td:first-child{ background:rgba(16,22
 .who{ gap:6px; }
 </style>
 
+
+<style id="disc-css">
+.disc-host{ margin-top:14px; }
+.disc-wrap{ display:block; }
+.disc-bar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+.disc-sel,.disc-q{ font:inherit; font-size:13px; color:var(--ink); background:var(--surface-tint,rgba(255,255,255,.5)); border:1px solid var(--line); border-radius:12px; padding:8px 12px; outline:none; }
+.disc-q{ flex:1 1 200px; min-width:160px; }
+.disc-q:focus,.disc-sel:focus{ border-color:var(--accent); }
+.disc-refresh{ font:inherit; font-size:13px; font-weight:700; color:var(--accent-deep,var(--accent)); background:var(--accent-soft); border:1px solid var(--line); border-radius:12px; padding:8px 14px; cursor:pointer; }
+.disc-sync{ font-size:11.5px; color:var(--ink-faint); margin-inline-start:auto; }
+.disc-title{ font-size:14px; font-weight:800; color:var(--ink); margin:0 2px 10px; }
+.disc-body{ display:flex; flex-direction:column; gap:10px; }
+.disc-grp{ border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+.disc-grp>summary{ list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:12px 16px; font-weight:700; color:var(--ink); }
+.disc-grp>summary::-webkit-details-marker{ display:none; }
+.disc-grp>summary::before{ content:'◂'; font-size:11px; color:var(--ink-faint); margin-inline-end:8px; transition:transform .15s; }
+.disc-grp[open]>summary::before{ transform:rotate(-90deg); }
+.disc-gname{ flex:1 1 auto; }
+.disc-gmeta{ font-size:12px; font-weight:600; color:var(--ink-soft); }
+.disc-lead{ font-size:11.5px; font-weight:500; color:var(--ink-faint); margin-inline-start:8px; }
+.disc-l1{ background:var(--accent-soft); }
+.disc-l1>summary{ font-size:15px; }
+.disc-l2{ margin:0 10px 10px; }
+.disc-l3{ margin:0 10px 10px; }
+.disc-item .bug-top{ align-items:center; }
+.disc-pill{ font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; border:1px solid var(--line); color:var(--ink-soft); white-space:nowrap; }
+.disc-pill.wait{ color:#a35b00; background:rgba(255,182,72,.2); border-color:rgba(255,182,72,.5); }
+.disc-pill.ded{ color:#9a3d00; background:rgba(255,120,60,.16); border-color:rgba(255,120,60,.45); }
+.disc-pill.done{ color:#0b7a5a; background:rgba(34,230,174,.16); border-color:rgba(34,230,174,.45); }
+.disc-chips{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.disc-chip{ font-size:12px; font-weight:600; color:var(--ink-soft); background:var(--accent-soft); padding:4px 11px; border-radius:999px; }
+.disc-meta{ font-size:12.5px; color:var(--ink-soft); margin-bottom:6px; }
+html[data-theme="dark"] .disc-pill.wait{ color:#ffcf7a; }
+html[data-theme="dark"] .disc-pill.ded{ color:#ffab85; }
+html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
+</style>
+
+<script id="disc-errors-js">
+/* خطاهای شیت مغایرت سفارشات (جدول discrepancy_errors) داخل تب «خطاها»
+   دسترسی را خود Supabase (RLS) بر اساس نقش کنترل می‌کند: کارشناس ← خودش، سنتر ← کارشناس‌هایش،
+   سرگروه ← سنترهایش، سرپرست ← همه. این‌جا فقط نمایش و گروه‌بندی انجام می‌شود. */
+(function () {
+  'use strict';
+  var TABLE = 'discrepancy_errors';
+  var STATUSES = ['در انتظار تخفیف', 'در انتظار کسر از حقوق', 'در انتظار تایید آموزش', 'بررسی مجدد - معلق', 'عدم تایید آموزش', 'تخفیف شد - کسر شد', 'پرداخت شد'];
+  var PENDING = ['در انتظار تخفیف', 'در انتظار کسر از حقوق'];
+  var PILL = { 'در انتظار تخفیف': 'wait', 'در انتظار کسر از حقوق': 'ded', 'تخفیف شد - کسر شد': 'done', 'پرداخت شد': 'done' };
+  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {} }, status: 'pending', q: '', loading: false, error: null, syncedAt: null };
+
+  var esc = function (v) { return window.escHtml(v); };
+  var num = function (v) { return faDigits((Number(v) || 0).toLocaleString('en-US')); };
+  var faSort = function (a, b) { return String(a).localeCompare(String(b), 'fa'); };
+
+  function hostId() {
+    var r = currentUserRole;
+    return r === 'supervisor' ? 'sup-view-bugs' : r === 'leader' ? 'disc-team-list' : r === 'center' ? 'disc-center-list' : 'disc-agent-list';
+  }
+
+  function shell(host) {
+    if (host.dataset.discInit) return host.querySelector('.disc-body');
+    host.dataset.discInit = '1';
+    host.innerHTML =
+      '<div class="disc-wrap">' +
+        '<div class="disc-title">مغایرت‌های ثبت‌شده در شیت (خطای صدور)</div>' +
+        '<div class="disc-bar">' +
+          '<select class="disc-sel" data-disc="status">' +
+            '<option value="pending">در انتظار (تخفیف / کسر از حقوق)</option>' +
+            '<option value="all">همه وضعیت‌ها</option>' +
+            STATUSES.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('') +
+          '</select>' +
+          '<input class="disc-q" data-disc="q" type="search" placeholder="جستجو: کارشناس / شماره سفارش / توضیحات" autocomplete="off">' +
+          '<button class="disc-refresh" data-disc="refresh" type="button">بروزرسانی</button>' +
+          '<span class="disc-sync"></span>' +
+        '</div>' +
+        '<div class="disc-body"></div>' +
+      '</div>';
+    host.addEventListener('change', function (e) {
+      if (e.target.matches('[data-disc="status"]')) { S.status = e.target.value; render(); }
+    });
+    host.addEventListener('input', function (e) {
+      if (e.target.matches('[data-disc="q"]')) { S.q = e.target.value.trim().toLowerCase(); render(); }
+    });
+    return host.querySelector('.disc-body');
+  }
+
+  function agentName(r) {
+    var p = r.agent_id && S.hier.byId[r.agent_id];
+    return (p && (p.full_name || p.backoffice_id)) || r.issuer_user || '—';
+  }
+  function passes(r) {
+    var st = (r.status || '').trim();
+    if (S.status === 'pending') { if (PENDING.indexOf(st) < 0) return false; }
+    else if (S.status !== 'all' && st !== S.status) return false;
+    if (S.q) {
+      var hay = [agentName(r), r.issuer_user, r.order_no, r.description, r.summary].join(' ').toLowerCase();
+      if (hay.indexOf(S.q) < 0) return false;
+    }
+    return true;
+  }
+  function sumAmt(l) { return l.reduce(function (s, r) { return s + (Number(r.amount) || 0); }, 0); }
+  function groupBy(list, fn) {
+    var m = new Map();
+    list.forEach(function (r) { var k = fn(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
+    return m;
+  }
+
+  function itemHtml(r) {
+    var st = (r.status || '').trim();
+    var order = r.order_no
+      ? '<a class="bug-order-link" href="https://backoffice.azki.com/panels/tracking-panel/' + encodeURIComponent(r.order_no) + '" target="_blank" rel="noopener noreferrer">' + esc(r.order_no) + '</a>'
+      : '—';
+    return '<div class="bug-item disc-item">' +
+      '<div class="bug-top"><span class="bug-kind">سفارش: ' + order + '</span>' +
+        '<span class="disc-pill ' + (PILL[st] || '') + '">' + esc(st || '—') + '</span></div>' +
+      '<div class="disc-meta">کارشناس: <b>' + esc(agentName(r)) + '</b>' + (r.report_date ? ' · تاریخ: ' + esc(toJalaliDisplay(r.report_date)) : '') + '</div>' +
+      (r.description ? '<div class="bug-desc">' + esc(r.description) + '</div>' : '') +
+      '<div class="disc-chips">' +
+        '<span class="bug-price">مبلغ خطا: ' + num(r.amount) + ' ریال</span>' +
+        (r.salary_deduction ? '<span class="disc-chip">کسر از حقوق: ' + esc(r.salary_deduction) + '</span>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  function agentBlock(name, rows, open, cls) {
+    return '<details class="disc-grp ' + (cls || 'disc-l3') + '"' + (open ? ' open' : '') + '>' +
+      '<summary><span class="disc-gname">' + esc(name) + '</span><span class="disc-gmeta">' + num(rows.length) + ' مورد · ' + num(sumAmt(rows)) + ' ریال</span></summary>' +
+      rows.map(itemHtml).join('') + '</details>';
+  }
+  function agentGroups(list) {
+    return groupBy(list, function (r) { return r.agent_id || ('u:' + (r.issuer_user || '')); });
+  }
+  function agentBlocks(list, openAll) {
+    var g = agentGroups(list), arr = [];
+    g.forEach(function (rows) { arr.push({ name: agentName(rows[0]), rows: rows }); });
+    arr.sort(function (a, b) { return faSort(a.name, b.name); });
+    return arr.map(function (x) { return agentBlock(x.name, x.rows, openAll || arr.length <= 4, 'disc-l3'); }).join('');
+  }
+  function centerOf(r) {
+    var cid = r.agent_id && S.hier.agentCenter[r.agent_id];
+    var c = cid && S.hier.byId[cid];
+    return { id: cid || null, name: c ? (c.full_name || '—') : 'بدون سنتر' };
+  }
+
+  function renderCenter(list) { return agentBlocks(list, false); }
+
+  function renderLeader(list) {
+    var g = groupBy(list, function (r) { return centerOf(r).name; }), arr = [];
+    g.forEach(function (rows, name) { arr.push({ name: name, rows: rows }); });
+    arr.sort(function (a, b) { return faSort(a.name, b.name); });
+    return arr.map(function (c) {
+      return '<details class="disc-grp disc-l1" open><summary><span class="disc-gname">سنتر: ' + esc(c.name) + '</span>' +
+        '<span class="disc-gmeta">' + num(c.rows.length) + ' مورد · ' + num(sumAmt(c.rows)) + ' ریال</span></summary>' +
+        '<div class="disc-l2">' + agentBlocks(c.rows, false) + '</div></details>';
+    }).join('');
+  }
+
+  function leaderLabel(r) {
+    if (!r.agent_id) return 'نامشخص';
+    var c = centerOf(r);
+    var ls = (c.id && S.hier.centerLeaders[c.id]) || [];
+    var names = ls.map(function (id) { return (S.hier.byId[id] || {}).full_name; }).filter(Boolean).sort(faSort);
+    return names.length ? names.join('، ') : 'بدون سرگروه';
+  }
+  function renderSup(list) {
+    var gl = groupBy(list, leaderLabel), L = [];
+    gl.forEach(function (rows, name) { L.push({ name: name, rows: rows }); });
+    L.sort(function (a, b) { return (a.name === 'نامشخص') - (b.name === 'نامشخص') || faSort(a.name, b.name); });
+    return L.map(function (l) {
+      var unknown = l.name === 'نامشخص';
+      var gc = groupBy(l.rows, function (r) { return unknown ? 'کاربر صدور با هیچ کارشناسی تطبیق نکرد' : centerOf(r).name; }), C = [];
+      gc.forEach(function (rows, name) { C.push({ name: name, rows: rows }); });
+      C.sort(function (a, b) { return faSort(a.name, b.name); });
+      var inner = C.map(function (c) {
+        return '<details class="disc-grp disc-l2"' + (C.length <= 3 ? ' open' : '') + '><summary><span class="disc-gname">' + (unknown ? '' : 'سنتر: ') + esc(c.name) + '</span>' +
+          '<span class="disc-gmeta">' + num(c.rows.length) + ' مورد · ' + num(sumAmt(c.rows)) + ' ریال</span></summary>' +
+          '<div class="disc-l2">' + agentBlocks(c.rows, false) + '</div></details>';
+      }).join('');
+      return '<details class="disc-grp disc-l1"' + (L.length <= 3 ? ' open' : '') + '><summary><span class="disc-gname">' + (unknown ? '' : 'سرگروه: ') + esc(l.name) + '</span>' +
+        '<span class="disc-gmeta">' + num(l.rows.length) + ' مورد · ' + num(sumAmt(l.rows)) + ' ریال</span></summary>' + inner + '</details>';
+    }).join('');
+  }
+
+  function errHtml(e) {
+    var msg = (e && e.message) || String(e || '');
+    var missing = /discrepancy_errors|42P01|does not exist|schema cache/i.test(msg);
+    return '<div class="empty-state">' + (missing
+      ? 'جدول خطاهای مغایرت هنوز ساخته نشده (فایل discrepancy_errors.sql را در Supabase اجرا کنید).'
+      : 'خطا در دریافت اطلاعات: ' + esc(msg)) + '</div>';
+  }
+
+  function render() {
+    var host = document.getElementById(hostId());
+    if (!host) return;
+    var body = shell(host);
+    var syncEl = host.querySelector('.disc-sync');
+    if (syncEl) syncEl.textContent = S.syncedAt ? ('آخرین همگام‌سازی شیت: ' + relativeTimeFa(S.syncedAt)) : '';
+    if (S.loading && !S.rows.length) { body.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>'; return; }
+    if (S.error) { body.innerHTML = errHtml(S.error); return; }
+    var list = S.rows.filter(passes);
+    if (!list.length) { body.innerHTML = '<div class="empty-state">خطایی با این مشخصات پیدا نشد</div>'; return; }
+    var r = currentUserRole;
+    body.innerHTML = r === 'supervisor' ? renderSup(list)
+      : r === 'leader' ? renderLeader(list)
+      : r === 'center' ? renderCenter(list)
+      : list.map(itemHtml).join('');
+  }
+
+  async function loadHier() {
+    var h = { byId: {}, agentCenter: {}, centerLeaders: {} };
+    var res = await Promise.all([
+      fetchAllRows(function (f, t) { return supabaseClient.from('profiles').select('id, full_name, backoffice_id, role, status').in('role', ['agent', 'center', 'leader']).range(f, t); }),
+      fetchAllRows(function (f, t) { return supabaseClient.from('center_agents').select('center_id, agent_id').range(f, t); }),
+      fetchAllRows(function (f, t) { return supabaseClient.from('leader_centers').select('leader_id, center_id').range(f, t); })
+    ]);
+    (res[0].data || []).forEach(function (p) { h.byId[p.id] = p; });
+    (res[1].data || []).forEach(function (l) { if (!h.agentCenter[l.agent_id]) h.agentCenter[l.agent_id] = l.center_id; });
+    (res[2].data || []).forEach(function (l) { (h.centerLeaders[l.center_id] = h.centerLeaders[l.center_id] || []).push(l.leader_id); });
+    // اگر کارشناس چند سنتر داره، سنتی که این کاربر بهش دسترسی داره اولویت داره (RLS خودش فیلتر می‌کنه)
+    return h;
+  }
+
+  async function load() {
+    if (S.loading) return;
+    S.loading = true; S.error = null;
+    render();
+    try {
+      var r = await fetchAllRows(function (f, t) {
+        return supabaseClient.from(TABLE).select('*').order('sheet_id', { ascending: false }).range(f, t);
+      });
+      if (r.error) throw r.error;
+      S.rows = r.data || [];
+      S.syncedAt = S.rows.reduce(function (m, x) { return (x.synced_at && (!m || x.synced_at > m)) ? x.synced_at : m; }, null);
+      if (currentUserRole === 'supervisor' || currentUserRole === 'leader' || currentUserRole === 'center') {
+        try { S.hier = await loadHier(); } catch (e) { console.warn('[disc] hierarchy', e); }
+      }
+    } catch (e) { S.error = e; S.rows = []; }
+    S.loading = false;
+    render();
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-disc="refresh"]')) { load(); return; }
+    if (e.target.closest('[data-tab="bugs"],[data-team-tab="team-bugs"],[data-center-tab="center-bugs"],[data-sup-tab="bugs"]')) load();
+  });
+  window.DISC = { load: load };
+})();
+</script>
 </body>
 </html>
 
