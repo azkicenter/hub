@@ -12216,6 +12216,31 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   window.DISC = { load: load };
 })();
 </script>
+<style id="nav-drawer-slide">
+/* منوی کشویی: چسبیده به لبه‌ی راست، تمام‌قد، لغزیدن نرم از راست به چپ (بدون جابه‌جایی/کوچک شدن صفحه) */
+#nav-drawer{
+  top:0; right:0; bottom:0; left:auto;
+  width:min(300px,84vw);
+  border-radius:26px 0 0 26px;
+  border-right:0;
+  padding:16px 10px 18px;
+  transform:translate3d(100%,0,0);
+  transition:transform .45s cubic-bezier(.22,1,.36,1), visibility 0s linear .45s;
+  will-change:transform;
+  -webkit-backdrop-filter:blur(26px) saturate(180%); backdrop-filter:blur(26px) saturate(180%);
+}
+html.nav-open #nav-drawer{
+  transform:translate3d(0,0,0);
+  transition:transform .45s cubic-bezier(.22,1,.36,1), visibility 0s linear 0s;
+}
+#nav-overlay{ transition:opacity .4s ease, visibility 0s linear .4s; }
+html.nav-open #nav-overlay{ transition:opacity .4s ease, visibility 0s linear 0s; }
+</style>
+<style id="header-align-fix">
+/* کل ردیف هدر (لوگو، آخرین آپدیت، دکمه‌ی منو، اسم و خروج) ~۴ پیکسل پایین‌تر؛ ارتفاع هدر ثابت می‌ماند */
+header.topbar{ padding-top:10px !important; padding-bottom:2px !important; }
+@media (max-width:640px){ header.topbar{ padding-top:9px !important; padding-bottom:1px !important; } }
+</style>
 </body>
 </html>
 
