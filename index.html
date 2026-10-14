@@ -2030,7 +2030,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       </button>
       <button class="tab-btn" data-tab="bugs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
-        خطاها
+        خطای صدور
         <span class="tab-dot bugs-dot" id="bugs-dot"></span>
       </button>
       <button class="tab-btn" data-tab="agent-attendance" type="button">
@@ -2087,7 +2087,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       </button>
       <button class="tab-btn" data-team-tab="team-bugs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
-        خطای تیم
+        خطای صدور
       </button>
       <button class="tab-btn" data-team-group="report" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
@@ -2215,7 +2215,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       </button>
       <button class="tab-btn" data-center-tab="center-bugs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
-        خطا
+        خطای صدور
       </button>
       <button class="tab-btn" data-center-tab="attendance" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg>
@@ -2362,7 +2362,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         </button>
         <button class="tab-btn" data-sup-tab="bugs" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4Z"/><path d="M8 12H4M20 12h-4M12 8V4M9 4l1.5 2M15 4l-1.5 2M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2"/></svg>
-          خطاها
+          خطای صدور
         </button>
         <button class="tab-btn" data-sup-group="report" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
@@ -10863,7 +10863,7 @@ function umLeadersModal(centerId) {
 // کلیدها همان data-team-tab تب‌های پنل سرگروه هستند؛ «report» یعنی کل گروه گزارش
 // ============================================================
 const LEADER_TAB_DEFS = [
-  ['team', 'تعداد صدور تیم'], ['team-bugs', 'خطای تیم'], ['report', 'گزارش (کل گروه)'],
+  ['team', 'تعداد صدور تیم'], ['team-bugs', 'خطای صدور'], ['report', 'گزارش (کل گروه)'],
   ['azki-shifts', 'گزارش ← تفکیک شیفت', 1], ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1],
   ['azki-chart', 'گزارش ← نمودار', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
@@ -11039,7 +11039,7 @@ async function leaderTabsSettingsRender(host) {
 // ---- تب‌های سرپرست (خود سرپرست) ----
 // کلیدها همان data-sup-tab / data-sup-group دکمه‌های #supervisor-tabs و #supervisor-subtabs هستند؛ «تنظیمات» همیشه نمایش داده می‌شود
 const SUP_TAB_DEFS = [
-  ['targets', 'صدور'], ['map', 'نقشه سنتر'], ['bugs', 'خطاها'], ['report', 'گزارش (کل گروه)'],
+  ['targets', 'صدور'], ['map', 'نقشه سنتر'], ['bugs', 'خطای صدور'], ['report', 'گزارش (کل گروه)'],
   ['azki-period', 'گزارش ← گزارش دوره‌ای', 1], ['azki-centers', 'گزارش ← به تفکیک نام مرکز', 1], ['azki-shifts', 'گزارش ← تفکیک شیفت', 1],
   ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1], ['azki-chart', 'گزارش ← نمودار', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
@@ -11153,7 +11153,7 @@ async function permSettingsRender(host) {
 // ذخیره در جدول agent_tab_settings از طریق توابع agent_tab_settings_get/set (فایل agent_tab_settings.sql)
 // کلیدها همان data-tab دکمه‌های #main-tabs هستند
 // ============================================================
-const AGENT_TAB_DEFS = [['targets', 'تارگت روزانه'], ['bugs', 'خطاها'], ['agent-attendance', 'حضور و غیاب'], ['training', 'آموزش']];
+const AGENT_TAB_DEFS = [['targets', 'تارگت روزانه'], ['bugs', 'خطای صدور'], ['agent-attendance', 'حضور و غیاب'], ['training', 'آموزش']];
 
 function applyAgentHiddenTabs(hiddenList) {
   const hidden = new Set(hiddenList || []);
@@ -11212,7 +11212,7 @@ async function agentSettingsRender(host) {
 // ذخیره در جدول center_tab_settings از طریق توابع center_tab_settings_get/set (فایل center_tab_settings.sql)
 // کلیدها همان data-center-tab دکمه‌های #center-tabs هستند
 // ============================================================
-const CENTER_TAB_DEFS = [['center', 'تعداد صدور'], ['center-bugs', 'خطا'], ['attendance', 'حضور و غیاب'], ['center-payroll', 'محاسبه حقوق'], ['center-perf', 'بررسی عملکرد'], ['training', 'آموزش']];
+const CENTER_TAB_DEFS = [['center', 'تعداد صدور'], ['center-bugs', 'خطای صدور'], ['attendance', 'حضور و غیاب'], ['center-payroll', 'محاسبه حقوق'], ['center-perf', 'بررسی عملکرد'], ['training', 'آموزش']];
 
 function applyCenterHiddenTabs(hiddenList) {
   const hidden = new Set(hiddenList || []);
@@ -11816,7 +11816,12 @@ html[data-theme="dark"] .center-perf-table td:first-child{ background:rgba(16,22
 .disc-q{ flex:1 1 200px; min-width:160px; }
 .disc-q:focus,.disc-sel:focus{ border-color:var(--accent); }
 .disc-refresh{ font:inherit; font-size:13px; font-weight:700; color:var(--accent-deep,var(--accent)); background:var(--accent-soft); border:1px solid var(--line); border-radius:12px; padding:8px 14px; cursor:pointer; }
-.disc-sync{ font-size:11.5px; color:var(--ink-faint); margin-inline-start:auto; }
+.disc-sync{ font-size:11.5px; color:var(--ink-faint); margin:-6px 2px 12px; }
+.disc-sync:empty{ display:none; }
+.disc-icon-btn{ display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; padding:0; }
+.disc-trash{ color:#d93025; background:rgba(217,48,37,.10); border-color:rgba(217,48,37,.35); }
+.disc-trash:hover{ background:rgba(217,48,37,.18); }
+html[data-theme="dark"] .disc-trash{ color:#ff7b72; background:rgba(255,100,90,.14); border-color:rgba(255,120,110,.4); }
 .disc-daterow{ align-items:flex-end; }
 .disc-range-note{ font-size:12px; color:var(--ink-soft); padding-bottom:9px; }
 .disc-clear-date{ margin-bottom:0; }
@@ -11949,7 +11954,8 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     host.dataset.discInit = '1';
     host.innerHTML =
       '<div class="disc-wrap">' +
-        '<div class="disc-title">مغایرت‌های ثبت‌شده در شیت (خطای صدور)</div>' +
+        '<div class="disc-title">خطای صدور</div>' +
+        '<div class="disc-sync"></div>' +
         '<div class="disc-bar">' +
           '<select class="disc-sel" data-disc="status">' +
             '<option value="pending">در انتظار (تخفیف / کسر از حقوق)</option>' +
@@ -11957,12 +11963,15 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
             STATUSES.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('') +
           '</select>' +
           '<input class="disc-q" data-disc="q" type="search" placeholder="جستجو: کارشناس / شماره سفارش / توضیحات" autocomplete="off">' +
-          '<button class="disc-refresh" data-disc="refresh" type="button">بروزرسانی</button>' +
-          '<span class="disc-sync"></span>' +
+          '<button class="disc-refresh disc-icon-btn" data-disc="refresh" type="button" title="بروزرسانی" aria-label="بروزرسانی">' +
+            '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>' +
+          '</button>' +
         '</div>' +
         '<div class="disc-bar disc-daterow">' +
           dateFld('from', 'از تاریخ') + dateFld('to', 'تا تاریخ') +
-          '<button class="disc-refresh disc-clear-date" data-disc="clear-date" type="button">حذف فیلتر تاریخ</button>' +
+          '<button class="disc-refresh disc-clear-date disc-icon-btn disc-trash" data-disc="clear-date" type="button" title="حذف فیلتر تاریخ" aria-label="حذف فیلتر تاریخ">' +
+            '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+          '</button>' +
           '<span class="disc-range-note"></span>' +
         '</div>' +
         '<div class="disc-body"></div>' +
