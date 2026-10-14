@@ -11862,7 +11862,7 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   var STATUSES = ['در انتظار تخفیف', 'در انتظار کسر از حقوق', 'در انتظار تایید آموزش', 'بررسی مجدد - معلق', 'عدم تایید آموزش', 'تخفیف شد - کسر شد', 'پرداخت شد'];
   var PENDING = ['در انتظار تخفیف', 'در انتظار کسر از حقوق'];
   var PILL = { 'در انتظار تخفیف': 'wait', 'در انتظار کسر از حقوق': 'ded', 'تخفیف شد - کسر شد': 'done', 'پرداخت شد': 'done' };
-  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {} }, status: 'pending', q: '', loading: false, error: null, syncedAt: null,
+  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {}, centerByKey: {} }, status: 'pending', q: '', loading: false, error: null, syncedAt: null,
             from: null, to: null, calView: { from: [0, 0], to: [0, 0] } };
 
   var esc = function (v) { return window.escHtml(v); };
@@ -12078,8 +12078,25 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     arr.sort(function (a, b) { return faSort(a.name, b.name); });
     return arr.map(function (x) { return agentBlock(x.name, x.rows, openAll || arr.length <= 4, 'disc-l3'); }).join('');
   }
+  /* کلید فشرده‌ی نام سنتر: بدون «مرکز صدور»، بدون هر نوع فاصله/نیم‌فاصله، ي/ك یکسان → «مرکز صدور  کیانی» = «کیانی» = «کیـانی» */
+  function compactKey(name) { return normCenterKey(name).replace(/[\s\u200c\u200b\u200e\u200f\u00a0]+/g, ''); }
+  function issuerCenterKey(issuer) {
+    var s = String(issuer == null ? '' : issuer);
+    var i = s.indexOf('|');
+    return compactKey(i >= 0 ? s.slice(0, i) : s);
+  }
+  /* سنتر ردیف بر اساس نام «مرکز صدور X | کارشناس» داخل کاربر صدور؛ اول تطبیق دقیق، بعد (فقط اگر یکتا بود) شامل‌بودن */
+  function centerByIssuer(issuer) {
+    var key = issuerCenterKey(issuer);
+    if (!key) return null;
+    var map = S.hier.centerByKey || {};
+    if (map[key]) return map[key];
+    var hits = Object.keys(map).filter(function (k) { return k.length >= 3 && (k.indexOf(key) >= 0 || key.indexOf(k) >= 0); });
+    return hits.length === 1 ? map[hits[0]] : null;
+  }
   function centerOf(r) {
     var cid = r.agent_id && S.hier.agentCenter[r.agent_id];
+    if (!cid) cid = centerByIssuer(r.issuer_user);
     var c = cid && S.hier.byId[cid];
     return { id: cid || null, name: c ? (c.full_name || '—') : 'بدون سنتر' };
   }
@@ -12098,8 +12115,8 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   }
 
   function leaderLabel(r) {
-    if (!r.agent_id) return 'نامشخص';
     var c = centerOf(r);
+    if (!r.agent_id && !c.id) return 'نامشخص';
     var ls = (c.id && S.hier.centerLeaders[c.id]) || [];
     var names = ls.map(function (id) { return (S.hier.byId[id] || {}).full_name; }).filter(Boolean).sort(faSort);
     return names.length ? names.join('، ') : 'بدون سرگروه';
@@ -12156,13 +12173,17 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   }
 
   async function loadHier() {
-    var h = { byId: {}, agentCenter: {}, centerLeaders: {} };
+    var h = { byId: {}, agentCenter: {}, centerLeaders: {}, centerByKey: {} };
     var res = await Promise.all([
       fetchAllRows(function (f, t) { return supabaseClient.from('profiles').select('id, full_name, backoffice_id, role, status').in('role', ['agent', 'center', 'leader']).range(f, t); }),
       fetchAllRows(function (f, t) { return supabaseClient.from('center_agents').select('center_id, agent_id').range(f, t); }),
       fetchAllRows(function (f, t) { return supabaseClient.from('leader_centers').select('leader_id, center_id').range(f, t); })
     ]);
-    (res[0].data || []).forEach(function (p) { h.byId[p.id] = p; });
+    h.centerByKey = {};
+    (res[0].data || []).forEach(function (p) {
+      h.byId[p.id] = p;
+      if (p.role === 'center') { var k = compactKey(p.full_name); if (k && !h.centerByKey[k]) h.centerByKey[k] = p.id; }
+    });
     (res[1].data || []).forEach(function (l) { if (!h.agentCenter[l.agent_id]) h.agentCenter[l.agent_id] = l.center_id; });
     (res[2].data || []).forEach(function (l) { (h.centerLeaders[l.center_id] = h.centerLeaders[l.center_id] || []).push(l.leader_id); });
     // اگر کارشناس چند سنتر داره، سنتی که این کاربر بهش دسترسی داره اولویت داره (RLS خودش فیلتر می‌کنه)
