@@ -9761,7 +9761,9 @@ async function load(){
   const cr=await supabaseClient.from(C).select('*').order('created_at',{ascending:true}).limit(5000);
   if(cr.error){S.err=S.err||('Failed to load comments: '+cr.error.message)}
   else{const vis=new Set(S.tasks.map(t=>t.id));(cr.data||[]).forEach(c=>{if(vis.has(c.task_id))(S.comments[c.task_id]=S.comments[c.task_id]||[]).push(c)})}
-  const p=await supabaseClient.from('profiles').select('id, full_name').in('role',isSup()?['leader']:['agent']).limit(500);
+  // only leaders + supervisors are listed in the kanban; RPC bypasses RLS so leaders can see each other and supervisors
+  let p=await supabaseClient.rpc('kanban_people');
+  if(p.error){console.warn('kanban_people RPC failed, falling back:',p.error.message);p=await supabaseClient.from('profiles').select('id, full_name').in('role',['leader','supervisor']).limit(500)}
   S.people={}; S.opts=[]; (p.data||[]).forEach(x=>{S.people[x.id]=x.full_name||'—';S.opts.push(x.id)});
   const miss=[...new Set(S.tasks.flatMap(t=>ids(t).concat(t.created_by,cms(t).map(c=>c.author_id))).concat(S.me).filter(i=>i&&!S.people[i]))];
   if(miss.length){
