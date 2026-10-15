@@ -9656,7 +9656,7 @@ document.addEventListener('visibilitychange', () => {
 .kb-btn{font:inherit;cursor:pointer;border:0;border-radius:var(--radius-sm);padding:8px 16px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-deep))}
 .kb-btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}.kb-btn.del{background:var(--danger)}
 .kb-mine{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink-soft)}
-.kb-board{display:grid;grid-template-columns:repeat(4,minmax(240px,1fr));gap:12px;overflow-x:auto;align-items:start;padding-bottom:8px}
+.kb-board{display:grid;grid-template-columns:repeat(5,minmax(240px,1fr));gap:12px;overflow-x:auto;align-items:start;padding-bottom:8px}
 .kb-col{background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius);padding:10px;min-height:160px}
 .kb-col.over{outline:2px dashed var(--accent)}
 .kb-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:10px;border-bottom:3px solid var(--c);padding-bottom:7px}
@@ -9724,13 +9724,13 @@ document.addEventListener('visibilitychange', () => {
 .kb-m .kb-ppl-list label{display:flex;flex-direction:row;align-items:center;gap:9px;font-size:13px;color:var(--ink);margin:0;padding:6px 8px;border-radius:7px;cursor:pointer;text-align:right}
 .kb-m .kb-ppl-list label:hover{background:var(--accent-soft)}
 .kb-ppl-empty{text-align:center;color:var(--ink-faint);font-size:12px;padding:12px 0}
-@media(max-width:760px){.kb-board{grid-template-columns:repeat(4,80vw)}}
+@media(max-width:760px){.kb-board{grid-template-columns:repeat(5,80vw)}}
 </style>
 <script>
 (function(){
-const T='kanban_tasks',COLS=[['todo','To Do','#7C5CE0'],['doing','In Progress','#17A9FF'],['review','In Review','#E08A17'],['done','Done','#1FA971']];
+const T='kanban_tasks',COLS=[['todo','To Do','#7C5CE0'],['doing','In Progress','#17A9FF'],['review','In Review','#E08A17'],['done','Done','#1FA971'],['cancelled','Cancelled','#E0453F']];
 const PRI={low:['Low','#1FA971'],medium:['Medium','#17A9FF'],high:['High','#E08A17'],urgent:['Urgent','#E0453F']};
-const FA_ST={todo:'برای انجام',doing:'در حال انجام',review:'در حال بررسی',done:'انجام‌شده'};
+const FA_ST={todo:'برای انجام',doing:'در حال انجام',review:'در حال بررسی',done:'انجام‌شده',cancelled:'لغو شده'};
 const FA_PRI={low:'کم',medium:'متوسط',high:'زیاد',urgent:'فوری'};
 const JMFA=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 const JM=['Farvardin','Ordibehesht','Khordad','Tir','Mordad','Shahrivar','Mehr','Aban','Azar','Dey','Bahman','Esfand'];
@@ -9742,7 +9742,7 @@ const p2=n=>String(n).padStart(2,'0');
 const toJ=d=>{if(!d)return null;const[y,m,x]=d.split('-').map(Number);return gregorianToJalali(y,m,x)};
 const fd=d=>{const j=toJ(d);return j?`${j[2]} ${JM[j[1]-1]} ${j[0]}`:''};
 const today=()=>{const j=tehranTodayJalali();return jalaliToGregorian(j[0],j[1],j[2])};
-const late=t=>t.due_date&&t.status!=='done'&&t.due_date<today();
+const late=t=>t.due_date&&t.status!=='done'&&t.status!=='cancelled'&&t.due_date<today();
 // ---- multi-assignee helpers (assignee_ids = uuid[]; assignee_id stays as the first assignee for backward compatibility)
 const ids=t=>Array.isArray(t.assignee_ids)&&t.assignee_ids.length?t.assignee_ids:(t.assignee_id?[t.assignee_id]:[]);
 const names=t=>ids(t).map(i=>S.people[i]||'—');
@@ -9764,7 +9764,12 @@ async function load(){
   const p=await supabaseClient.from('profiles').select('id, full_name').in('role',isSup()?['leader']:['agent']).limit(500);
   S.people={}; S.opts=[]; (p.data||[]).forEach(x=>{S.people[x.id]=x.full_name||'—';S.opts.push(x.id)});
   const miss=[...new Set(S.tasks.flatMap(t=>ids(t).concat(t.created_by,cms(t).map(c=>c.author_id))).concat(S.me).filter(i=>i&&!S.people[i]))];
-  if(miss.length){const n=await supabaseClient.from('profiles').select('id, full_name').in('id',miss);(n.data||[]).forEach(x=>S.people[x.id]=x.full_name||'—');}
+  if(miss.length){
+    // RLS on profiles hides other users' names from non-supervisors -> use a SECURITY DEFINER RPC (see kanban_names.sql)
+    let n=await supabaseClient.rpc('kanban_names',{p_ids:miss});
+    if(n.error){console.warn('kanban_names RPC failed, falling back to direct select:',n.error.message);n=await supabaseClient.from('profiles').select('id, full_name').in('id',miss)}
+    (n.data||[]).forEach(x=>S.people[x.id]=x.full_name||'—');
+  }
 }
 function shell(){
   const opts=Object.entries(S.people).sort((a,b)=>a[1].localeCompare(b[1],'fa')).map(([i,n])=>`<option value="${e(i)}">${e(n)}</option>`).join('');
@@ -9982,7 +9987,7 @@ window.kbOpen=async function(host){
 const sk=()=>'kb_seen_'+S.me;
 function seenSet(){if(!S.seen){try{S.seen=new Set(JSON.parse(localStorage.getItem(sk())||'[]'))}catch(x){S.seen=new Set()}}return S.seen}
 const key=t=>t.id+':'+S.me;
-function newOnes(){return S.tasks.filter(t=>ids(t).includes(S.me)&&t.created_by!==S.me&&t.status!=='done'&&t.status!=='archived'&&!seenSet().has(key(t)))}
+function newOnes(){return S.tasks.filter(t=>ids(t).includes(S.me)&&t.created_by!==S.me&&t.status!=='done'&&t.status!=='cancelled'&&t.status!=='archived'&&!seenSet().has(key(t)))}
 function seen(t){const s=seenSet();if(!s.has(key(t))){s.add(key(t));try{localStorage.setItem(sk(),JSON.stringify([...s].slice(-500)))}catch(x){}pulse(true)}}
 let lastCount=-1;
 function pulse(silent){
