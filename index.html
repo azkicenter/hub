@@ -574,43 +574,7 @@
   .azki-trend-chip.on i { opacity: 1; }
 
   /* گزارش قطعی */
-  .aog-row { display: grid; grid-template-columns: minmax(84px, 150px) 1fr auto; align-items: center; gap: 6px 12px; padding: 9px 0; border-bottom: 1px dashed var(--line); }
-  .aog-row:last-child { border-bottom: 0; }
-  .aog-name { font-weight: 700; font-size: 13.5px; color: var(--ink); }
-  .aog-bar { display: flex; height: 20px; border-radius: 6px; overflow: hidden; background: var(--surface-tint); min-width: 0; }
-  .aog-seg { height: 100%; min-width: 3px; }
-  .aog-total { font-weight: 800; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .aog-detail { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
-  .aog-dchip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-soft); background: var(--surface-tint); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
-  .aog-dchip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
-  .aog-dchip b { color: var(--ink); font-weight: 800; }
-  .aog-open { color: var(--danger); font-size: 11.5px; font-weight: 700; margin-inline-start: 6px; }
-  .aog-foot { padding: 10px 4px 2px; color: var(--ink-faint); font-size: 12px; line-height: 1.8; }
   /* نمودار روزانه‌ی قطعی: تگ‌ها سمت راست، نمودار سمت چپ */
-  .aod-card { margin-bottom: 14px; }
-  .aod-head { display: flex; align-items: center; gap: 10px; width: 100%; background: transparent; border: 0; padding: 2px 0; margin: 0; cursor: pointer; font: inherit; color: var(--ink); text-align: right; direction: rtl; }
-  .aod-head .azki-trend-title { margin: 0; }
-  .aod-arrow { width: 14px; height: 14px; flex: none; color: var(--ink-soft); fill: currentColor; transition: transform .2s ease; }
-  .aod-card.open .aod-arrow { transform: rotate(-90deg); }
-  .aod-body { display: none; margin-top: 12px; }
-  .aod-card.open .aod-body { display: block; }
-  .aod-wrap { display: flex; flex-direction: column; gap: 12px; direction: rtl; }
-  .aod-tags { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 6px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
-  .aod-tags-title { font-size: 12px; font-weight: 800; color: var(--ink-soft); white-space: nowrap; flex: none; }
-  .aod-tag { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 8px; text-align: right; font: inherit; font-size: 12.5px; color: var(--ink-soft); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; cursor: pointer; transition: background .12s, border-color .12s; }
-  .aod-tag i { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--ink-faint)); flex: none; opacity: .5; }
-  .aod-tag span { white-space: nowrap; }
-  .aod-tag.zero { opacity: .6; }
-  .aod-tag small { color: var(--ink-faint); font-size: 11px; white-space: nowrap; }
-  .aod-tag.on { color: var(--ink); font-weight: 700; border-color: var(--c, var(--accent)); background: var(--surface-tint); }
-  .aod-tag.on i { opacity: 1; }
-  .aod-main { flex: 1; min-width: 0; }
-  .aod-mode { display: inline-flex; gap: 4px; margin-bottom: 10px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-tint); }
-  .aod-mode button { font: inherit; font-size: 12.5px; border: 0; background: transparent; color: var(--ink-soft); padding: 5px 16px; border-radius: 7px; cursor: pointer; }
-  .aod-mode button.on { background: var(--accent); color: #fff; font-weight: 700; }
-  .aod-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
-  .aod-legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .aod-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
   .azc-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-bottom: 14px; }
   .azc-tools .azki-fld { min-width: 0; }
   .azki-trend-plot.azc svg text { font-size: 11.5px; }
@@ -1540,6 +1504,18 @@
   .sm-prow .pc { font-size: 13px; font-weight: 700; color: var(--accent-deep); }
   .sm-prow .bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; display: block; }
   .sm-prow .bar u { display: block; height: 100%; background: var(--accent); text-decoration: none; }
+  .sm-pwrap { border-bottom: 1px solid var(--line); }
+  .sm-pwrap .sm-phead { display: flex; align-items: stretch; }
+  .sm-pwrap .sm-prow { border-bottom: 0; flex: 1; min-width: 0; }
+  .sm-pwrap .sm-ptog { flex: none; width: 40px; background: none; border: 0; border-right: 1px solid var(--line); cursor: pointer; color: var(--ink-soft); font-family: var(--font); font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+  .sm-pwrap .sm-ptog:hover { background: var(--accent-soft); color: var(--accent-deep); }
+  .sm-pwrap .sm-ptog i { font-style: normal; font-size: 10px; transition: transform .15s; display: inline-block; }
+  .sm-pwrap.open .sm-ptog i { transform: rotate(180deg); }
+  .sm-pwrap .sm-cities { display: none; padding: 6px 14px 10px; background: var(--surface-tint); border-top: 1px dashed var(--line); }
+  .sm-pwrap.open .sm-cities { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sm-city { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface, #fff); font-family: var(--font); font-size: 12px; color: var(--ink); cursor: pointer; }
+  .sm-city:hover, .sm-city.active { background: var(--accent-soft); border-color: var(--accent); }
+  .sm-city b { color: var(--accent-deep); font-weight: 700; }
   .sm-prow.zero { cursor: default; grid-template-columns: 1fr auto; }
   .sm-prow.zero:hover { background: none; }
   .sm-prow.zero .pn, .sm-prow.zero .pc { color: var(--danger); }
@@ -2128,14 +2104,6 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
         مقایسه درصد صدور
       </button>
-      <button class="subtab-btn" data-team-tab="azki-oct" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
-        OCT
-      </button>
-      <button class="subtab-btn" data-team-tab="azki-outage" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-        گزارش قطعی
-      </button>
       <span class="subtab-break"></span>
       <button class="subtab-btn" data-team-tab="azki-chart" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
@@ -2202,9 +2170,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
     <div class="panel" id="panel-team-training"></div>
     <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
-    <div class="panel" id="panel-azki-oct"></div>
     <div class="panel" id="panel-azki-chart"></div>
-    <div class="panel" id="panel-azki-outage"></div>
     <div class="panel" id="panel-azki-active"></div>
     <div class="panel" id="panel-azki-payroll"></div>
 
@@ -2419,14 +2385,6 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
           مقایسه درصد صدور
         </button>
-          <button class="subtab-btn" data-sup-tab="azki-oct" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>
-          OCT
-        </button>
-          <button class="subtab-btn" data-sup-tab="azki-outage" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-          گزارش قطعی
-        </button>
       <span class="subtab-break"></span>
           <button class="subtab-btn" data-sup-tab="azki-chart" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
@@ -2528,13 +2486,6 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
               </div>
             </div>
           </div>
-          <div class="azki-fld" id="azki-oct-opts" style="display:none;">
-            <span class="azki-fld-label">فیلتر OCT</span>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
-              <label class="sm-chk" for="azki-oct-ex-maturity"><input type="checkbox" id="azki-oct-ex-maturity" checked>بدون سررسید</label>
-              <label class="sm-chk" for="azki-oct-ex-addendum"><input type="checkbox" id="azki-oct-ex-addendum" checked>بدون الحاقیه</label>
-            </div>
-          </div>
           <div class="azki-fld">
             <span class="azki-fld-label">از تاریخ</span>
             <button type="button" class="azki-ctl" id="azki-from-btn"><span id="azki-from-text">—</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
@@ -2628,26 +2579,9 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         </div>
       </div>
 
-      <div id="sup-view-azki-oct" style="display:none;">
-        <div class="period-label" id="azki-oct-label"></div>
-        <div class="period-label" id="azki-oct-note"></div>
-        <div class="summary-row" id="azki-oct-cards"></div>
-        <div id="azki-oct-compare" style="margin:14px 0;"></div>
-        <div style="text-align:center; margin:0 0 10px;"><button type="button" class="sm-btn" id="azki-oct-to-chart">مشاهده‌ی نمودار کامل OCT (با P50 و P95)</button></div>
-        <div class="list-card" id="azki-oct-list">
-          <div class="loading-state">در حال بارگذاری...</div>
-        </div>
-        <div id="azki-oct-centers"></div>
-      </div>
-
       <div id="sup-view-azki-chart" style="display:none;">
         <div class="period-label" id="azki-chart-label"></div>
         <div id="azki-chart-root"><div class="loading-state">در حال بارگذاری...</div></div>
-      </div>
-
-      <div id="sup-view-azki-outage" style="display:none;">
-        <div class="period-label" id="azki-outage-label"></div>
-        <div id="azki-outage-root"><div class="loading-state">در حال بارگذاری...</div></div>
       </div>
 
       <div id="sup-view-bugs" class="disc-host" style="display:none;"></div>
@@ -2785,8 +2719,6 @@ const TABLE_META = "app_meta";
 const TABLE_AZKI_PERIOD = "azki_center_period_report";
 const TABLE_AZKI_BREAKDOWN = "azki_center_breakdown_report";
 const TABLE_AZKI_SHIFT = "azki_center_shift_report";
-const TABLE_CENTER_OCT = "oct_center_daily";               // OCT روزانه از کارت ۲۳۶۵۳ (۴ ترکیب بدون سررسید × بدون الحاقیه)
-const TABLE_CENTER_OCT_BRK = "azki_center_oct_breakdown";  // OCT به تفکیک اسم مرکز (از کارت ۱۵۰۹۲؛ همه‌ی کاربرهای دارای «مرکز» در اسم)
 const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "پارسیان", "پردیس", "تجارت نو", "تعاون", "حکمت", "دی", "رازی", "سامان", "سینا", "کوثر", "ما", "معلم", "نوین", "هوشمند فردا"];
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
@@ -2867,7 +2799,7 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
 });
 
 window.teamCurrentTab = 'team';
-const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare', 'azki-oct', 'azki-chart', 'azki-outage'];
+const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare', 'azki-chart'];
 let teamLastReportTab = 'azki-shifts';
 window.leaderHiddenTabs = new Set(); // تب‌هایی که سرپرست برای سرگروه‌ها مخفی کرده
 function teamShowTab(tab) {
@@ -2886,7 +2818,7 @@ function teamShowTab(tab) {
   }
   document.getElementById('panel-team').classList.remove('active');
   document.getElementById('panel-team-bugs').classList.remove('active');
-  ['panel-azki-compare', 'panel-azki-oct', 'panel-azki-chart', 'panel-azki-outage', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll', 'panel-kanban', 'panel-attendance', 'panel-users', 'panel-team-training'].forEach(id => {
+  ['panel-azki-compare', 'panel-azki-chart', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll', 'panel-kanban', 'panel-attendance', 'panel-users', 'panel-team-training'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2899,10 +2831,8 @@ function teamShowTab(tab) {
   if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
   if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
   if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
-  if (tab === 'azki-oct' && !azkiState.oct.loaded) loadAzkiOctView();
   if (tab === 'azki-chart') azkiChartEnsure();
   azkiSyncFilterForTab(tab);
-  if (tab === 'azki-outage' && !azkiState.outage.loaded) loadAzkiOutageView();
   if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
   if (tab === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
   if (tab === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
@@ -2958,7 +2888,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   const PROVINCES = ['آذربایجان شرقی', 'آذربایجان غربی', 'اردبیل', 'اصفهان', 'البرز', 'ایلام', 'بوشهر', 'تهران', 'چهارمحال و بختیاری', 'خراسان جنوبی', 'خراسان رضوی', 'خراسان شمالی', 'خوزستان', 'زنجان', 'سمنان', 'سیستان و بلوچستان', 'فارس', 'قزوین', 'قم', 'کردستان', 'کرمان', 'کرمانشاه', 'کهگیلویه و بویراحمد', 'گلستان', 'گیلان', 'لرستان', 'مازندران', 'مرکزی', 'هرمزگان', 'همدان', 'یزد'];
   const STATE_ALIAS = { 'آذربایجان': 'آذربایجان غربی' };
 
-  const S = { map: null, cluster: null, markers: new Map(), rows: [], activeId: null, busy: false, libs: null, green: new Set(), unmatched: [] };
+  const S = { map: null, cluster: null, markers: new Map(), rows: [], activeId: null, busy: false, libs: null, green: new Set(), unmatched: [], city: '', openProv: new Set() };
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const norm = s => String(s == null ? '' : s)
@@ -3167,8 +3097,24 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     const without = PROVINCES.filter(p => !counts.get(p)).sort((a, b) => a.localeCompare(b, 'fa'));
     const others = [...counts.keys()].filter(k => !PROVINCES.includes(k));
     const max = Math.max(1, ...withC.map(p => counts.get(p)));
-    const row = p => '<button type="button" class="sm-prow" data-p="' + esc(p) + '"><span class="pn">' + esc(p) + '</span><span class="pc">' + faNum(counts.get(p)) + '</span>'
-      + '<i class="bar"><u style="width:' + Math.max(4, Math.round(counts.get(p) / max * 100)) + '%"></u></i></button>';
+    const cityMap = new Map();
+    S.rows.forEach(c => {
+      const raw = String(c.city == null ? '' : c.city).replace(/\s+/g, ' ').trim();
+      const label = raw || 'نامشخص', k = norm(label);
+      if (!cityMap.has(c.state)) cityMap.set(c.state, new Map());
+      const m = cityMap.get(c.state);
+      if (!m.has(k)) m.set(k, { label, raw, n: 0 });
+      m.get(k).n++;
+    });
+    const citiesOf = p => [...(cityMap.get(p) || new Map()).values()].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label, 'fa'));
+    const row = p => {
+      const cs = citiesOf(p), open = S.openProv.has(p);
+      return '<div class="sm-pwrap' + (open ? ' open' : '') + '" data-pw="' + esc(p) + '"><div class="sm-phead">'
+        + '<button type="button" class="sm-prow" data-p="' + esc(p) + '"><span class="pn">' + esc(p) + '</span><span class="pc">' + faNum(counts.get(p)) + '</span>'
+        + '<i class="bar"><u style="width:' + Math.max(4, Math.round(counts.get(p) / max * 100)) + '%"></u></i></button>'
+        + '<button type="button" class="sm-ptog" data-tog="' + esc(p) + '" title="نمایش شهرها"><span>' + faNum(cs.length) + ' شهر</span><i>▼</i></button></div>'
+        + '<div class="sm-cities">' + cs.map(ct => '<button type="button" class="sm-city' + (S.city === ct.raw && $('sm-state').value === p ? ' active' : '') + '" data-cp="' + esc(p) + '" data-cc="' + esc(ct.raw) + '">' + esc(ct.label) + '<b>' + faNum(ct.n) + '</b></button>').join('') + '</div></div>';
+    };
     const zero = p => '<div class="sm-prow zero"><span class="pn">' + esc(p) + '</span><span class="pc">۰</span></div>';
     $('sm-prov').innerHTML =
       '<div class="sm-sum"><div><b>' + faNum(S.rows.length) + '</b><span>کل سنترها</span></div>'
@@ -3182,10 +3128,12 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   function render(fit) {
     const q = norm($('sm-q').value.trim()), st = $('sm-state').value;
     const onlyGreen = $('sm-only-green').checked;
-    const rows = S.rows.filter(c => (!st || c.state === st) && (!q || c._h.includes(q)) && (!onlyGreen || S.green.has(c.id)));
+    if (!st) S.city = '';
+    const rows = S.rows.filter(c => (!st || c.state === st) && (!S.city || String(c.city == null ? '' : c.city).replace(/\s+/g, ' ').trim() === S.city) && (!q || c._h.includes(q)) && (!onlyGreen || S.green.has(c.id)));
     S.cluster.clearLayers();
     S.cluster.addLayers(rows.map(c => S.markers.get(c.id)));
     document.querySelectorAll('#sm-prov .sm-prow[data-p]').forEach(b => b.classList.toggle('active', b.dataset.p === st));
+    document.querySelectorAll('#sm-prov .sm-city').forEach(b => b.classList.toggle('active', !!S.city && b.dataset.cc === S.city && b.dataset.cp === st));
     $('sm-list').innerHTML = rows.length ? rows.map(c =>
       '<button type="button" class="sm-item' + (c.id === S.activeId ? ' active' : '') + '" data-id="' + esc(c.id) + '">'
       + '<div class="n"><i class="sm-dot' + (S.green.has(c.id) ? ' green' : (c.is_approx ? ' approx' : '')) + '" style="margin:0"></i>' + esc(c.name) + '</div>'
@@ -3248,7 +3196,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
   }
 
   window.supCurrentTab = 'targets';
-  const SUP_REPORT_TABS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare', 'azki-oct', 'azki-chart', 'azki-outage'];
+  const SUP_REPORT_TABS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare', 'azki-chart'];
   let supLastReportTab = 'azki-period';
   window.supHiddenTabs = new Set(); // تب‌هایی که خود سرپرست از تنظیمات مخفی کرده
   function supShowTab(which) {
@@ -3268,9 +3216,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sup-view-azki-centers').style.display = which === 'azki-centers' ? '' : 'none';
     $('sup-view-azki-shifts').style.display = which === 'azki-shifts' ? '' : 'none';
     $('sup-view-azki-compare').style.display = which === 'azki-compare' ? '' : 'none';
-    $('sup-view-azki-oct').style.display = which === 'azki-oct' ? '' : 'none';
     $('sup-view-azki-chart').style.display = which === 'azki-chart' ? '' : 'none';
-    $('sup-view-azki-outage').style.display = which === 'azki-outage' ? '' : 'none';
     $('sup-view-azki-payroll').style.display = which === 'azki-payroll' ? '' : 'none';
     $('sup-view-azki-active').style.display = which === 'azki-active' ? '' : 'none';
     $('sup-view-bugs').style.display = which === 'bugs' ? '' : 'none';
@@ -3288,10 +3234,8 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'azki-centers' && !azkiState.centers.loaded) loadAzkiCentersView();
     if (which === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
     if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
-    if (which === 'azki-oct' && !azkiState.oct.loaded) loadAzkiOctView();
     if (which === 'azki-chart') azkiChartEnsure();
     azkiSyncFilterForTab(which);
-    if (which === 'azki-outage' && !azkiState.outage.loaded) loadAzkiOutageView();
     if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
     if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
     if (which === 'kanban') kbOpen($('sup-view-kanban'));
@@ -3323,9 +3267,25 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     $('sm-prov').style.display = b.dataset.side === 'prov' ? '' : 'none';
   }));
   $('sm-prov').addEventListener('click', e => {
+    const tg = e.target.closest('.sm-ptog[data-tog]');
+    if (tg) {
+      const p = tg.dataset.tog, w = tg.closest('.sm-pwrap');
+      if (S.openProv.has(p)) S.openProv.delete(p); else S.openProv.add(p);
+      if (w) w.classList.toggle('open', S.openProv.has(p));
+      return;
+    }
+    const ct = e.target.closest('.sm-city[data-cc]');
+    if (ct) {
+      if (!S.map) return;
+      const sel = $('sm-state'), same = sel.value === ct.dataset.cp && S.city === ct.dataset.cc;
+      sel.value = ct.dataset.cp; S.city = same ? '' : ct.dataset.cc;
+      render(true);
+      return;
+    }
     const b = e.target.closest('.sm-prow[data-p]'); if (!b || !S.map) return;
     const sel = $('sm-state');
     sel.value = sel.value === b.dataset.p ? '' : b.dataset.p;
+    S.city = '';
     render(true);
   });
   const fsBtn = $('sm-full');
@@ -3338,7 +3298,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
 
   let t;
   $('sm-q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => S.map && S.rows.length && render(true), 150); });
-  $('sm-state').addEventListener('change', () => S.map && S.rows.length && render(true));
+  $('sm-state').addEventListener('change', () => { S.city = ''; if (S.map && S.rows.length) render(true); });
   $('sm-only-green').addEventListener('change', () => S.map && S.rows.length && render(true));
   $('sm-refresh').addEventListener('click', () => { if (S.map) fetchRows(); else openMap(); });
   $('sm-list').addEventListener('click', e => {
@@ -3486,13 +3446,9 @@ const azkiState = {
   centers: { loaded: false, rows: [] },
   shifts:  { loaded: false, rows: [], mode: 'date' },
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
-  oct:     { loaded: false, rows: [], brk: [], excludeMaturity: true, excludeAddendum: true },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
-  outage:  { loaded: false, rows: [], tagOff: new Set(), dayTags: new Set(), dayOpen: true, dayMode: 'bar', allTags: null, companyMap: null, gen: 0 },
-  chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']), oct: new Set(['avg', 'sla']) }, gen: 0 },
-  octSla: { loaded: false, loading: false, byPeriod: {} },
-  octCmp: { sel: new Set(['avg', 'all', 'sla']) },
+  chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']) }, gen: 0 },
 };
 
 function faDigits(v) { return String(v).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]); }
@@ -4871,8 +4827,6 @@ async function exportAzkiReportExcel() {
     'azki-period':  { st: azkiState.period,  has: () => azkiState.period.rows.length,  build: azkiBuildPeriodExport },
     'azki-centers': { st: azkiState.centers, has: () => azkiState.centers.rows.length, build: azkiBuildCentersExport },
     'azki-shifts':  { st: azkiState.shifts,  has: () => azkiState.shifts.rows.length,  build: azkiBuildShiftsExport },
-    'azki-outage':  { st: azkiState.outage,  has: () => azkiState.outage.rows.length,  build: azkiBuildOutageExport },
-    'azki-oct':     { st: azkiState.oct,     has: () => azkiState.oct.rows.length,    build: azkiBuildOctExport },
     'azki-compare': { st: azkiState.compare, has: () => azkiState.compare.list.some(c => (azkiState.compare.byScope[c] || []).length), build: azkiBuildCompareExport },
   }[tab];
   if (!cfg) return;
@@ -4918,271 +4872,6 @@ async function loadAzkiCompareView() {
   renderAzkiCompareView();
 }
 
-// ============================================================
-// تب «OCT» (زمان صدور = زمان بستن − زمان خرید سفارش)
-// منبع: کارت ۲۳۶۵۳ متابیس (مبنای «تاریخ بستن»). ورک‌فلوی داشبورد در n8n هر ۲ ساعت کارت رو برای ۴ ترکیبِ
-// (بدون سررسید × بدون الحاقیه) می‌خونه و تو جدول oct_center_daily می‌ریزه:
-//  • avg/p50/p75/p95/max/min = فقط operator_type «ازکی سنتر»
-//  • all_avg_hours = همون کارت بدون فیلتر operator_type (کل صدور)
-// لیست «میانگین هر مرکز» از جدول azki_center_oct_breakdown (کارت ۱۵۰۹۲، همه‌ی کاربرهای دارای «مرکز» در اسم) می‌آد.
-// نکته: صدک‌ها قابل جمع‌زدن نیستن، پس این تب فقط «روزانه» نشون می‌ده؛ فیلتر «حالت نمایش» و «شرکت بیمه» توش مخفیه.
-// توجه: «محاسبه حقوق» هنوز از SLA اپراتورها استفاده می‌کنه و به این تب ربطی نداره.
-// ============================================================
-function azkiOctFmtSec(sec) {
-  if (sec === null || sec === undefined || !isFinite(sec)) return '—';
-  const sign = sec < 0 ? '-' : '';
-  const min = Math.abs(sec) / 60;
-  if (min < 60) return `${sign}${formatNumber(round2(min))} دقیقه`;
-  const totalMin = Math.round(min);
-  const h = Math.floor(totalMin / 60), m = totalMin % 60;
-  return sign + (m ? `${faDigits(h)} ساعت و ${faDigits(m)} دقیقه` : `${faDigits(h)} ساعت`);
-}
-const azkiOctFmtHours = (h) => (h === null || h === undefined || !isFinite(Number(h))) ? '—' : azkiOctFmtSec(Number(h) * 3600);
-const azkiOctNums = (rows, key) => rows.map(r => r[key]).filter(v => v !== null && v !== undefined && isFinite(Number(v))).map(Number);
-const azkiOctMean = (rows, key) => { const v = azkiOctNums(rows, key); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
-const azkiOctMax = (rows, key) => { const v = azkiOctNums(rows, key); return v.length ? Math.max(...v) : null; };
-const azkiOctMin = (rows, key) => { const v = azkiOctNums(rows, key); return v.length ? Math.min(...v) : null; };
-
-function azkiOctFilterText() {
-  const st = azkiState.oct;
-  return `ازکی سنتر • مبنای تاریخ بستن • ${st.excludeMaturity ? 'بدون سررسید' : 'همراه با سررسید'} • ${st.excludeAddendum ? 'بدون الحاقیه' : 'همراه با الحاقیه'}`;
-}
-
-async function fetchAzkiOctRows(bounds, excludeAddendum, excludeMaturity) {
-  return fetchAllRows((from, to) =>
-    supabaseClient
-      .from(TABLE_CENTER_OCT)
-      .select('*')
-      .eq('exclude_addendum', excludeAddendum)
-      .eq('exclude_maturity', excludeMaturity)
-      .gte('report_date', bounds.startDate)
-      .lte('report_date', bounds.endDate)
-      .order('report_date', { ascending: true })
-      .range(from, to)
-  );
-}
-
-async function fetchAzkiOctBreakdown(bounds, excludeAddendum, excludeMaturity) {
-  return fetchAllRows((from, to) =>
-    supabaseClient
-      .from(TABLE_CENTER_OCT_BRK)
-      .select('*')
-      .eq('exclude_addendum', excludeAddendum)
-      .eq('exclude_maturity', excludeMaturity)
-      .gte('report_date', bounds.startDate)
-      .lte('report_date', bounds.endDate)
-      .order('report_date', { ascending: true })
-      .range(from, to)
-  );
-}
-
-// میانگین وزنی OCT هر مرکز در کل بازه (وزن = تعداد سفارشِ دارای OCT)
-function azkiOctCenterAgg(rows) {
-  const m = {};
-  rows.forEach(r => {
-    const name = r.center_name || 'نامشخص';
-    const g = m[name] || (m[name] = { name, orders: 0, octN: 0, sum: 0 });
-    g.orders += r.orders_count || 0;
-    g.octN += r.oct_n || 0;
-    g.sum += Number(r.oct_sum_hours) || 0;
-  });
-  return Object.values(m).map(g => ({ ...g, avg: g.octN ? g.sum / g.octN : null }))
-    .sort((a, b) => (b.orders - a.orders) || a.name.localeCompare(b.name, 'fa'));
-}
-
-async function loadAzkiOctView() {
-  if (!azkiAllowed()) return;
-  const bounds = getAzkiBounds();
-  const st = azkiState.oct;
-  const exA = st.excludeAddendum, exM = st.excludeMaturity;
-  document.getElementById('azki-oct-label').textContent = azkiRangeText(bounds);
-  const [res, brkRes] = await Promise.all([fetchAzkiOctRows(bounds, exA, exM), fetchAzkiOctBreakdown(bounds, exA, exM)]);
-  // اگه وسط لود بازه یا یکی از دو فیلتر عوض شده، این جواب کهنه‌ست
-  if (bounds !== azkiState.bounds || exA !== st.excludeAddendum || exM !== st.excludeMaturity) return;
-  if (res.error) {
-    document.getElementById('azki-oct-cards').innerHTML = '';
-    document.getElementById('azki-oct-note').textContent = '';
-    document.getElementById('azki-oct-centers').innerHTML = '';
-    document.getElementById('azki-oct-list').innerHTML = `<div class="empty-state">خطا در دریافت گزارش: ${azkiShiftEsc(res.error.message)}</div>`;
-    return;
-  }
-  if (brkRes.error) console.warn('خطا در دریافت OCT تفکیک مراکز:', brkRes.error.message);
-  st.rows = res.data || [];
-  st.brk = brkRes.error ? [] : (brkRes.data || []);
-  st.loaded = true;
-  renderAzkiOctView();
-}
-
-function renderAzkiOctView() {
-  renderAzkiOctViewCore();
-  renderAzkiOctCompare();
-}
-
-// نمودار مقایسه‌ی «OCT» و «SLA کل» داخل خود تب OCT (هر دو بر حسب ساعت، روی یک محور)
-function renderAzkiOctCompare() {
-  const el = document.getElementById('azki-oct-compare');
-  if (!el) return;
-  const st = azkiState.oct, sla = azkiState.octSla;
-  if (!st.rows.length) { el.innerHTML = ''; return; }
-  if (!sla.loaded && !sla.loading) {
-    sla.loading = true;
-    loadAzkiOctSla().catch(e => console.warn('SLA:', e)).finally(() => { sla.loading = false; if (sla.loaded) renderAzkiOctCompare(); });
-  }
-
-  // کارت SLA کل (میانگین دوره‌ها در بازه‌ی انتخابی)
-  const cardsEl = document.getElementById('azki-oct-cards');
-  if (cardsEl && !document.getElementById('azki-oct-sla-card')) {
-    cardsEl.insertAdjacentHTML('beforeend', '<div class="summary-card" id="azki-oct-sla-card" title="میانگین زمان صدور کارشناس‌ها از گزارش SLA (کارت ۲۰۵۱۶) — کل دوره‌ی ۲۱ تا ۲۰"><div class="label">SLA کل کارشناسان</div><div class="value is-text" id="azki-oct-sla-val">—</div><div class="sub" id="azki-oct-sla-sub"></div></div>');
-  }
-  const periodsData = Object.values(sla.byPeriod || {});
-  const valEl = document.getElementById('azki-oct-sla-val'), subEl = document.getElementById('azki-oct-sla-sub');
-  if (valEl && subEl) {
-    if (periodsData.length) {
-      const avgMin = periodsData.reduce((t, x) => t + x.minutes, 0) / periodsData.length;
-      valEl.textContent = azkiOctFmtSec(avgMin * 60);
-      const last = periodsData[periodsData.length - 1];
-      subEl.textContent = `${faDigits(last.centers)} ${last.unit === 'agents' ? 'کارشناس' : 'مرکز'} • وزن‌دار` + (last.noOrders ? ` • ${faDigits(last.noOrders)} مرکز بدون آمار صدور` : '');
-    } else {
-      valEl.textContent = '—';
-      subEl.textContent = sla.loaded ? 'برای این بازه ثبت نشده' : 'در حال بارگذاری...';
-    }
-  }
-
-  const m0 = azcBuildOctModel();
-  const ids = ['avg', 'all', 'sla'];
-  const all = ids.map(id => m0.all.find(d => d.id === id)).filter(Boolean);
-  const sel = azkiState.octCmp.sel;
-  const defs = all.filter(d => sel.has(d.id));
-  const m = Object.assign({}, m0, { all, areaId: 'avg' });
-  const n = m.points.length;
-  const chips = `<div class="azki-trend-chips">${all.map(d => `<button type="button" class="azki-trend-chip${sel.has(d.id) ? ' on' : ''}" data-id="${d.id}" style="--c:${d.color}"><i></i>${escHtml(d.name)}</button>`).join('')}</div>`;
-  const head = `<div class="azki-trend-head"><div class="azki-trend-title">مقایسه‌ی OCT و SLA کل (ساعت)</div></div>`;
-  let body, pb = null;
-  if (n < 2) body = '<div class="azki-trend-note">برای رسم نمودار حداقل دو روز لازم است؛ بازه را بزرگ‌تر کنید.</div>';
-  else if (!defs.length) body = '<div class="azki-trend-note">حداقل یک مورد را برای نمایش انتخاب کنید.</div>';
-  else { pb = azcPlotBuild(m, defs, 'azo-'); body = pb.html; }
-  const hint = '<div class="azki-trend-note" style="margin-top:8px;">SLA برای کل دوره‌ی ۲۱ تا ۲۰ محاسبه می‌شود و به‌صورت خط ثابت روی روزهای همان دوره نمایش داده می‌شود.</div>';
-  el.innerHTML = `<div class="azki-trend">${head}${chips}${body}${hint}</div>`;
-  el.querySelectorAll('.azki-trend-chip').forEach(btn => btn.addEventListener('click', () => {
-    const id = btn.dataset.id;
-    if (sel.has(id)) sel.delete(id); else sel.add(id);
-    renderAzkiOctCompare();
-  }));
-  if (pb) azcBindHover(pb.g);
-}
-
-function renderAzkiOctViewCore() {
-  const st = azkiState.oct;
-  const cardsEl = document.getElementById('azki-oct-cards');
-  const noteEl = document.getElementById('azki-oct-note');
-  const container = document.getElementById('azki-oct-list');
-  document.getElementById('azki-oct-ex-maturity').checked = st.excludeMaturity;
-  document.getElementById('azki-oct-ex-addendum').checked = st.excludeAddendum;
-
-  if (!st.rows.length) {
-    cardsEl.innerHTML = '';
-    noteEl.textContent = azkiOctFilterText();
-    document.getElementById('azki-oct-centers').innerHTML = '';
-    container.innerHTML = '<div class="empty-state">ردیفی برای این بازه و این ترکیبِ فیلتر پیدا نشد (اگه فیلتر «بدون سررسید/الحاقیه» روشنه، مطمئن شو ورک‌فلو برای اون ترکیب اجرا شده)</div>';
-    return;
-  }
-
-  const rows = st.rows.slice().sort((a, b) => String(a.report_date).localeCompare(String(b.report_date)));
-  const lastUpdate = rows.reduce((m, r) => (r.updated_at && r.updated_at > m ? r.updated_at : m), '');
-  let updText = '';
-  if (lastUpdate) {
-    try { updText = ` • آخرین بروزرسانی: ${new Date(lastUpdate).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran', dateStyle: 'short', timeStyle: 'short' })}`; } catch (e) { /* نادیده */ }
-  }
-  noteEl.textContent = azkiOctFilterText() + updText;
-
-  const wAvg = (sumKey, nKey, avgKey) => {
-    const sum = rows.reduce((a, r) => a + (Number(r[sumKey]) || 0), 0), n = rows.reduce((a, r) => a + (r[nKey] || 0), 0);
-    return n ? sum / n : azkiOctMean(rows, avgKey);
-  };
-  cardsEl.innerHTML = [
-    ['میانگین OCT مراکز', azkiOctFmtHours(wAvg('oct_sum_hours', 'oct_n', 'avg_hours')), 'میانگینِ «میانگین روزانه»ها در بازه (ازکی سنتر)'],
-    ['میانگین کل صدور سنتر', azkiOctFmtHours(wAvg('all_oct_sum_hours', 'all_oct_n', 'all_avg_hours')), 'میانگینِ «میانگین روزانه»ها در بازه (کل صدور، بدون فیلتر نوع کارشناس)'],
-    ['میانه OCT (P50)', azkiOctFmtHours(azkiOctMean(rows, 'p50_hours')), 'میانگینِ P50 روزانه در بازه'],
-    ['P95 OCT', azkiOctFmtHours(azkiOctMean(rows, 'p95_hours')), 'میانگینِ P95 روزانه در بازه'],
-    ['بیشترین OCT', azkiOctFmtHours(azkiOctMax(rows, 'max_hours')), 'بیشترین OCT ثبت‌شده در بازه'],
-  ].map(([label, value, tip]) => `<div class="summary-card" title="${tip}"><div class="label">${label}</div><div class="value is-text">${value}</div></div>`).join('');
-
-  container.innerHTML = rows.map(r => `
-    <div class="row-item">
-      <div class="row-date">${faDigits(r.report_date_jalali)}</div>
-      <div class="row-main row-stats">
-        <span class="mini-stat"><span class="k">کل صدور سنتر</span><b>${azkiOctFmtHours(r.all_avg_hours)}</b></span>
-        <span class="mini-stat"><span class="k">میانه (P50)</span><b>${azkiOctFmtHours(r.p50_hours)}</b></span>
-        <span class="mini-stat"><span class="k">P75</span><b>${azkiOctFmtHours(r.p75_hours)}</b></span>
-        <span class="mini-stat"><span class="k">P95</span><b>${azkiOctFmtHours(r.p95_hours)}</b></span>
-        <span class="mini-stat"><span class="k">بیشترین</span><b>${azkiOctFmtHours(r.max_hours)}</b></span>
-        <span class="mini-stat"><span class="k">کمترین</span><b>${azkiOctFmtHours(r.min_hours)}</b></span>
-      </div>
-      <div class="row-badge pay-amount" title="میانگین OCT مراکز در این روز">${azkiOctFmtHours(r.avg_hours)}</div>
-    </div>`).join('');
-
-  // میانگین زمان پاسخگویی هر مرکز (هر کاربری که «مرکز» تو اسمش بوده)
-  const cEl = document.getElementById('azki-oct-centers');
-  const centers = azkiOctCenterAgg(st.brk || []);
-  cEl.innerHTML = centers.length ? `
-    <div class="list-card">
-      <div class="period-label" style="margin:8px 0;">میانگین زمان پاسخگویی هر مرکز در بازه (${faDigits(centers.length)} مرکز)</div>
-      ${centers.map(c => `
-      <div class="row-item">
-        <div class="row-date" style="min-width:0;">${azkiShiftEsc(c.name)}</div>
-        <div class="row-main row-stats">
-          <span class="mini-stat"><span class="k">تعداد سفارش</span><b>${formatNumber(c.orders)}</b></span>
-        </div>
-        <div class="row-badge pay-amount" title="میانگین زمان صدور این مرکز">${azkiOctFmtHours(c.avg)}</div>
-      </div>`).join('')}
-    </div>` : '<div class="empty-state">تفکیک مراکز برای این بازه ثبت نشده</div>';
-}
-
-// فیلترهای «بدون سررسید» / «بدون الحاقیه»: هر تغییر، دوباره از جدول می‌خونه
-function azkiOctOptsChanged() {
-  const st = azkiState.oct;
-  st.excludeMaturity = document.getElementById('azki-oct-ex-maturity').checked;
-  st.excludeAddendum = document.getElementById('azki-oct-ex-addendum').checked;
-  st.loaded = false;
-  if (azkiActiveTab() === 'azki-chart') { azkiChartEnsure(); return; }
-  document.getElementById('azki-oct-list').innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
-  loadAzkiOctView();
-}
-document.getElementById('azki-oct-to-chart').addEventListener('click', () => {
-  azkiState.chart.report = 'oct';
-  const btn = document.querySelector(currentUserRole === 'leader'
-    ? '#team-subtabs .subtab-btn[data-team-tab="azki-chart"]'
-    : '#supervisor-subtabs .subtab-btn[data-sup-tab="azki-chart"]');
-  if (btn) btn.click();
-});
-document.getElementById('azki-oct-ex-maturity').addEventListener('change', azkiOctOptsChanged);
-document.getElementById('azki-oct-ex-addendum').addEventListener('change', azkiOctOptsChanged);
-
-function azkiBuildOctExport() {
-  const st = azkiState.oct;
-  const rows = st.rows.slice().sort((a, b) => String(a.report_date).localeCompare(String(b.report_date)));
-  const h2 = v => (v === null || v === undefined || !isFinite(Number(v))) ? '' : round2(Number(v));
-  const sheet = azkiXlsxSheet({
-    title: 'گزارش OCT ازکی سنتر — به تفکیک روز (ساعت)',
-    headers: ['تاریخ', 'میانگین مراکز (ساعت)', 'میانه P50 (ساعت)', 'P75 (ساعت)', 'P95 (ساعت)', 'بیشترین (ساعت)', 'کمترین (ساعت)', 'میانگین کل صدور سنتر (ساعت)'],
-    rows: rows.map(r => [r.report_date_jalali, h2(r.avg_hours), h2(r.p50_hours), h2(r.p75_hours), h2(r.p95_hours), h2(r.max_hours), h2(r.min_hours), h2(r.all_avg_hours)]),
-    total: ['میانگین روزها / بیشترین / کمترین', h2(azkiOctMean(rows, 'avg_hours')), h2(azkiOctMean(rows, 'p50_hours')), h2(azkiOctMean(rows, 'p75_hours')),
-      h2(azkiOctMean(rows, 'p95_hours')), h2(azkiOctMax(rows, 'max_hours')), h2(azkiOctMin(rows, 'min_hours')), h2(azkiOctMean(rows, 'all_avg_hours'))],
-    widths: [34, 18, 18, 14, 14, 18, 18, 22], fmts: ['text', 'pct', 'pct', 'pct', 'pct', 'pct', 'pct', 'pct'],
-    metaLine2: azkiOctFilterText(),
-  });
-  const centers = azkiOctCenterAgg(st.brk || []);
-  const sheet2 = azkiXlsxSheet({
-    title: 'میانگین زمان پاسخگویی هر مرکز (ساعت)',
-    headers: ['نام مرکز', 'تعداد سفارش', 'میانگین OCT (ساعت)'],
-    rows: centers.map(c => [c.name, c.orders, h2(c.avg)]),
-    total: ['مجموع', centers.reduce((a, c) => a + c.orders, 0), ''],
-    widths: [44, 16, 20], fmts: ['text', 'int', 'pct'],
-    metaLine2: azkiOctFilterText(),
-  });
-  return { sheets: [['OCT روزانه', sheet], ['OCT هر مرکز', sheet2]], label: 'گزارش-OCT' };
-}
-
 function azkiMiniStatsHtml(total, center) {
   return `
         <div class="row-main row-stats">
@@ -5223,7 +4912,6 @@ const AZC_REPORTS = [
   { id: 'pct', label: 'درصد صدور' },
   { id: 'shift', label: 'تفکیک شیفت' },
   { id: 'period', label: 'تعداد صدور' },
-  { id: 'oct', label: 'روند OCT' },
 ];
 const AZC_SHIFT_DEFS = [
   { id: 'morning', name: 'شیفت صبح', color: '#1656F5' },
@@ -5290,8 +4978,6 @@ function azcBuildModel() {
       title: asPct ? 'روند درصد صدور ازکی سنتر به تفکیک شیفت' : 'روند تعداد صدور ازکی سنتر به تفکیک شیفت', areaId: null };
   }
 
-  if (st.report === 'oct') return azcBuildOctModel();
-
   // period: کل صدور و صدور ازکی سنتر
   const groups = groupAzkiPeriodRows(azkiState.period.rows, azkiState.granularity);
   const pts = groups.map(g => ({ key: g.key, label: g.label }));
@@ -5306,120 +4992,6 @@ function azcBuildModel() {
 function azcFmtVal(v, pct, m) {
   if (m && m.fmt) return m.fmt(v);
   return pct ? `${formatNumber(round2(v))}٪` : formatNumber(Math.round(v));
-}
-
-// ───────── نمودار «روند OCT»: OCT روزانه‌ی ازکی سنتر + (اختیاری) SLA میانگین زمان صدور کل مراکز ─────────
-// SLA فقط در سطح دوره‌ی ۲۱ تا ۲۰ ذخیره می‌شه، پس به‌صورت خط ثابت روی روزهای همون دوره کشیده می‌شه.
-// همه‌ی مراکزِ موجود در گزارش SLA اپراتورها حساب می‌شن (نه فقط مراکز/کارشناس‌های تعریف‌شده در داشبورد)؛
-// میانگین با وزنِ تعداد صدور هر مرکز در همون دوره (اگه وزنی پیدا نشد، میانگین ساده).
-function azcBuildOctModel() {
-  const rows = azkiState.oct.rows.slice().sort((a, b) => String(a.report_date).localeCompare(String(b.report_date)));
-  const points = rows.map(r => ({ key: r.report_date_jalali, label: faDigits(r.report_date_jalali), short: faDigits(String(r.report_date_jalali).slice(5)) }));
-  const slaOf = r => {
-    const p = parseJalaliParts(r.report_date_jalali);
-    return azkiState.octSla.byPeriod[periodStartSortOfJalali(p.jy, p.jm, p.jd)] || null;
-  };
-  const col = key => rows.map(r => (r[key] === null || r[key] === undefined || !isFinite(Number(r[key]))) ? null : Number(r[key]));
-  const all = [
-    { id: 'avg', name: 'میانگین OCT مراکز', color: 'var(--accent-deep)', vals: col('avg_hours'), sub: rows.map(r => r.oct_n ? `${formatNumber(r.oct_n)} سفارش` : '') },
-    { id: 'all', name: 'میانگین زمان صدور کل صدور سنتر', color: '#7C5CE0', vals: col('all_avg_hours'), sub: rows.map(r => r.all_oct_n ? `${formatNumber(r.all_oct_n)} سفارش` : '') },
-    { id: 'p50', name: 'میانه (P50)', color: '#1fa971', vals: col('p50_hours'), sub: rows.map(() => '') },
-    { id: 'p95', name: 'P95', color: '#e0453f', vals: col('p95_hours'), sub: rows.map(() => '') },
-    {
-      id: 'sla', name: 'SLA کارشناسان (میانگین زمان صدور)', color: '#F59E0B',
-      vals: rows.map(r => { const s = slaOf(r); return s ? s.minutes / 60 : null; }),
-      sub: rows.map(r => { const s = slaOf(r); return s ? `دوره ${periodLabelFromStartSort(s.periodStart)} • ${faDigits(s.centers)} ${s.unit === 'agents' ? 'کارشناس' : 'مرکز'}` : ''; }),
-    },
-  ];
-  const f = azkiState.oct;
-  return {
-    points, all, pct: false, empty: !rows.length, selKey: 'oct', areaId: 'avg',
-    title: `روند OCT ازکی سنتر (ساعت) — ${f.excludeMaturity ? 'بدون سررسید' : 'با سررسید'}، ${f.excludeAddendum ? 'بدون الحاقیه' : 'با الحاقیه'}`,
-    granLabel: 'روزانه',
-    fmt: azkiOctFmtHours,
-    short: v => formatNumber(round2(v)),
-  };
-}
-
-// SLA کل مراکز برای دوره‌هایی که بازه‌ی انتخابی روشون افتاده: { periodStartSort: { minutes, centers, periodStart } }
-async function loadAzkiOctSla() {
-  const bounds = getAzkiBounds();
-  const st = azkiState.octSla;
-  const s = parseJalaliParts(bounds.startLabel), e = parseJalaliParts(bounds.endLabel);
-  let p = periodStartSortOfJalali(s.jy, s.jm, s.jd);
-  const pLast = periodStartSortOfJalali(e.jy, e.jm, e.jd);
-  const periods = [];
-  while (p <= pLast && periods.length < 14) {
-    periods.push(p);
-    const y = Math.floor(p / 10000), m = Math.floor(p / 100) % 100;
-    p = m < 12 ? y * 10000 + (m + 1) * 100 + 21 : (y + 1) * 10000 + 100 + 21;
-  }
-  const [slaRes, cntRes] = await Promise.all([
-    supabaseClient.from(TABLE_CENTER_SLA).select('*').in('period_start_sort', periods),
-    fetchAzkiBreakdownRows(['کل'], bounds),
-  ]);
-  if (bounds !== azkiState.bounds) return;
-  if (slaRes.error) console.warn('خطا در دریافت SLA مراکز:', slaRes.error.message);
-  // وزن هر مرکز = تعداد صدورش در همون دوره (از گزارش تفکیک مراکز، کلِ شرکت‌ها)
-  const weight = {};
-  (cntRes.data || []).forEach(r => {
-    const jp = parseJalaliParts(r.report_date_jalali);
-    const ps = periodStartSortOfJalali(jp.jy, jp.jm, jp.jd);
-    const k = normCenterKey(r.center_name);
-    if (!k) return;
-    (weight[ps] || (weight[ps] = {}))[k] = (weight[ps][k] || 0) + (r.orders_count || 0);
-  });
-  const byPeriod = {};
-  periods.forEach(ps => {
-    const items = (slaRes.data || [])
-      .filter(r => r.period_start_sort === ps && r.avg_issuance_minutes != null && isFinite(Number(r.avg_issuance_minutes)))
-      .map(r => { const k = normCenterKey(r.center_key || r.center_name); return { k, v: Number(r.avg_issuance_minutes), w: (weight[ps] && weight[ps][k]) || 0 }; });
-    if (!items.length) return;
-    // همه‌ی مراکزِ گزارش SLA حساب می‌شن، حتی اگه اسمشون تو گزارش صدور (تب تعداد صدور) نباشه:
-    // وزن = تعداد صدور مرکز؛ مرکزی که آمار صدور نداره با «میانگین وزنِ بقیه‌ی مراکز» وارد می‌شه (حذف نمی‌شه).
-    const known = items.filter(x => x.w > 0);
-    const avgW = known.length ? known.reduce((a, x) => a + x.w, 0) / known.length : 1;
-    const eff = items.map(x => ({ v: x.v, w: x.w > 0 ? x.w : avgW }));
-    const wSum = eff.reduce((a, x) => a + x.w, 0);
-    const minutes = eff.reduce((a, x) => a + x.v * x.w, 0) / wSum;
-    byPeriod[ps] = { minutes, centers: items.length, noOrders: items.length - known.length, unit: 'centers', periodStart: ps };
-  });
-  // اگر جدول center_sla_report برای دوره‌ای خالی بود، SLA کل را از daily_targets می‌سازیم
-  // (n8n میانگین زمان صدور هر کارشناس را از کارت ۲۰۵۱۶ آنجا می‌نویسد). وزن هر کارشناس = مجموع صدورش در همان دوره.
-  const missing = periods.filter(ps => !byPeriod[ps]);
-  if (missing.length) {
-    const pEndOf = ps => { const y = Math.floor(ps / 10000), mo = Math.floor(ps / 100) % 100; return mo < 12 ? y * 10000 + (mo + 1) * 100 + 20 : (y + 1) * 10000 + 100 + 20; };
-    const tRes = await fetchAllRows((from, to) =>
-      supabaseClient.from(TABLE_TARGETS)
-        .select('agent_id, report_date_sort, avg_issuance_minutes, target_count')
-        .not('avg_issuance_minutes', 'is', null)
-        .gte('report_date_sort', Math.min(...missing))
-        .lte('report_date_sort', pEndOf(Math.max(...missing)))
-        .order('report_date_sort', { ascending: true })
-        .range(from, to)
-    );
-    if (bounds !== azkiState.bounds) return;
-    if (tRes.error) console.warn('خطا در دریافت SLA کارشناسان:', tRes.error.message);
-    else missing.forEach(ps => {
-      const lo = ps, hi = pEndOf(ps), per = {};
-      (tRes.data || []).forEach(r => {
-        const sk = Number(r.report_date_sort) || 0;
-        if (sk < lo || sk > hi) return;
-        const v = Number(r.avg_issuance_minutes);
-        if (!isFinite(v)) return;
-        const a = per[r.agent_id] || (per[r.agent_id] = { v, sk, w: 0 });
-        if (sk >= a.sk) { a.v = v; a.sk = sk; }
-        a.w += Number(r.target_count) || 0;
-      });
-      const items = Object.values(per);
-      if (!items.length) return;
-      const wSum = items.reduce((t, x) => t + x.w, 0);
-      const minutes = wSum > 0 ? items.reduce((t, x) => t + x.v * x.w, 0) / wSum : items.reduce((t, x) => t + x.v, 0) / items.length;
-      byPeriod[ps] = { minutes, centers: items.length, unit: 'agents', periodStart: ps };
-    });
-  }
-  st.byPeriod = byPeriod;
-  st.loaded = true;
 }
 
 function azcPlotBuild(m, defs, pfx) {
@@ -5636,20 +5208,16 @@ async function azkiChartEnsure() {
   if (!root) return;
   const gen = ++st.gen;
   azkiSyncFilterForTab('azki-chart');
-  const key = { pct: 'compare', shift: 'shifts', period: 'period', oct: 'oct' }[st.report];
+  const key = { pct: 'compare', shift: 'shifts', period: 'period' }[st.report];
   if (!azkiState[key].loaded) {
     root.innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
-    const loader = { compare: loadAzkiCompareView, shifts: loadAzkiShiftsView, period: loadAzkiPeriodView, oct: loadAzkiOctView }[key];
+    const loader = { compare: loadAzkiCompareView, shifts: loadAzkiShiftsView, period: loadAzkiPeriodView }[key];
     await loader();
     if (gen !== st.gen) return;
     if (!azkiState[key].loaded) {
       if (!root.querySelector('.empty-state')) root.innerHTML = '<div class="empty-state">خطا در دریافت گزارش؛ دوباره تلاش کنید.</div>';
       return;
     }
-  }
-  if (st.report === 'oct' && !azkiState.octSla.loaded) {
-    await loadAzkiOctSla();
-    if (gen !== st.gen) return;
   }
   azkiChartRender();
 }
@@ -5745,431 +5313,10 @@ function azkiActiveTab() {
   return window.supCurrentTab || null;
 }
 
-/* ==========================================================
-   گزارش قطعی — از جدول incidents (همان دیتای وال‌برد)، بدون وابستگی به لینک گوگل‌شیت
-========================================================== */
-const AOG_COLORS = ['#17a9ff', '#7c5ce0', '#e08a17', '#1fa971', '#e0453f', '#14b8c4', '#d946a8', '#8a94a6'];
-
-// فیلتر نوار گزارش‌ها رو برای هر تب تنظیم می‌کنه:
-// - «حالت نمایش» (روزانه/هفتگی/ماهانه): برای «گزارش قطعی» و «OCT» معنی نداره → مخفی
-// - «شرکت بیمه»: کارت OCT تفکیک شرکت نداره → توی تب OCT مخفی
-// - «بدون سررسید / بدون الحاقیه»: فقط توی تب OCT دیده می‌شن
+// (فیلتر همه‌ی تب‌ها یکسانه؛ چیزی برای مخفی/نمایش کردن نمونده)
 function azkiSyncFilterForTab(tab) {
-  const toggle = (el, hide) => { const f = el && el.closest('.azki-fld'); if (f) f.style.display = hide ? 'none' : ''; };
-  const octMode = tab === 'azki-oct' || (tab === 'azki-chart' && azkiState.chart.report === 'oct');
-  toggle(document.getElementById('azki-gran'), tab === 'azki-outage' || octMode);
-  toggle(document.getElementById('azki-comp-btn'), octMode);
-  const opts = document.getElementById('azki-oct-opts');
-  if (opts) opts.style.display = octMode ? '' : 'none';
-}
-
-function outageNorm(n) {
-  return String(n || '').replace(/[\u200c\u200e\u200f]/g, ' ').replace(/ي/g, 'ی').replace(/ك/g, 'ک')
-    .replace(/\s+/g, ' ').trim().replace(/^بیمه /, '');
-}
-// نام شرکت در جدول companies را به نام کوتاه فهرست فیلتر (AZKI_COMPANIES) وصل می‌کند؛ اگر نخورد null
-function outageMatchCompany(raw) {
-  const n = outageNorm(raw);
-  if (!n) return null;
-  const exact = AZKI_COMPANIES.find(a => outageNorm(a) === n);
-  if (exact) return exact;
-  const padded = ' ' + n + ' ';
-  const hits = AZKI_COMPANIES.filter(a => padded.includes(' ' + outageNorm(a) + ' '));
-  if (!hits.length) return null;
-  return hits.sort((a, b) => b.length - a.length)[0];
-}
-
-function outageFmtDur(h) {
-  const mins = Math.round(h * 60);
-  if (mins < 1) return h > 0 ? 'کمتر از ۱ دقیقه' : '۰';
-  const hh = Math.floor(mins / 60), mm = mins % 60;
-  if (!hh) return faDigits(mm) + ' دقیقه';
-  return faDigits(hh) + ' ساعت' + (mm ? ' و ' + faDigits(mm) + ' دقیقه' : '');
-}
-
-async function loadAzkiOutageView() {
-  if (!azkiAllowed()) return;
-  const bounds = getAzkiBounds();
-  const st = azkiState.outage;
-  const root = document.getElementById('azki-outage-root');
-  document.getElementById('azki-outage-label').textContent = azkiRangeText(bounds);
-  const gen = ++st.gen;
-  try {
-    if (!st.companyMap) {
-      const { data, error } = await supabaseClient.from('companies').select('id,name');
-      if (error) throw error;
-      st.companyMap = {};
-      (data || []).forEach(c => { st.companyMap[c.id] = c.name; });
-    }
-    // فهرست کامل تگ‌های قطعی (از کل جدول، نه فقط بازه‌ی انتخابی) تا همیشه همه نمایش داده شوند
-    if (!st.allTags) {
-      try {
-        const { data: tg, error: tgErr } = await fetchAllRows((from, to) =>
-          supabaseClient.from('incidents').select('id,title').order('id', { ascending: true }).range(from, to));
-        if (tgErr) throw tgErr;
-        st.allTags = [...new Set((tg || []).map(r => (r.title || '').trim()).filter(Boolean))];
-      } catch (e) { st.allTags = []; }
-    }
-    // بازه‌ی تقویم شمسی انتخاب‌شده به وقت تهران (UTC+3:30)
-    const startISO = new Date(bounds.startDate + 'T00:00:00+03:30').toISOString();
-    const endISO = new Date(bounds.endDate + 'T23:59:59.999+03:30').toISOString();
-    const { data, error } = await fetchAllRows((from, to) =>
-      supabaseClient.from('incidents')
-        .select('id,company_id,title,line,opened_at,closed_at,status')
-        .gte('opened_at', startISO)
-        .lte('opened_at', endISO)
-        .order('opened_at', { ascending: true })
-        .order('id', { ascending: true })
-        .range(from, to));
-    if (error) throw error;
-    if (bounds !== azkiState.bounds || gen !== st.gen) return;
-    st.rows = data || [];
-    st.loaded = true;
-    renderAzkiOutageView();
-  } catch (e) {
-    if (bounds !== azkiState.bounds) return;
-    root.innerHTML = '<div class="empty-state">خطا در دریافت گزارش: ' + azkiShiftEsc(e && (e.message || e.details) || String(e)) + '</div>';
-  }
-}
-
-// ساعت قطعی هر شرکت به تفکیک تگ، فقط سهمِ داخل بازه‌ی انتخاب‌شده
-function azkiOutageCompute() {
-  const st = azkiState.outage;
-  const b = azkiState.bounds || getAzkiBounds();
-  const startMs = new Date(b.startDate + 'T00:00:00+03:30').getTime();
-  const endMs = new Date(b.endDate + 'T23:59:59.999+03:30').getTime();
-  const now = Date.now();
-  const sel = azkiState.companies.all ? null : azkiState.companies.selected;
-  const comps = {};
-  const tagTotals = {};
-  let anyOpen = false;
-
-  const ensure = (name) => comps[name] || (comps[name] = { name, tags: {}, open: false });
-  if (sel) AZKI_COMPANIES.filter(n => sel.has(n)).forEach(ensure);
-
-  st.rows.forEach(r => {
-    const raw = (st.companyMap && st.companyMap[r.company_id]) || 'نامشخص';
-    const az = outageMatchCompany(raw);
-    if (sel && !(az && sel.has(az))) return;
-    const rs = new Date(r.opened_at).getTime();
-    if (rs < startMs || rs > endMs) return;
-    const isOpen = !r.closed_at;
-    const re = isOpen ? now : new Date(r.closed_at).getTime();
-    if (!(re > rs)) return;
-    const h = (re - rs) / 3600000;
-    const tag = r.title || 'بدون عنوان';
-    const c = ensure(az || raw);
-    const t = c.tags[tag] || (c.tags[tag] = { h: 0, n: 0 });
-    t.h += h; t.n += 1;
-    if (isOpen) { c.open = true; anyOpen = true; }
-    const tt = tagTotals[tag] || (tagTotals[tag] = { h: 0, n: 0 });
-    tt.h += h; tt.n += 1;
-  });
-  return { companies: Object.values(comps), tagTotals, anyOpen };
-}
-
-function renderAzkiOutageView() {
-  const root = document.getElementById('azki-outage-root');
-  if (!root) return;
-  document.getElementById('azki-outage-label').textContent = azkiRangeText(azkiState.bounds || getAzkiBounds());
-  const st = azkiState.outage;
-  const data = azkiOutageCompute();
-  const tags = Object.keys(data.tagTotals).sort((a, b) => data.tagTotals[b].h - data.tagTotals[a].h);
-  if (!tags.length) {
-    root.innerHTML = azkiOutageDayChartHtml([], {}, {}) + '<div class="azki-trend"><div class="azki-trend-note">قطعی‌ای برای این بازه و شرکت‌های انتخاب‌شده ثبت نشده است</div></div>';
-    azkiOutageDayChartBind(root, []);
-    return;
-  }
-  const color = {};
-  tags.forEach((t, i) => { color[t] = AOG_COLORS[i % AOG_COLORS.length]; });
-  const activeTags = tags.filter(t => !st.tagOff.has(t));
-  const esc = azkiShiftEsc;
-
-  let rows = data.companies.map(c => {
-    const segs = activeTags.map(t => ({ t, h: (c.tags[t] || {}).h || 0, n: (c.tags[t] || {}).n || 0 })).filter(x => x.n > 0);
-    return { name: c.name, open: c.open, segs, total: segs.reduce((a, x) => a + x.h, 0), count: segs.reduce((a, x) => a + x.n, 0) };
-  });
-  if (azkiState.companies.all) rows = rows.filter(r => r.count > 0);
-  rows.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'fa'));
-
-  const totalH = rows.reduce((a, r) => a + r.total, 0);
-  const totalN = rows.reduce((a, r) => a + r.count, 0);
-  const affected = rows.filter(r => r.count > 0).length;
-  const maxTotal = Math.max(0.0001, ...rows.map(r => r.total));
-  const topCompany = rows.find(r => r.count > 0);
-
-  const chips = tags.map(t => `<button type="button" class="azki-trend-chip${st.tagOff.has(t) ? '' : ' on'}" data-tag="${esc(t)}" style="--c:${color[t]}"><i></i>${esc(t)}</button>`).join('');
-
-  const rowsHtml = rows.map(r => {
-    const segHtml = r.segs.map(x => `<div class="aog-seg" style="width:${(x.h / maxTotal * 100).toFixed(2)}%;background:${color[x.t]}" title="${esc(r.name)} — ${esc(x.t)}: ${outageFmtDur(x.h)} (${faDigits(x.n)} قطعی)"></div>`).join('');
-    const detail = r.segs.map(x => `<span class="aog-dchip" style="--c:${color[x.t]}"><i></i>${esc(x.t)}<b>${outageFmtDur(x.h)}</b>${x.n > 1 ? `<span>(${faDigits(x.n)} بار)</span>` : ''}</span>`).join('');
-    return `<div class="aog-row">
-      <div class="aog-name">${esc(r.name)}${r.open ? '<span class="aog-open">● باز</span>' : ''}</div>
-      <div class="aog-bar">${segHtml}</div>
-      <div class="aog-total">${r.count ? formatNumber(r.total) + ' ساعت' : '—'}</div>
-      ${detail ? `<div class="aog-detail">${detail}</div>` : ''}
-    </div>`;
-  }).join('');
-
-  const stats = `<div class="azki-trend-stats">
-      <span class="azki-trend-stat">مجموع ساعت قطعی<b>${formatNumber(totalH)}</b></span>
-      <span class="azki-trend-stat">تعداد قطعی<b>${formatNumber(totalN)}</b></span>
-      <span class="azki-trend-stat">شرکت‌های درگیر<b>${formatNumber(affected)}</b></span>
-      ${topCompany ? `<span class="azki-trend-stat">بیشترین قطعی<b>${esc(topCompany.name)}</b></span>` : ''}
-    </div>`;
-
-  root.innerHTML = azkiOutageDayChartHtml(tags, data.tagTotals, color) + `
-    <div class="azki-trend">
-      <div class="azki-trend-head"><div class="azki-trend-title">ساعت قطعی هر شرکت به تفکیک تگ</div>${stats}</div>
-      <div class="azki-trend-chips">${chips}</div>
-      ${activeTags.length ? (rowsHtml || '<div class="azki-trend-note">برای تگ‌های انتخاب‌شده قطعی‌ای نیست</div>')
-                          : '<div class="azki-trend-note">حداقل یک تگ را برای نمایش انتخاب کنید.</div>'}
-      <div class="aog-foot">هر قطعی با کل مدتش (از شروع تا وصل‌شدن) و در روزی که شروع شده حساب می‌شود، حتی اگر بعد از نیمه‌شب وصل شده باشد.${data.anyOpen ? ' قطعی‌های هنوز وصل‌نشده (● باز) تا همین لحظه حساب شده‌اند.' : ''} قطعی‌های هم‌زمانِ یک شرکت جداگانه جمع می‌شوند.</div>
-    </div>`;
-
-  root.querySelectorAll('.azki-trend-chip').forEach(btn => btn.addEventListener('click', () => {
-    const t = btn.dataset.tag;
-    if (st.tagOff.has(t)) st.tagOff.delete(t); else st.tagOff.add(t);
-    renderAzkiOutageView();
-  }));
-  azkiOutageDayChartBind(root, tags);
-}
-
-
-// ساعت قطعی هر شرکت در هر روز (به وقت تهران)، فقط برای تگ‌های انتخاب‌شده
-function azkiOutageDaily(tagSet) {
-  const st = azkiState.outage;
-  const b = azkiState.bounds || getAzkiBounds();
-  const DAY = 86400000;
-  const startMs = new Date(b.startDate + 'T00:00:00+03:30').getTime();
-  const endMs = new Date(b.endDate + 'T23:59:59.999+03:30').getTime();
-  const nDays = Math.max(1, Math.round((endMs - startMs) / DAY));
-  const points = [];
-  for (let i = 0; i < nDays; i++) {
-    const [gy, gm, gd] = new Date(startMs + i * DAY + 12 * 3600000).toISOString().slice(0, 10).split('-').map(Number);
-    const [jy, jm, jd] = gregorianToJalali(gy, gm, gd);
-    points.push({ label: faDigits(`${jy}/${pad2(jm)}/${pad2(jd)}`), short: faDigits(`${pad2(jm)}/${pad2(jd)}`) });
-  }
-  const sel = azkiState.companies.all ? null : azkiState.companies.selected;
-  const now = Date.now();
-  const by = {};
-  if (sel) AZKI_COMPANIES.filter(n => sel.has(n)).forEach(n => { by[n] = new Array(nDays).fill(0); });
-  st.rows.forEach(r => {
-    const tag = r.title || 'بدون عنوان';
-    if (tagSet.size && !tagSet.has(tag)) return;
-    const raw = (st.companyMap && st.companyMap[r.company_id]) || 'نامشخص';
-    const az = outageMatchCompany(raw);
-    if (sel && !(az && sel.has(az))) return;
-    const name = az || raw;
-    const rs = new Date(r.opened_at).getTime();
-    if (rs < startMs || rs > endMs) return;
-    const re = r.closed_at ? new Date(r.closed_at).getTime() : now;
-    if (!(re > rs)) return;
-    const arr = by[name] || (by[name] = new Array(nDays).fill(0));
-    const di = Math.min(nDays - 1, Math.floor((rs - startMs) / DAY));
-    arr[di] += (re - rs) / 3600000;
-  });
-  let series = Object.keys(by).map(name => ({ name, vals: by[name], total: by[name].reduce((a, v) => a + v, 0) }));
-  if (!sel) series = series.filter(x => x.total > 0);
-  series.sort((a, b2) => b2.total - a.total);
-  let trimmed = 0;
-  if (!sel && series.length > 8) { trimmed = series.length - 8; series = series.slice(0, 8); }
-  series.forEach((x, i) => { x.color = AOG_COLORS[i % AOG_COLORS.length]; });
-  return { points, series, trimmed };
-}
-
-function azkiOutageDayChartHtml(tags, tagTotals, color) {
-  const st = azkiState.outage;
-  const esc = azkiShiftEsc;
-  const allTagList = [...new Set([...tags, ...(st.allTags || [])])];
-  const selSet = new Set([...st.dayTags].filter(t => allTagList.includes(t)));
-  const allOn = selSet.size === 0;
-  const d = azkiOutageDaily(selSet);
-  let ci = tags.length;
-  const colOf = {};
-  allTagList.forEach(t => { colOf[t] = color[t] || AOG_COLORS[ci++ % AOG_COLORS.length]; });
-  const tagBtns = `<button type="button" class="aod-tag${allOn ? ' on' : ''}" data-dtag="__all"><i></i><span>همه تگ‌ها</span></button>`
-    + allTagList.map(t => { const tt = tagTotals[t]; return `<button type="button" class="aod-tag${selSet.has(t) ? ' on' : ''}${tt ? '' : ' zero'}" data-dtag="${esc(t)}" style="--c:${colOf[t]}"><i></i><span>${esc(t)}</span>${tt ? `<small>${outageFmtDur(tt.h)}</small>` : ''}</button>`; }).join('');
-  const side = `<div class="aod-tags"><div class="aod-tags-title">تگ قطعی</div>${tagBtns}</div>`;
-  const title = `<button type="button" class="aod-head" id="aod-toggle" aria-expanded="${st.dayOpen ? 'true' : 'false'}"><span class="azki-trend-title">نمودار ساعت قطعی روزانه</span><svg class="aod-arrow" viewBox="0 0 24 24" aria-hidden="true"><polygon points="17,4 17,20 5,12"/></svg></button>`;
-  const n = d.points.length;
-  const mode = st.dayMode === 'line' ? 'line' : 'bar';
-  let plot;
-  if (!d.series.length) {
-    plot = '<div class="azki-trend-note">برای این تگ و شرکت‌ها قطعی‌ای در این بازه ثبت نشده است</div>';
-  } else if (mode === 'line' && n < 2) {
-    plot = '<div class="azki-trend-note">برای رسم نمودار روزانه، بازه را حداقل دو روز انتخاب کنید.</div>';
-  } else if (mode === 'bar') {
-    const W = 900, H = 300, L = 52, R = 14, T = 16, B = 34;
-    const pw = W - L - R, ph = H - T - B;
-    const slot = pw / n, bw = Math.max(3, Math.min(34, slot * 0.68));
-    const X = i => L + slot * (i + 0.5);
-    const tot = d.points.map((_, i) => d.series.reduce((a, x) => a + x.vals[i], 0));
-    const top = azcNiceTop(Math.max(...tot, 0) || 1, false);
-    const Y = v => T + ph * (1 - v / top);
-    let grid = '';
-    for (let k = 0; k <= 4; k++) {
-      const v = top * k / 4, y = Y(v);
-      grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/><text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${faDigits(round2(v))}</text>`;
-    }
-    const step = Math.ceil(n / 10);
-    let xl = '', bars = '', labels = '';
-    d.points.forEach((p, i) => {
-      if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${p.short}</text>`;
-      let acc = 0;
-      d.series.forEach(x => {
-        const v = x.vals[i]; if (!(v > 0)) return;
-        const y1 = Y(acc + v), y0 = Y(acc);
-        bars += `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y0 - y1).toFixed(1)}" rx="2" style="fill:${x.color}"/>`;
-        acc += v;
-      });
-      if (n <= 31 && tot[i] > 0) labels += `<text class="azc-lbl" x="${X(i).toFixed(1)}" y="${(Y(tot[i]) - 6).toFixed(1)}" text-anchor="middle" style="fill:var(--ink)">${faDigits(round2(tot[i]))}</text>`;
-    });
-    plot = `<div class="azki-trend-plot azc" id="aod-plot">
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="نمودار میله‌ای ساعت قطعی به تفکیک روز">
-          ${grid}${xl}${bars}${labels}
-          <line class="azki-trend-guide" id="aod-guide" y1="${T}" y2="${T + ph}" style="display:none"/>
-          <g id="aod-hover"></g>
-          <rect id="aod-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
-        </svg>
-        <div class="azki-trend-tip" id="aod-tip"></div>
-      </div>
-      <div class="aod-legend">${d.series.map(x => `<span style="--c:${x.color}"><i></i>${esc(x.name)}</span>`).join('')}<span style="color:var(--ink-faint)">واحد: ساعت (هر میله = مجموع قطعی همان روز)</span></div>
-      ${d.trimmed ? `<div class="aog-foot">فقط ۸ شرکت با بیشترین قطعی نمایش داده شد (${faDigits(d.trimmed)} شرکت دیگر مخفی است)؛ برای دیدن بقیه از فیلتر شرکت بیمه استفاده کنید.</div>` : ''}`;
-    azkiState.outage._dayModel = { mode: 'bar', W, L, pw, n, X, Y, d, T, ph, slot, tot };
-  } else {
-    const W = 900, H = 300, L = 52, R = 14, T = 16, B = 34;
-    const pw = W - L - R, ph = H - T - B;
-    const X = i => L + pw * i / (n - 1);
-    let mx = 0;
-    d.series.forEach(x => x.vals.forEach(v => { if (v > mx) mx = v; }));
-    const top = azcNiceTop(mx || 1, false);
-    const Y = v => T + ph * (1 - v / top);
-    let grid = '';
-    for (let k = 0; k <= 4; k++) {
-      const v = top * k / 4, y = Y(v);
-      grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/><text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${faDigits(round2(v))}</text>`;
-    }
-    const step = Math.ceil(n / 10);
-    let xl = '';
-    d.points.forEach((p, i) => { if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${p.short}</text>`; });
-    let paths = '';
-    d.series.forEach(x => {
-      const pts = x.vals.map((v, i) => X(i).toFixed(1) + ' ' + Y(v).toFixed(1));
-      paths += `<path d="M${pts.join(' L')}" fill="none" style="stroke:${x.color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
-      if (n <= 45) x.vals.forEach((v, i) => { paths += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${v > 0 ? 3.2 : 2}" style="fill:${x.color}" opacity="${v > 0 ? 1 : .45}"/>`; });
-    });
-    let labels = '';
-    if (n <= 31 && d.series.length <= 3) {
-      d.series.forEach(x => x.vals.forEach((v, i) => {
-        if (v <= 0) return;
-        labels += `<text class="azc-lbl" x="${X(i).toFixed(1)}" y="${(Y(v) - 8).toFixed(1)}" text-anchor="middle" style="fill:${x.color}">${faDigits(round2(v))}</text>`;
-      }));
-    }
-    plot = `<div class="azki-trend-plot azc" id="aod-plot">
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="ساعت قطعی به تفکیک روز">
-          ${grid}${xl}${paths}${labels}
-          <line class="azki-trend-guide" id="aod-guide" y1="${T}" y2="${T + ph}" style="display:none"/>
-          <g id="aod-hover"></g>
-          <rect id="aod-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>
-        </svg>
-        <div class="azki-trend-tip" id="aod-tip"></div>
-      </div>
-      <div class="aod-legend">${d.series.map(x => `<span style="--c:${x.color}"><i></i>${esc(x.name)}</span>`).join('')}<span style="color:var(--ink-faint)">واحد: ساعت</span></div>
-      ${d.trimmed ? `<div class="aog-foot">فقط ۸ شرکت با بیشترین قطعی نمایش داده شد (${faDigits(d.trimmed)} شرکت دیگر مخفی است)؛ برای دیدن بقیه از فیلتر شرکت بیمه استفاده کنید.</div>` : ''}`;
-    azkiState.outage._dayModel = { mode: 'line', W, L, pw, n, X, Y, d, T, ph };
-  }
-  return `<div class="azki-trend aod-card${st.dayOpen ? ' open' : ''}" id="aod-card">${title}<div class="aod-body"><div class="aod-wrap">${side}<div class="aod-main">${d.series.length ? `<div class="aod-mode"><button type="button" data-mode="bar" class="${mode === 'bar' ? 'on' : ''}">میله‌ای</button><button type="button" data-mode="line" class="${mode === 'line' ? 'on' : ''}">خطی</button></div>` : ''}${plot}</div></div></div></div>`;
-}
-
-function azkiOutageDayChartBind(root, tags) {
-  const st = azkiState.outage;
-  const tgl = root.querySelector('#aod-toggle'), card = root.querySelector('#aod-card');
-  if (tgl && card) tgl.addEventListener('click', () => {
-    st.dayOpen = !st.dayOpen;
-    card.classList.toggle('open', st.dayOpen);
-    tgl.setAttribute('aria-expanded', st.dayOpen ? 'true' : 'false');
-  });
-  root.querySelectorAll('.aod-mode button').forEach(btn => btn.addEventListener('click', () => {
-    st.dayMode = btn.dataset.mode === 'line' ? 'line' : 'bar';
-    renderAzkiOutageView();
-  }));
-  root.querySelectorAll('.aod-tag').forEach(btn => btn.addEventListener('click', () => {
-    const t = btn.dataset.dtag;
-    if (t === '__all') st.dayTags = new Set();
-    else if (!st.dayTags.size) st.dayTags = new Set([t]);
-    else { if (st.dayTags.has(t)) st.dayTags.delete(t); else st.dayTags.add(t); }
-    renderAzkiOutageView();
-  }));
-  const wrap = root.querySelector('#aod-plot'), hit = root.querySelector('#aod-hit');
-  const g = st._dayModel;
-  if (!wrap || !hit || !g) return;
-  const svg = wrap.querySelector('svg'), guide = root.querySelector('#aod-guide'), hov = root.querySelector('#aod-hover'), tip = root.querySelector('#aod-tip');
-  function show(clientX) {
-    const r = svg.getBoundingClientRect(); if (!r.width) return;
-    const vx = (clientX - r.left) * (g.W / r.width);
-    const isBar = g.mode === 'bar';
-    const i = isBar ? Math.max(0, Math.min(g.n - 1, Math.floor((vx - g.L) / g.slot)))
-                    : Math.max(0, Math.min(g.n - 1, Math.round((vx - g.L) / g.pw * (g.n - 1))));
-    const x = g.X(i);
-    if (isBar) {
-      hov.innerHTML = `<rect x="${(x - g.slot / 2).toFixed(1)}" y="${g.T}" width="${g.slot.toFixed(1)}" height="${g.ph}" rx="3" style="fill:var(--accent)" opacity=".12"/>`;
-      const rowsB = g.d.series.filter(sr => sr.vals[i] > 0).map(sr => `<div class="t-r"><i style="background:${sr.color}"></i><span>${azkiShiftEsc(sr.name)}</span><b>${outageFmtDur(sr.vals[i])}</b></div>`).join('');
-      tip.innerHTML = `<div class="t-h">${g.d.points[i].label}</div>${rowsB || '<div class="t-r"><span>بدون قطعی</span></div>'}${g.tot[i] > 0 ? `<div class="t-r" style="border-top:1px solid var(--line);margin-top:4px;padding-top:5px"><i style="background:transparent"></i><span>مجموع</span><b>${outageFmtDur(g.tot[i])}</b></div>` : ''}`;
-      tip.style.display = 'block';
-      const pxb = x / g.W * r.width;
-      if (pxb > r.width / 2) { tip.style.left = 'auto'; tip.style.right = (r.width - pxb + 12) + 'px'; }
-      else { tip.style.right = 'auto'; tip.style.left = (pxb + 12) + 'px'; }
-      return;
-    }
-    guide.setAttribute('x1', x.toFixed(1)); guide.setAttribute('x2', x.toFixed(1)); guide.style.display = '';
-    let dots = '', rows = '';
-    g.d.series.forEach(sr => {
-      const v = sr.vals[i];
-      dots += `<circle cx="${x.toFixed(1)}" cy="${g.Y(v).toFixed(1)}" r="5" style="fill:${sr.color};stroke:#fff" stroke-width="2"/>`;
-      rows += `<div class="t-r"><i style="background:${sr.color}"></i><span>${azkiShiftEsc(sr.name)}</span><b>${v > 0 ? outageFmtDur(v) : '۰'}</b></div>`;
-    });
-    hov.innerHTML = dots;
-    tip.innerHTML = `<div class="t-h">${g.d.points[i].label}</div>${rows}`;
-    tip.style.display = 'block';
-    const px = x / g.W * r.width;
-    if (px > r.width / 2) { tip.style.left = 'auto'; tip.style.right = (r.width - px + 12) + 'px'; }
-    else { tip.style.right = 'auto'; tip.style.left = (px + 12) + 'px'; }
-  }
-  function hide() { guide.style.display = 'none'; hov.innerHTML = ''; tip.style.display = 'none'; }
-  hit.addEventListener('mousemove', e => show(e.clientX));
-  hit.addEventListener('mouseleave', hide);
-  hit.addEventListener('touchstart', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
-  hit.addEventListener('touchmove', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
-  hit.addEventListener('touchend', hide);
-}
-
-function azkiBuildOutageExport() {
-  const data = azkiOutageCompute();
-  const comps = data.companies.map(c => {
-    const tagList = Object.keys(c.tags);
-    return { name: c.name, tags: c.tags, h: tagList.reduce((a, t) => a + c.tags[t].h, 0), n: tagList.reduce((a, t) => a + c.tags[t].n, 0) };
-  }).filter(c => c.n > 0 || !azkiState.companies.all).sort((a, b) => b.h - a.h);
-  const grandH = comps.reduce((a, c) => a + c.h, 0), grandN = comps.reduce((a, c) => a + c.n, 0);
-  const meta = 'شرکت: ' + (azkiState.companies.all ? 'همه شرکت‌ها' : azkiActiveScopes().join('، ')) + '   |   واحد: ساعت';
-  const summary = azkiXlsxSheet({
-    title: 'گزارش قطعی — خلاصه شرکت‌ها',
-    headers: ['ردیف', 'شرکت بیمه', 'تعداد قطعی', 'مجموع ساعت قطعی'],
-    rows: comps.map((c, i) => [i + 1, c.name, c.n, round2(c.h)]),
-    total: ['', 'جمع کل', grandN, round2(grandH)],
-    widths: [8, 28, 16, 20], fmts: ['int', 'text', 'int', 'pct'], metaLine2: meta,
-  });
-  const detailRows = [];
-  comps.forEach(c => Object.keys(c.tags).sort((a, b) => c.tags[b].h - c.tags[a].h)
-    .forEach(t => detailRows.push([c.name, t, c.tags[t].n, round2(c.tags[t].h)])));
-  const detail = azkiXlsxSheet({
-    title: 'گزارش قطعی — به تفکیک تگ',
-    headers: ['شرکت بیمه', 'تگ قطعی', 'تعداد قطعی', 'ساعت قطعی'],
-    rows: detailRows,
-    total: ['جمع کل', '', grandN, round2(grandH)],
-    widths: [26, 30, 14, 16], fmts: ['text', 'text', 'int', 'pct'], metaLine2: meta,
-  });
-  return { sheets: [['خلاصه شرکت‌ها', summary], ['به تفکیک تگ', detail]], label: 'گزارش-قطعی' };
+  const show = id => { const el = document.getElementById(id); const f = el && el.closest('.azki-fld'); if (f) f.style.display = ''; };
+  show('azki-gran'); show('azki-comp-btn');
 }
 
 function azkiRenderLoadedViews() {
@@ -6177,8 +5324,6 @@ function azkiRenderLoadedViews() {
   if (azkiState.centers.loaded) renderAzkiCentersView();
   if (azkiState.shifts.loaded) renderAzkiShiftsView();
   if (azkiState.compare.loaded) renderAzkiCompareView();
-  if (azkiState.oct.loaded) renderAzkiOctView();
-  if (azkiState.outage.loaded) renderAzkiOutageView();
   if (azkiState.payroll.loaded) renderAzkiPayrollView();
   if (azkiActiveTab() === 'azki-chart') azkiChartEnsure();
 }
@@ -6207,11 +5352,8 @@ function azkiApplyRange() {
   azkiState.centers.loaded = false;
   azkiState.shifts.loaded = false;
   azkiState.compare.loaded = false;
-  azkiState.oct.loaded = false;
-  azkiState.octSla.loaded = false;
-  azkiState.outage.loaded = false;
   azkiState.payroll.loaded = false;
-  ['azki-period-list', 'azki-centers-list', 'azki-shifts-list', 'azki-compare-list', 'azki-oct-list', 'azki-outage-root', 'azki-payroll-list'].forEach(id => {
+  ['azki-period-list', 'azki-centers-list', 'azki-shifts-list', 'azki-compare-list', 'azki-payroll-list'].forEach(id => {
     document.getElementById(id).innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
   });
 
@@ -6220,9 +5362,7 @@ function azkiApplyRange() {
   else if (tab === 'azki-centers') loadAzkiCentersView();
   else if (tab === 'azki-shifts') loadAzkiShiftsView();
   else if (tab === 'azki-compare') loadAzkiCompareView();
-  else if (tab === 'azki-oct') loadAzkiOctView();
   else if (tab === 'azki-chart') azkiChartEnsure();
-  else if (tab === 'azki-outage') loadAzkiOutageView();
   else if (tab === 'azki-payroll') loadAzkiPayrollView();
 }
 
@@ -6514,7 +5654,7 @@ async function enterApp(user) {
     document.getElementById('panel-supervisor').classList.remove('active');
     (function relocateAzkiViewsForLeader() {
       const filterEl = document.getElementById('azki-filter');
-      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-oct', 'sup-view-azki-oct'], ['panel-azki-chart', 'sup-view-azki-chart'], ['panel-azki-outage', 'sup-view-azki-outage'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
+      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-chart', 'sup-view-azki-chart'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
         const host = document.getElementById(hostId);
         const viewEl = document.getElementById(viewId);
         if (host && viewEl && !host.contains(viewEl)) {
@@ -10086,6 +9226,15 @@ window.kbNotifyStart=async function(){
 .as-pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11.5px;font-weight:700;line-height:1.7;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
 .as-cell{display:inline-block;min-width:46px;padding:2px 7px;border-radius:8px;font-size:12px;font-weight:700;background:var(--surface-tint);color:var(--ink-soft)}.as-cell.ok{background:var(--success-soft);color:var(--success)}.as-cell.warn{background:var(--amber-soft);color:var(--amber)}.as-cell.bad{background:var(--danger-soft);color:var(--danger)}.as-cell.none{background:var(--surface-tint);color:var(--ink-soft)}
 .as-d>td{background:var(--surface-tint);text-align:right!important}.as-ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:5px;margin-bottom:8px}.as-a{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px}.as-a small{display:inline;margin:0}
+.as-shifts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px;align-items:start}
+@media (max-width:640px){.as-shifts{grid-template-columns:1fr}}
+.as-sh{--c:var(--ink);background:var(--surface-tint);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:var(--radius-sm);padding:8px 10px}
+.as-sh-h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:var(--ink);cursor:pointer;list-style:none;user-select:none}.as-sh-h::-webkit-details-marker{display:none}.as-sh-h b{margin-inline-start:auto}.as-sh-ar{font-style:normal;color:var(--ink-soft);transition:transform .15s}.as-sh[open] .as-sh-ar{transform:rotate(180deg)}.as-sh[open] .as-sh-h{margin-bottom:8px}
+.as-sh-h b{color:var(--c);font-size:15px}
+.as-sh-l{display:flex;flex-wrap:wrap;gap:5px;max-height:240px;overflow:auto}
+.as-sh-p{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--ink)}
+.as-sh-p small{color:var(--ink-faint);font-size:10.5px}
+.as-sh-e{color:var(--ink-faint);font-size:12px;padding:4px 2px}
 .att-lk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px}.att-lk label{display:flex;gap:4px;align-items:center}
 .att-host .empty-state{padding:28px 16px;font-size:13.5px}
 /* پنجره‌ها */
@@ -10133,6 +9282,9 @@ const sup=()=>A.role==='supervisor';
 const ldr=()=>A.role==='leader';
 const mgr=()=>sup()||ldr();
 const agt=()=>!['center','leader','supervisor','admin'].includes(A.role);
+// فقط برای «نمایش وضعیت حضور»: سرگروه همه‌ی سنترها رو می‌بینه (حتی اساین‌نشده‌ها)؛ بقیه‌ی بخش‌ها فقط سنترهای خودش
+const SC=()=>(A.role==='leader'&&A.allCenters&&A.allCenters.length)?A.allCenters:(A.centers||[]);
+const isOwn=id=>A.role!=='leader'||(A.centers||[]).some(c=>c.id===id);
 const cOpen=d=>{const L=A.locks[d];return L?!L.locked:true};
 const dayOpen=d=>mgr()?true:(A.role==='center'&&cOpen(d));
 const canEdit=()=>mgr()||(A.role==='center'&&DN.some((_,i)=>cOpen(add(A.week,i))));
@@ -10211,7 +9363,7 @@ async function loadWeek(){
   }
   A.pending=[];
   if(mgr()&&A.view==='status')await loadStatus();
-  await nextCount(A.view==='status'?(A.centers||[]).map(c=>c.id):(A.sel?[A.sel]:[]));
+  await nextCount(A.view==='status'?SC().map(c=>c.id):(A.sel?[A.sel]:[]));
   render();
 }
 function render(){
@@ -10260,7 +9412,14 @@ function renderSet(){
 }
 
 async function loadStatus(){
-  const ids=(A.centers||[]).map(c=>c.id), w1=add(A.week,6);
+  if(A.role==='leader'&&!A.allCenters){
+    const r=await supabaseClient.from('profiles').select('id, full_name').eq('role','center').limit(2000);
+    const own=new Set((A.centers||[]).map(c=>c.id)), m=new Map();
+    (A.centers||[]).forEach(c=>m.set(c.id,c));
+    (r.data||[]).forEach(x=>{if(!m.has(x.id))m.set(x.id,{id:x.id,name:x.full_name||'—'})});
+    A.allCenters=[...m.values()].sort((x,y)=>(own.has(y.id)-own.has(x.id))||x.name.localeCompare(y.name,'fa'));
+  }
+  const ids=SC().map(c=>c.id), w1=add(A.week,6);
   if(!ids.length){A.st.data={entries:[],locks:{},unl:{}};return}
   const h=await supabaseClient.from(TH).select('*'); A.hol={}; (h.data||[]).forEach(x=>A.hol[x.day]=x.title||'تعطیل رسمی');
   const ca=await fetchAllRows((f,t)=>supabaseClient.from('center_agents').select('center_id, agent_id').in('center_id',ids).order('agent_id').range(f,t));
@@ -10285,7 +9444,7 @@ async function loadStatus(){
 const SS={present:'حاضر',hourly:'ساعتی',leave:'مرخصی',weekly_off:'اف',suspended:'تعلیق'};
 function renderStatus(){
   const H=A.body; if(!H)return;
-  if(!A.centers.length){H.innerHTML='<div class="att"><div class="empty-state">سنتری برای نمایش وجود ندارد</div></div>';return}
+  if(!SC().length){H.innerHTML='<div class="att"><div class="empty-state">سنتری برای نمایش وجود ندارد</div></div>';return}
   const D=A.st.data||{entries:[],locks:{},unl:{}}, w1=add(A.week,6), days=wdays(), t=todayI();
   if(!(A.st.day>=A.week&&A.st.day<=w1))A.st.day=(t>=A.week&&t<=w1)?t:A.week;
   const day=A.st.day, wk=A.st.mode==='week';
@@ -10295,36 +9454,44 @@ function renderStatus(){
     list.forEach(a=>{const x=m[a.id]; if(!x){r.none++;return} r.reg++; r[x.status]++; if(ACT.includes(x.status)){if((x.shift||'morning')==='night')r.ni++;else r.mo++}});
     r.act=r.present+r.hourly; r.cap=Math.max(1,Math.floor(r.total*PCT)); r.over=r.total>0&&(new Date(d+'T00:00:00Z').getUTCDay()===5||!!A.hol[d])&&r.act>r.cap; return r};
   const tot={total:0,present:0,hourly:0,leave:0,weekly_off:0,suspended:0,none:0};
-  if(!wk)A.centers.forEach(c=>{const r=calc(c.id,day);Object.keys(tot).forEach(k=>tot[k]+=r[k])});
-  const cards=!wk?`<div class="as-cards">${[['کل نیروها',tot.total,''],['حاضر',tot.present,'#1FA971'],['مرخصی ساعتی',tot.hourly,'#E08A17'],['مرخصی',tot.leave,'#7C5CE0'],['اف هفتگی',tot.weekly_off,'#8A94A6'],['تعلیق',tot.suspended,'#E0453F'],['ثبت‌نشده',tot.none,'#B0892B']].map(c=>`<div class="as-card" style="${c[2]?'--c:'+c[2]:''}"><span>${c[0]}</span><b>${faDigits(c[1])}</b></div>`).join('')}</div>`:'';
+  if(!wk)SC().forEach(c=>{const r=calc(c.id,day);Object.keys(tot).forEach(k=>tot[k]+=r[k])});
+  const shiftSet={mo:new Map(),ni:new Map()};
+  if(!wk)SC().forEach(c=>{(A.agents[c.id]||[]).forEach(a=>{const x=((idx[c.id+'|'+day]||{})[a.id]); if(!x||!ACT.includes(x.status))return;
+    const k=(x.shift||'morning')==='night'?'ni':'mo', m=shiftSet[k], cur=m.get(a.id);
+    if(cur){cur.centers.push(c.name)} else m.set(a.id,{name:a.name,hourly:x.status==='hourly',periods:x.periods,centers:[c.name]})})});
+  const shList=k=>[...shiftSet[k].values()].sort((a,b)=>a.name.localeCompare(b.name,'fa'));
+  const shBox=(k,title,color)=>{const l=shList(k);return `<details class="as-sh" data-k="${k}" style="--c:${color}"${(A.st.sh||{})[k]?' open':''}><summary class="as-sh-h"><span>${title}</span><b>${faDigits(l.length)} نفر</b><i class="as-sh-ar">▾</i></summary><div class="as-sh-l">${l.map(p=>`<span class="as-sh-p" title="${e(p.centers.join('، '))}">${e(p.name)}${p.hourly?'<small>ساعتی'+(p.periods&&p.periods.length?' '+fmtP(p.periods):'')+'</small>':''}</span>`).join('')||'<span class="as-sh-e">کسی برای این شیفت ثبت نشده</span>'}</div></details>`};
+  const shiftPanel=!wk?`<div class="as-shifts">${shBox('mo','☀ شیفت صبح','#F59E0B')}${shBox('ni','🌙 شیفت شب','#4F46E5')}</div>`:'';
+  const cards=!wk?`<div class="as-cards">${[['کل نیروها',tot.total,''],['حاضر',tot.present,'#1FA971'],['☀ شیفت صبح',shiftSet.mo.size,'#F59E0B'],['🌙 شیفت شب',shiftSet.ni.size,'#4F46E5'],['مرخصی ساعتی',tot.hourly,'#E08A17'],['مرخصی',tot.leave,'#7C5CE0'],['اف هفتگی',tot.weekly_off,'#8A94A6'],['تعلیق',tot.suspended,'#E0453F'],['ثبت‌نشده',tot.none,'#B0892B']].map(c=>`<div class="as-card" style="${c[2]?'--c:'+c[2]:''}"><span>${c[0]}</span><b>${faDigits(c[1])}</b></div>`).join('')}</div>`:'';
   const dayBar=!wk?`<div class="as-days">${days.map((d,i)=>`<button type="button" class="subtab-btn${d===day?' active':''}" data-sd="${d}">${DN[i]} ${fdate(d)}${A.hol[d]?' 🎌':''}</button>`).join('')}</div>`:'';
   const pill=(st,x)=>`<span class="as-pill" style="--c:${ST[st][1]}" title="${e(ST[st][0])}${x&&x.periods&&x.periods.length?' · '+fmtP(x.periods):''}">${SS[st]}</span>`;
-  const rowsHtml=A.centers.map(c=>{
+  const rowsHtml=SC().map(c=>{
     const open=!!A.st.open[c.id], ag=A.agents[c.id]||[];
     let main='',detail='';
     if(!wk){
       const r=calc(c.id,day), pct=r.total?Math.round(r.act*100/r.total):0, lock=!stOpen(c.id,day);
-      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b>${e(c.name)}</b> ${lock?'<span title="قفل">🔒</span>':''}${r.over?`<span class="att-badge lock" title="سقف روز تعطیل/جمعه ${faDigits(r.cap)} نفر">بیش از سقف</span>`:''}${r.total&&!r.reg?'<span class="att-badge wait">ثبت نشده</span>':''}</td>
+      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b>${e(c.name)}</b> ${isOwn(c.id)?'':'<span class="att-badge wait" title="این سنتر به شما اساین نشده؛ فقط مشاهده">فقط مشاهده</span>'} ${lock?'<span title="قفل">🔒</span>':''}${r.over?`<span class="att-badge lock" title="سقف روز تعطیل/جمعه ${faDigits(r.cap)} نفر">بیش از سقف</span>`:''}${r.total&&!r.reg?'<span class="att-badge wait">ثبت نشده</span>':''}</td>
         <td>${faDigits(r.total)}</td><td style="color:#1FA971;font-weight:700">${faDigits(r.present)}</td><td>${faDigits(r.hourly)}</td><td>${faDigits(r.leave)}</td><td>${faDigits(r.weekly_off)}</td><td>${faDigits(r.suspended)}</td><td>${faDigits(r.none)}</td>
         <td>☀ ${faDigits(r.mo)} · 🌙 ${faDigits(r.ni)}</td><td><div class="as-bar"><i style="width:${pct}%"></i></div><small>${faDigits(r.act)} از ${faDigits(r.total)}</small></td>`;
-      if(open)detail=`<tr class="as-d"><td colspan="10"><div class="as-ag">${ag.map(a=>{const x=(idx[c.id+'|'+day]||{})[a.id];return `<div class="as-a"><b>${e(a.name)}</b>${x?`${pill(x.status,x)}<small>${x.shift==='night'?'🌙 شب':'☀ صبح'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' · '+(x.status==='hourly'?'حضور ':'')+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">ثبت‌نشده</span>'}</div>`}).join('')||'<span class="kb-empty">نیرویی اساین نشده</span>'}</div><button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button></td></tr>`;
+      if(open)detail=`<tr class="as-d"><td colspan="10"><div class="as-ag">${ag.map(a=>{const x=(idx[c.id+'|'+day]||{})[a.id];return `<div class="as-a"><b>${e(a.name)}</b>${x?`${pill(x.status,x)}<small>${x.shift==='night'?'🌙 شب':'☀ صبح'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' · '+(x.status==='hourly'?'حضور ':'')+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">ثبت‌نشده</span>'}</div>`}).join('')||'<span class="kb-empty">نیرویی اساین نشده</span>'}</div>${isOwn(c.id)?`<button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button>`:''}</td></tr>`;
     }else{
-      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b>${e(c.name)}</b> <small>(${faDigits(ag.length)} نفر)</small></td>`+days.map(d=>{const r=calc(c.id,d);const cls=!r.total?'':r.over?'bad':!r.reg?'none':r.act===0?'warn':'ok';return `<td><span class="as-cell ${cls}" title="${DN[days.indexOf(d)]} ${fdate(d)}">${r.total?faDigits(r.act)+'/'+faDigits(r.total):'—'}${!stOpen(c.id,d)?' 🔒':''}</span></td>`}).join('');
-      if(open)detail=`<tr class="as-d"><td colspan="8"><div class="as-w"><table class="as-tbl"><thead><tr><th>کارشناس</th>${days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('')}</tr></thead><tbody>${ag.map(a=>`<tr><td class="as-n"><b>${e(a.name)}</b></td>${days.map(d=>{const x=(idx[c.id+'|'+d]||{})[a.id];return `<td>${x?pill(x.status,x)+`<small>${x.shift==='night'?'🌙':'☀'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' '+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">—</span>'}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="8" class="kb-empty">نیرویی اساین نشده</td></tr>`}</tbody></table></div><button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button></td></tr>`;
+      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b>${e(c.name)}</b> <small>(${faDigits(ag.length)} نفر)</small>${isOwn(c.id)?'':' <span class="att-badge wait" title="این سنتر به شما اساین نشده؛ فقط مشاهده">فقط مشاهده</span>'}</td>`+days.map(d=>{const r=calc(c.id,d);const cls=!r.total?'':r.over?'bad':!r.reg?'none':r.act===0?'warn':'ok';return `<td><span class="as-cell ${cls}" title="${DN[days.indexOf(d)]} ${fdate(d)}">${r.total?faDigits(r.act)+'/'+faDigits(r.total):'—'}${!stOpen(c.id,d)?' 🔒':''}</span></td>`}).join('');
+      if(open)detail=`<tr class="as-d"><td colspan="8"><div class="as-w"><table class="as-tbl"><thead><tr><th>کارشناس</th>${days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('')}</tr></thead><tbody>${ag.map(a=>`<tr><td class="as-n"><b>${e(a.name)}</b></td>${days.map(d=>{const x=(idx[c.id+'|'+d]||{})[a.id];return `<td>${x?pill(x.status,x)+`<small>${x.shift==='night'?'🌙':'☀'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' '+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">—</span>'}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="8" class="kb-empty">نیرویی اساین نشده</td></tr>`}</tbody></table></div>${isOwn(c.id)?`<button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button>`:''}</td></tr>`;
     }
     return `<tr>${main}</tr>${detail}`}).join('');
   const head=!wk?'<th>سنتر</th><th>کل</th><th>حاضر</th><th>ساعتی</th><th>مرخصی</th><th>اف</th><th>تعلیق</th><th>ثبت‌نشده</th><th>شیفت</th><th>پوشش</th>':'<th>سنتر</th>'+days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('');
   H.innerHTML=`<div class="att">${nextBar()}<div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="s-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="s-next" type="button">هفته بعد</button></div><span class="att-sp"></span>
     <div class="subtabs" style="margin:0"><button class="subtab-btn${wk?'':' active'}" data-sm="day" type="button">نمای روزانه</button><button class="subtab-btn${wk?' active':''}" data-sm="week" type="button">نمای هفتگی</button></div>
-    <button class="kb-btn ghost" id="s-carry" type="button" title="چیدمان آخرین هفته‌ی ثبت‌شده را روی جاهای خالی این هفته‌ی همه سنترها اعمال می‌کند">📋 اعمال چیدمان هفته قبل روی همه سنترها</button><button class="kb-btn ghost" id="s-all" type="button">باز/بسته کردن همه</button></div>${dayBar}${cards}
+    <button class="kb-btn ghost" id="s-carry" type="button" title="چیدمان آخرین هفته‌ی ثبت‌شده را روی جاهای خالی این هفته‌ی همه سنترها اعمال می‌کند">📋 اعمال چیدمان هفته قبل روی همه سنترها</button><button class="kb-btn ghost" id="s-all" type="button">باز/بسته کردن همه</button></div>${dayBar}${cards}${shiftPanel}
     <div class="as-w"><table class="as-tbl"><thead><tr>${head}</tr></thead><tbody>${rowsHtml}</tbody></table></div></div>`;
   const q=i=>H.querySelector(i); bindNext(H);
   q('#s-prev').onclick=()=>{A.week=add(A.week,-7);loadWeek()}; q('#s-next').onclick=()=>{A.week=add(A.week,7);loadWeek()};
   H.querySelectorAll('[data-sm]').forEach(b=>b.onclick=()=>{A.st.mode=b.dataset.sm;renderStatus()});
   H.querySelectorAll('[data-sd]').forEach(b=>b.onclick=()=>{A.st.day=b.dataset.sd;renderStatus()});
+  H.querySelectorAll('details.as-sh').forEach(d=>d.addEventListener('toggle',()=>{A.st.sh=A.st.sh||{};A.st.sh[d.dataset.k]=d.open}));
   H.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{const c=b.dataset.ex;A.st.open[c]=!A.st.open[c];renderStatus()});
   q('#s-carry').onclick=carryAllCenters;
-  q('#s-all').onclick=()=>{const any=A.centers.some(c=>A.st.open[c.id]);A.centers.forEach(c=>A.st.open[c.id]=!any);renderStatus()};
+  q('#s-all').onclick=()=>{const any=SC().some(c=>A.st.open[c.id]);SC().forEach(c=>A.st.open[c.id]=!any);renderStatus()};
   H.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{A.sel=b.dataset.ed;A.view='set';loadWeek()});
 }
 // کپی چیدمان آخرین هفته‌ی دارای ثبت (حداکثر ۴ هفته قبل) روی هفته‌ی داده‌شده، فقط برای جاهای خالی.
@@ -10871,8 +10038,8 @@ function umLeadersModal(centerId) {
 // ============================================================
 const LEADER_TAB_DEFS = [
   ['team', 'تعداد صدور تیم'], ['team-bugs', 'خطای صدور'], ['report', 'گزارش (کل گروه)'],
-  ['azki-shifts', 'گزارش ← تفکیک شیفت', 1], ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1],
-  ['azki-chart', 'گزارش ← نمودار', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1],
+  ['azki-shifts', 'گزارش ← تفکیک شیفت', 1], ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1],
+  ['azki-chart', 'گزارش ← نمودار', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
   ['attendance', 'حضور و غیاب'], ['training', 'آموزش'], ['users', 'مدیریت کاربران']
 ];
@@ -11048,11 +10215,11 @@ async function leaderTabsSettingsRender(host) {
 const SUP_TAB_DEFS = [
   ['targets', 'صدور'], ['map', 'نقشه سنتر'], ['bugs', 'خطای صدور'], ['report', 'گزارش (کل گروه)'],
   ['azki-period', 'گزارش ← گزارش دوره‌ای', 1], ['azki-centers', 'گزارش ← به تفکیک نام مرکز', 1], ['azki-shifts', 'گزارش ← تفکیک شیفت', 1],
-  ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-oct', 'گزارش ← OCT', 1], ['azki-outage', 'گزارش ← گزارش قطعی', 1], ['azki-chart', 'گزارش ← نمودار', 1],
+  ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1], ['azki-chart', 'گزارش ← نمودار', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
   ['attendance', 'حضور و غیاب'], ['training', 'آموزش'], ['users', 'مدیریت کاربران'], ['run-history', 'تاریخچه گزارش']
 ];
-const SUP_REPORT_KEYS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare', 'azki-oct', 'azki-chart', 'azki-outage'];
+const SUP_REPORT_KEYS = ['azki-period', 'azki-centers', 'azki-shifts', 'azki-compare', 'azki-chart'];
 
 function applySupHiddenTabs(hiddenList) {
   const hidden = new Set((hiddenList || []).filter(k => k !== 'settings'));
