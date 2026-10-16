@@ -1504,6 +1504,9 @@
   .sm-prow .pc { font-size: 13px; font-weight: 700; color: var(--accent-deep); }
   .sm-prow .bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; display: block; }
   .sm-prow .bar u { display: block; height: 100%; background: var(--accent); text-decoration: none; }
+  .sm-cq { padding: 8px 12px 4px; }
+  .sm-cq input { width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface, #fff); color: var(--ink); font-family: var(--font); font-size: 13px; }
+  .sm-crow small { color: var(--ink-faint); font-size: 11px; margin-inline-start: 6px; }
   .sm-pwrap { border-bottom: 1px solid var(--line); }
   .sm-pwrap .sm-phead { display: flex; align-items: stretch; }
   .sm-pwrap .sm-prow { border-bottom: 0; flex: 1; min-width: 0; }
@@ -2453,9 +2456,11 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
             <div class="sm-stabs">
               <button type="button" class="sm-stab active" data-side="list">سنترها</button>
               <button type="button" class="sm-stab" data-side="prov">آمار استان‌ها</button>
+              <button type="button" class="sm-stab" data-side="city">آمار شهرها</button>
             </div>
             <div class="sm-scroll" id="sm-list"></div>
             <div class="sm-scroll" id="sm-prov" style="display:none;"></div>
+            <div class="sm-scroll" id="sm-city" style="display:none;"></div>
           </div>
           <div class="sm-card sm-mapbox">
             <div id="sm-map"></div>
@@ -3125,6 +3130,42 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
       + (others.length ? '<div class="sm-prov-h bad">نام استان نامعتبر در داده</div>' + others.map(p => '<div class="sm-prow zero"><span class="pn">' + esc(p || '—') + '</span><span class="pc">' + faNum(counts.get(p)) + '</span></div>').join('') : '');
   }
 
+  // آمار شهرها: هر شهر (به همراه استانش) با تعداد سنتر، مستقل از تب استان‌ها
+  function cityStats() {
+    const m = new Map();
+    S.rows.forEach(c => {
+      const raw = String(c.city == null ? '' : c.city).replace(/\s+/g, ' ').trim();
+      const label = raw || 'نامشخص', key = norm(c.state) + '|' + norm(label);
+      if (!m.has(key)) m.set(key, { state: c.state, raw, label, n: 0 });
+      m.get(key).n++;
+    });
+    return [...m.values()].sort((a, b) => b.n - a.n || a.label.localeCompare(b.label, 'fa') || String(a.state).localeCompare(String(b.state), 'fa'));
+  }
+  function renderCityList() {
+    const box = $('sm-clist'); if (!box) return;
+    const q = norm(S.cityQ || '').trim(), st = $('sm-state').value;
+    const all = S.cityAll || [];
+    const list = q ? all.filter(c => norm(c.label + ' ' + c.state).includes(q)) : all;
+    const max = Math.max(1, ...all.map(c => c.n));
+    box.innerHTML = list.length ? list.map(c =>
+      '<button type="button" class="sm-prow sm-crow' + (S.city && S.city === c.raw && st === c.state ? ' active' : '') + '" data-cp="' + esc(c.state) + '" data-cc="' + esc(c.raw) + '">'
+      + '<span class="pn">' + esc(c.label) + '<small>' + esc(c.state || '—') + '</small></span><span class="pc">' + faNum(c.n) + '</span>'
+      + '<i class="bar"><u style="width:' + Math.max(4, Math.round(c.n / max * 100)) + '%"></u></i></button>').join('')
+      : '<div class="sm-empty">شهری پیدا نشد</div>';
+  }
+  function renderCities() {
+    const all = cityStats(); S.cityAll = all;
+    const prov = new Set(S.rows.map(c => c.state).filter(Boolean));
+    $('sm-city').innerHTML =
+      '<div class="sm-sum"><div><b>' + faNum(S.rows.length) + '</b><span>کل سنترها</span></div>'
+      + '<div><b>' + faNum(all.length) + '</b><span>شهر دارای سنتر</span></div>'
+      + '<div><b>' + faNum(prov.size) + '</b><span>استان</span></div></div>'
+      + '<div class="sm-cq"><input id="sm-cq" type="search" placeholder="جستجوی شهر یا استان" autocomplete="off" value="' + esc(S.cityQ || '') + '"></div>'
+      + '<div id="sm-clist"></div>';
+    $('sm-cq').addEventListener('input', e => { S.cityQ = e.target.value; renderCityList(); });
+    renderCityList();
+  }
+
   function render(fit) {
     const q = norm($('sm-q').value.trim()), st = $('sm-state').value;
     const onlyGreen = $('sm-only-green').checked;
@@ -3134,6 +3175,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     S.cluster.addLayers(rows.map(c => S.markers.get(c.id)));
     document.querySelectorAll('#sm-prov .sm-prow[data-p]').forEach(b => b.classList.toggle('active', b.dataset.p === st));
     document.querySelectorAll('#sm-prov .sm-city').forEach(b => b.classList.toggle('active', !!S.city && b.dataset.cc === S.city && b.dataset.cp === st));
+    document.querySelectorAll('#sm-clist .sm-crow').forEach(b => b.classList.toggle('active', !!S.city && b.dataset.cc === S.city && b.dataset.cp === st));
     $('sm-list').innerHTML = rows.length ? rows.map(c =>
       '<button type="button" class="sm-item' + (c.id === S.activeId ? ' active' : '') + '" data-id="' + esc(c.id) + '">'
       + '<div class="n"><i class="sm-dot' + (S.green.has(c.id) ? ' green' : (c.is_approx ? ' approx' : '')) + '" style="margin:0"></i>' + esc(c.name) + '</div>'
@@ -3167,6 +3209,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     sel.value = keep;
     setStatus('');
     renderProvinces();
+    renderCities();
     render(!keep && !$('sm-q').value);
     updateGreenInfo();
     S.map.invalidateSize();
@@ -3265,7 +3308,14 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     document.querySelectorAll('.sm-stab[data-side]').forEach(x => x.classList.toggle('active', x === b));
     $('sm-list').style.display = b.dataset.side === 'list' ? '' : 'none';
     $('sm-prov').style.display = b.dataset.side === 'prov' ? '' : 'none';
+    $('sm-city').style.display = b.dataset.side === 'city' ? '' : 'none';
   }));
+  $('sm-city').addEventListener('click', e => {
+    const ct = e.target.closest('.sm-crow[data-cc]'); if (!ct || !S.map) return;
+    const sel = $('sm-state'), same = sel.value === ct.dataset.cp && S.city === ct.dataset.cc;
+    sel.value = same ? '' : ct.dataset.cp; S.city = same ? '' : ct.dataset.cc;
+    render(true);
+  });
   $('sm-prov').addEventListener('click', e => {
     const tg = e.target.closest('.sm-ptog[data-tog]');
     if (tg) {
@@ -9235,6 +9285,7 @@ window.kbNotifyStart=async function(){
 .as-sh-p{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--ink)}
 .as-sh-p small{color:var(--ink-faint);font-size:10.5px}
 .as-sh-e{color:var(--ink-faint);font-size:12px;padding:4px 2px}
+.as-tbl td.as-n b.as-other,b.as-other{color:var(--amber,#E08A17)}
 .att-lk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px}.att-lk label{display:flex;gap:4px;align-items:center}
 .att-host .empty-state{padding:28px 16px;font-size:13.5px}
 /* پنجره‌ها */
@@ -9470,12 +9521,12 @@ function renderStatus(){
     let main='',detail='';
     if(!wk){
       const r=calc(c.id,day), pct=r.total?Math.round(r.act*100/r.total):0, lock=!stOpen(c.id,day);
-      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b>${e(c.name)}</b> ${isOwn(c.id)?'':'<span class="att-badge wait" title="این سنتر به شما اساین نشده؛ فقط مشاهده">فقط مشاهده</span>'} ${lock?'<span title="قفل">🔒</span>':''}${r.over?`<span class="att-badge lock" title="سقف روز تعطیل/جمعه ${faDigits(r.cap)} نفر">بیش از سقف</span>`:''}${r.total&&!r.reg?'<span class="att-badge wait">ثبت نشده</span>':''}</td>
+      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b${isOwn(c.id)?'':' class="as-other" title="این سنتر به شما اساین نشده؛ فقط مشاهده"'}>${e(c.name)}</b> ${lock?'<span title="قفل">🔒</span>':''}${r.over?`<span class="att-badge lock" title="سقف روز تعطیل/جمعه ${faDigits(r.cap)} نفر">بیش از سقف</span>`:''}${r.total&&!r.reg?'<span class="att-badge wait">ثبت نشده</span>':''}</td>
         <td>${faDigits(r.total)}</td><td style="color:#1FA971;font-weight:700">${faDigits(r.present)}</td><td>${faDigits(r.hourly)}</td><td>${faDigits(r.leave)}</td><td>${faDigits(r.weekly_off)}</td><td>${faDigits(r.suspended)}</td><td>${faDigits(r.none)}</td>
         <td>☀ ${faDigits(r.mo)} · 🌙 ${faDigits(r.ni)}</td><td><div class="as-bar"><i style="width:${pct}%"></i></div><small>${faDigits(r.act)} از ${faDigits(r.total)}</small></td>`;
       if(open)detail=`<tr class="as-d"><td colspan="10"><div class="as-ag">${ag.map(a=>{const x=(idx[c.id+'|'+day]||{})[a.id];return `<div class="as-a"><b>${e(a.name)}</b>${x?`${pill(x.status,x)}<small>${x.shift==='night'?'🌙 شب':'☀ صبح'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' · '+(x.status==='hourly'?'حضور ':'')+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">ثبت‌نشده</span>'}</div>`}).join('')||'<span class="kb-empty">نیرویی اساین نشده</span>'}</div>${isOwn(c.id)?`<button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button>`:''}</td></tr>`;
     }else{
-      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b>${e(c.name)}</b> <small>(${faDigits(ag.length)} نفر)</small>${isOwn(c.id)?'':' <span class="att-badge wait" title="این سنتر به شما اساین نشده؛ فقط مشاهده">فقط مشاهده</span>'}</td>`+days.map(d=>{const r=calc(c.id,d);const cls=!r.total?'':r.over?'bad':!r.reg?'none':r.act===0?'warn':'ok';return `<td><span class="as-cell ${cls}" title="${DN[days.indexOf(d)]} ${fdate(d)}">${r.total?faDigits(r.act)+'/'+faDigits(r.total):'—'}${!stOpen(c.id,d)?' 🔒':''}</span></td>`}).join('');
+      main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b${isOwn(c.id)?'':' class="as-other" title="این سنتر به شما اساین نشده؛ فقط مشاهده"'}>${e(c.name)}</b> <small>(${faDigits(ag.length)} نفر)</small></td>`+days.map(d=>{const r=calc(c.id,d);const cls=!r.total?'':r.over?'bad':!r.reg?'none':r.act===0?'warn':'ok';return `<td><span class="as-cell ${cls}" title="${DN[days.indexOf(d)]} ${fdate(d)}">${r.total?faDigits(r.act)+'/'+faDigits(r.total):'—'}${!stOpen(c.id,d)?' 🔒':''}</span></td>`}).join('');
       if(open)detail=`<tr class="as-d"><td colspan="8"><div class="as-w"><table class="as-tbl"><thead><tr><th>کارشناس</th>${days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('')}</tr></thead><tbody>${ag.map(a=>`<tr><td class="as-n"><b>${e(a.name)}</b></td>${days.map(d=>{const x=(idx[c.id+'|'+d]||{})[a.id];return `<td>${x?pill(x.status,x)+`<small>${x.shift==='night'?'🌙':'☀'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' '+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">—</span>'}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="8" class="kb-empty">نیرویی اساین نشده</td></tr>`}</tbody></table></div>${isOwn(c.id)?`<button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button>`:''}</td></tr>`;
     }
     return `<tr>${main}</tr>${detail}`}).join('');
