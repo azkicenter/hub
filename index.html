@@ -9285,6 +9285,15 @@ window.kbNotifyStart=async function(){
 .as-sh-p{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--ink)}
 .as-sh-p small{color:var(--ink-faint);font-size:10.5px}
 .as-sh-e{color:var(--ink-faint);font-size:12px;padding:4px 2px}
+.as-fl{background:var(--surface-tint);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:10px}
+.as-fl-h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:var(--ink);cursor:pointer;list-style:none;user-select:none}.as-fl-h::-webkit-details-marker{display:none}
+.as-fl-h b{margin-inline-start:auto;color:var(--accent-deep);font-size:12.5px}
+.as-fl[open] .as-sh-ar{transform:rotate(180deg)}.as-fl[open] .as-fl-h{margin-bottom:8px}
+.as-fl-t{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.att-host .as-fl-t input{height:32px;flex:1 1 180px;min-width:0;font-family:var(--font);font-size:12.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:0 10px;box-sizing:border-box}
+.as-fl-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:2px 10px;max-height:260px;overflow:auto}
+.azki-chk.as-fl-i.hid{display:none}
+.as-fl-e{grid-column:1/-1;color:var(--ink-faint);font-size:12px;padding:6px 2px}
 .as-tbl td.as-n b.as-other,b.as-other{color:var(--amber,#E08A17)}
 .att-lk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px}.att-lk label{display:flex;gap:4px;align-items:center}
 .att-host .empty-state{padding:28px 16px;font-size:13.5px}
@@ -9336,6 +9345,11 @@ const agt=()=>!['center','leader','supervisor','admin'].includes(A.role);
 // فقط برای «نمایش وضعیت حضور»: سرگروه همه‌ی سنترها رو می‌بینه (حتی اساین‌نشده‌ها)؛ بقیه‌ی بخش‌ها فقط سنترهای خودش
 const SC=()=>(A.role==='leader'&&A.allCenters&&A.allCenters.length)?A.allCenters:(A.centers||[]);
 const isOwn=id=>A.role!=='leader'||(A.centers||[]).some(c=>c.id===id);
+// فیلتر انتخاب سنتر در «نمایش وضعیت حضور»: A.st.fsel = null یعنی همه‌ی سنترها؛ در غیر این صورت Set از idهای انتخاب‌شده
+const FKEY=()=>'att_status_centers_'+(A.me||'');
+const fLoad=()=>{try{const v=localStorage.getItem(FKEY());if(!v||v==='all')return null;const arr=JSON.parse(v);return Array.isArray(arr)?new Set(arr):null}catch(_){return null}};
+const fSave=()=>{try{localStorage.setItem(FKEY(),A.st.fsel?JSON.stringify([...A.st.fsel]):'all')}catch(_){}};
+const VC=()=>{const all=SC(),f=A.st.fsel;return f?all.filter(c=>f.has(c.id)):all};
 const cOpen=d=>{const L=A.locks[d];return L?!L.locked:true};
 const dayOpen=d=>mgr()?true:(A.role==='center'&&cOpen(d));
 const canEdit=()=>mgr()||(A.role==='center'&&DN.some((_,i)=>cOpen(add(A.week,i))));
@@ -9495,19 +9509,22 @@ async function loadStatus(){
 const SS={present:'حاضر',hourly:'ساعتی',leave:'مرخصی',weekly_off:'اف',suspended:'تعلیق'};
 function renderStatus(){
   const H=A.body; if(!H)return;
+  if(A.st.fsel===undefined)A.st.fsel=fLoad();
   if(!SC().length){H.innerHTML='<div class="att"><div class="empty-state">سنتری برای نمایش وجود ندارد</div></div>';return}
   const D=A.st.data||{entries:[],locks:{},unl:{}}, w1=add(A.week,6), days=wdays(), t=todayI();
   if(!(A.st.day>=A.week&&A.st.day<=w1))A.st.day=(t>=A.week&&t<=w1)?t:A.week;
   const day=A.st.day, wk=A.st.mode==='week';
+  const fsel=A.st.fsel, selN=VC().length;
+  const filterPanel=`<details class="as-fl" id="as-fl"${A.st.fo?' open':''}><summary class="as-fl-h"><span>🎯 انتخاب سنترها</span><b>${fsel?faDigits(selN)+' از '+faDigits(SC().length)+' سنتر انتخاب شده':'همه‌ی سنترها ('+faDigits(SC().length)+')'}</b><i class="as-sh-ar">▾</i></summary><div class="as-fl-b"><div class="as-fl-t"><input type="search" id="as-fq" placeholder="جستجوی نام سنتر…" value="${e(A.st.fq||'')}" autocomplete="off"><button class="kb-btn ghost" type="button" id="as-fall">انتخاب همه</button><button class="kb-btn ghost" type="button" id="as-fnone">حذف انتخاب</button></div><div class="as-fl-l">${SC().map(c=>`<label class="azki-chk as-fl-i" data-n="${e(c.name)}"><input type="checkbox" data-fc="${e(c.id)}"${!fsel||fsel.has(c.id)?' checked':''}><span>${e(c.name)}</span></label>`).join('')}<div class="as-fl-e" id="as-fl-e" style="display:none">سنتری با این نام پیدا نشد</div></div></div></details>`;
   const idx={}; D.entries.forEach(x=>{(idx[x.center_id+'|'+x.day]=idx[x.center_id+'|'+x.day]||{})[x.agent_id]=x});
   const stOpen=(c,d)=>{const L=D.locks[c+'|'+d];return L?!L.locked:true};
   const calc=(c,d)=>{const list=A.agents[c]||[],m=idx[c+'|'+d]||{},r={total:list.length,present:0,hourly:0,leave:0,weekly_off:0,suspended:0,none:0,mo:0,ni:0,reg:0};
     list.forEach(a=>{const x=m[a.id]; if(!x){r.none++;return} r.reg++; r[x.status]++; if(ACT.includes(x.status)){if((x.shift||'morning')==='night')r.ni++;else r.mo++}});
     r.act=r.present+r.hourly; r.cap=Math.max(1,Math.floor(r.total*PCT)); r.over=r.total>0&&(new Date(d+'T00:00:00Z').getUTCDay()===5||!!A.hol[d])&&r.act>r.cap; return r};
   const tot={total:0,present:0,hourly:0,leave:0,weekly_off:0,suspended:0,none:0};
-  if(!wk)SC().forEach(c=>{const r=calc(c.id,day);Object.keys(tot).forEach(k=>tot[k]+=r[k])});
+  if(!wk)VC().forEach(c=>{const r=calc(c.id,day);Object.keys(tot).forEach(k=>tot[k]+=r[k])});
   const shiftSet={mo:new Map(),ni:new Map()};
-  if(!wk)SC().forEach(c=>{(A.agents[c.id]||[]).forEach(a=>{const x=((idx[c.id+'|'+day]||{})[a.id]); if(!x||!ACT.includes(x.status))return;
+  if(!wk)VC().forEach(c=>{(A.agents[c.id]||[]).forEach(a=>{const x=((idx[c.id+'|'+day]||{})[a.id]); if(!x||!ACT.includes(x.status))return;
     const k=(x.shift||'morning')==='night'?'ni':'mo', m=shiftSet[k], cur=m.get(a.id);
     if(cur){cur.centers.push(c.name)} else m.set(a.id,{name:a.name,hourly:x.status==='hourly',periods:x.periods,centers:[c.name]})})});
   const shList=k=>[...shiftSet[k].values()].sort((a,b)=>a.name.localeCompare(b.name,'fa'));
@@ -9516,7 +9533,7 @@ function renderStatus(){
   const cards=!wk?`<div class="as-cards">${[['کل نیروها',tot.total,''],['حاضر',tot.present,'#1FA971'],['☀ شیفت صبح',shiftSet.mo.size,'#F59E0B'],['🌙 شیفت شب',shiftSet.ni.size,'#4F46E5'],['مرخصی ساعتی',tot.hourly,'#E08A17'],['مرخصی',tot.leave,'#7C5CE0'],['اف هفتگی',tot.weekly_off,'#8A94A6'],['تعلیق',tot.suspended,'#E0453F'],['ثبت‌نشده',tot.none,'#B0892B']].map(c=>`<div class="as-card" style="${c[2]?'--c:'+c[2]:''}"><span>${c[0]}</span><b>${faDigits(c[1])}</b></div>`).join('')}</div>`:'';
   const dayBar=!wk?`<div class="as-days">${days.map((d,i)=>`<button type="button" class="subtab-btn${d===day?' active':''}" data-sd="${d}">${DN[i]} ${fdate(d)}${A.hol[d]?' 🎌':''}</button>`).join('')}</div>`:'';
   const pill=(st,x)=>`<span class="as-pill" style="--c:${ST[st][1]}" title="${e(ST[st][0])}${x&&x.periods&&x.periods.length?' · '+fmtP(x.periods):''}">${SS[st]}</span>`;
-  const rowsHtml=SC().map(c=>{
+  const rowsHtml=VC().map(c=>{
     const open=!!A.st.open[c.id], ag=A.agents[c.id]||[];
     let main='',detail='';
     if(!wk){
@@ -9529,11 +9546,11 @@ function renderStatus(){
       main=`<td class="as-n"><button type="button" class="as-ex" data-ex="${e(c.id)}">${open?'▾':'▸'}</button> <b${isOwn(c.id)?'':' class="as-other" title="این سنتر به شما اساین نشده؛ فقط مشاهده"'}>${e(c.name)}</b> <small>(${faDigits(ag.length)} نفر)</small></td>`+days.map(d=>{const r=calc(c.id,d);const cls=!r.total?'':r.over?'bad':!r.reg?'none':r.act===0?'warn':'ok';return `<td><span class="as-cell ${cls}" title="${DN[days.indexOf(d)]} ${fdate(d)}">${r.total?faDigits(r.act)+'/'+faDigits(r.total):'—'}${!stOpen(c.id,d)?' 🔒':''}</span></td>`}).join('');
       if(open)detail=`<tr class="as-d"><td colspan="8"><div class="as-w"><table class="as-tbl"><thead><tr><th>کارشناس</th>${days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('')}</tr></thead><tbody>${ag.map(a=>`<tr><td class="as-n"><b>${e(a.name)}</b></td>${days.map(d=>{const x=(idx[c.id+'|'+d]||{})[a.id];return `<td>${x?pill(x.status,x)+`<small>${x.shift==='night'?'🌙':'☀'}${x.periods&&x.periods.length&&(x.status==='present'||x.status==='hourly')?' '+fmtP(x.periods):''}</small>`:'<span class="as-pill" style="--c:#B0892B">—</span>'}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="8" class="kb-empty">نیرویی اساین نشده</td></tr>`}</tbody></table></div>${isOwn(c.id)?`<button class="kb-btn ghost" type="button" data-ed="${e(c.id)}">ویرایش چیدمان این سنتر</button>`:''}</td></tr>`;
     }
-    return `<tr>${main}</tr>${detail}`}).join('');
+    return `<tr>${main}</tr>${detail}`}).join('')||`<tr><td colspan="10" class="kb-empty">هیچ سنتری انتخاب نشده؛ از «انتخاب سنترها» سنتر مورد نظر را تیک بزنید</td></tr>`;
   const head=!wk?'<th>سنتر</th><th>کل</th><th>حاضر</th><th>ساعتی</th><th>مرخصی</th><th>اف</th><th>تعلیق</th><th>ثبت‌نشده</th><th>شیفت</th><th>پوشش</th>':'<th>سنتر</th>'+days.map((d,i)=>`<th>${DN[i]}<br><small>${fdate(d)}</small></th>`).join('');
   H.innerHTML=`<div class="att">${nextBar()}<div class="att-bar"><div class="att-nav"><button class="kb-btn ghost" id="s-prev" type="button">هفته قبل</button><span>${fdate(A.week)} تا ${fdate(w1)} ${fyear(w1)}</span><button class="kb-btn ghost" id="s-next" type="button">هفته بعد</button></div><span class="att-sp"></span>
     <div class="subtabs" style="margin:0"><button class="subtab-btn${wk?'':' active'}" data-sm="day" type="button">نمای روزانه</button><button class="subtab-btn${wk?' active':''}" data-sm="week" type="button">نمای هفتگی</button></div>
-    <button class="kb-btn ghost" id="s-carry" type="button" title="چیدمان آخرین هفته‌ی ثبت‌شده را روی جاهای خالی این هفته‌ی همه سنترها اعمال می‌کند">📋 اعمال چیدمان هفته قبل روی همه سنترها</button><button class="kb-btn ghost" id="s-all" type="button">باز/بسته کردن همه</button></div>${dayBar}${cards}${shiftPanel}
+    <button class="kb-btn ghost" id="s-carry" type="button" title="چیدمان آخرین هفته‌ی ثبت‌شده را روی جاهای خالی این هفته‌ی همه سنترها اعمال می‌کند">📋 اعمال چیدمان هفته قبل روی همه سنترها</button><button class="kb-btn ghost" id="s-all" type="button">باز/بسته کردن همه</button></div>${filterPanel}${dayBar}${cards}${shiftPanel}
     <div class="as-w"><table class="as-tbl"><thead><tr>${head}</tr></thead><tbody>${rowsHtml}</tbody></table></div></div>`;
   const q=i=>H.querySelector(i); bindNext(H);
   q('#s-prev').onclick=()=>{A.week=add(A.week,-7);loadWeek()}; q('#s-next').onclick=()=>{A.week=add(A.week,7);loadWeek()};
@@ -9542,8 +9559,20 @@ function renderStatus(){
   H.querySelectorAll('details.as-sh').forEach(d=>d.addEventListener('toggle',()=>{A.st.sh=A.st.sh||{};A.st.sh[d.dataset.k]=d.open}));
   H.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{const c=b.dataset.ex;A.st.open[c]=!A.st.open[c];renderStatus()});
   q('#s-carry').onclick=carryAllCenters;
-  q('#s-all').onclick=()=>{const any=SC().some(c=>A.st.open[c.id]);SC().forEach(c=>A.st.open[c.id]=!any);renderStatus()};
+  q('#s-all').onclick=()=>{const any=VC().some(c=>A.st.open[c.id]);VC().forEach(c=>A.st.open[c.id]=!any);renderStatus()};
   H.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{A.sel=b.dataset.ed;A.view='set';loadWeek()});
+
+  const normQ=s=>String(s||'').replace(/ي/g,'ی').replace(/ك/g,'ک').trim().toLowerCase();
+  const visItems=()=>[...H.querySelectorAll('.as-fl-i')].filter(l=>!l.classList.contains('hid'));
+  const applyQ=()=>{const t=normQ(A.st.fq);let n=0;H.querySelectorAll('.as-fl-i').forEach(l=>{const ok=!t||normQ(l.dataset.n).includes(t);l.classList.toggle('hid',!ok);if(ok)n++});const em=q('#as-fl-e');if(em)em.style.display=n?'none':''};
+  applyQ();
+  const fSet=ids=>{const all=SC().map(c=>c.id);A.st.fsel=ids.length>=all.length&&all.every(i=>ids.includes(i))?null:new Set(ids);fSave();A.st.fo=true;renderStatus()};
+  const curIds=()=>A.st.fsel?[...A.st.fsel].filter(i=>SC().some(c=>c.id===i)):SC().map(c=>c.id);
+  q('#as-fl').addEventListener('toggle',()=>{A.st.fo=q('#as-fl').open});
+  q('#as-fq').oninput=ev=>{A.st.fq=ev.target.value;applyQ()};
+  H.querySelectorAll('[data-fc]').forEach(cb=>cb.onchange=()=>{const s=new Set(curIds());if(cb.checked)s.add(cb.dataset.fc);else s.delete(cb.dataset.fc);fSet([...s])});
+  q('#as-fall').onclick=()=>{const s=new Set(curIds());visItems().forEach(l=>s.add(l.querySelector('input').dataset.fc));fSet([...s])};
+  q('#as-fnone').onclick=()=>{const s=new Set(curIds());visItems().forEach(l=>s.delete(l.querySelector('input').dataset.fc));fSet([...s])};
 }
 // کپی چیدمان آخرین هفته‌ی دارای ثبت (حداکثر ۴ هفته قبل) روی هفته‌ی داده‌شده، فقط برای جاهای خالی.
 // فقط «حضور» و «اف هفتگی» منتقل می‌شن؛ مرخصی، مرخصی ساعتی و تعلیق موردی‌ان و منتقل نمی‌شن.
