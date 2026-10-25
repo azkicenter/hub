@@ -671,6 +671,16 @@
   .admin-company-box-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-height: 110px; overflow-y: auto; font-size: 14px; font-weight: 400; color: #fff; }
   .admin-company-count { display: inline-flex; gap: 5px; align-items: center; font-size: 12.5px; color: #fff; background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.35); padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
   .admin-company-count b { font-weight: 800; }
+  button.admin-company-count { font-family: inherit; cursor: pointer; transition: background .15s, color .15s; }
+  button.admin-company-count:hover { background: rgba(255,255,255,.34); }
+  button.admin-company-count.sel { background: #fff; color: var(--accent-deep); border-color: #fff; font-weight: 700; }
+  .admin-company-people { margin: 0 0 14px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); }
+  .acp-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink); margin-bottom: 8px; }
+  .acp-close { font-family: inherit; cursor: pointer; border: 0; background: var(--accent-soft); color: var(--accent-strong); width: 26px; height: 26px; border-radius: 50%; font-size: 13px; line-height: 1; }
+  .acp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 14px; }
+  .acp-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .acp-name { font-weight: 700; color: var(--ink); }
+  .acp-center { margin-inline-start: auto; font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
   .admin-company-box .admin-company-empty { color: #fff; }
   @media (max-width: 560px) { .admin-company-box { grid-column: 1 / -1; } }
   .admin-companies-col { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: flex-start; flex: 1 1 auto; margin: 0 12px; min-width: 0; }
@@ -2560,6 +2570,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
             <div class="value" id="azki-active-pct">—</div>
           </div>
         </div>
+        <div class="admin-company-people" id="azki-active-company-people" style="display:none;"></div>
         <div class="list-card" id="azki-active-list">
           <div class="loading-state">در حال بارگذاری...</div>
         </div>
@@ -3814,6 +3825,32 @@ async function loadAzkiActiveStatusView() {
   renderAzkiActiveStatusView();
 }
 
+// لیست اسم کارشناس‌های «فعال و در حال صدور» شرکتی که روی چیپش کلیک شده
+function renderAzkiActiveCompanyPeople() {
+  const box = document.getElementById('azki-active-company-people');
+  if (!box) return;
+  const st = azkiState.activeStatus;
+  const comp = st.selCompany;
+  const people = comp && st.peopleByCompany ? st.peopleByCompany[comp] : null;
+  if (!people || !people.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const sorted = people.slice().sort((a, b) =>
+    String(a.center_name || '').localeCompare(String(b.center_name || ''), 'fa') ||
+    String(a.full_name || '').localeCompare(String(b.full_name || ''), 'fa'));
+  box.innerHTML = `
+    <div class="acp-head">
+      <span><b>${formatNumber(sorted.length)}</b> کارشناس فعال و در حال صدور — ${escHtml(comp)}</span>
+      <button type="button" class="acp-close" data-acp-close title="بستن">✕</button>
+    </div>
+    <div class="acp-list">${sorted.map(m => `
+      <div class="acp-item">
+        <span class="admin-status-dot online"></span>
+        <span class="acp-name">${escHtml(m.full_name || '—')}</span>
+        <span class="acp-center">${escHtml(fmtCenterName(m.center_name || ''))}</span>
+      </div>`).join('')}
+    </div>`;
+  box.style.display = '';
+}
+
 function renderAzkiActiveStatusView() {
   const rows = azkiState.activeStatus.rows;
   const container = document.getElementById('azki-active-list');
@@ -3861,15 +3898,38 @@ function renderAzkiActiveStatusView() {
   // تعداد کارشناسانی که هم پنلشون فعاله هم آنلاین (در حال صدور) هستن، به تفکیک شرکت
   {
     const byComp = {};
+    const peopleByComp = {};
     rows.forEach(r => {
       if (!(r.is_active && r.is_active_to_issue)) return;
       String(r.companies || r.all_companies || '').split(/[،,]/).map(x => x.trim()).filter(Boolean)
-        .forEach(c => { byComp[c] = (byComp[c] || 0) + 1; });
+        .forEach(c => { byComp[c] = (byComp[c] || 0) + 1; (peopleByComp[c] = peopleByComp[c] || []).push(r); });
     });
+    const st = azkiState.activeStatus;
+    st.peopleByCompany = peopleByComp;
+    if (st.selCompany && !peopleByComp[st.selCompany]) st.selCompany = '';
     const entries = Object.entries(byComp).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fa'));
-    document.getElementById('azki-active-by-company').innerHTML = entries.length
-      ? entries.map(([c, n]) => `<span class="admin-company-count"><b>${formatNumber(n)}</b> ${escHtml(c)}</span>`).join('')
+    const byCompEl = document.getElementById('azki-active-by-company');
+    byCompEl.innerHTML = entries.length
+      ? entries.map(([c, n]) => `<button type="button" class="admin-company-count${c === st.selCompany ? ' sel' : ''}" data-company="${escHtml(c)}" title="نمایش کارشناس‌های فعال ${escHtml(c)}"><b>${formatNumber(n)}</b> ${escHtml(c)}</button>`).join('')
       : '<span class="admin-company-empty">—</span>';
+    if (!byCompEl.dataset.bound) {
+      byCompEl.dataset.bound = '1';
+      byCompEl.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-company]');
+        if (!b) return;
+        const s2 = azkiState.activeStatus;
+        s2.selCompany = (s2.selCompany === b.dataset.company) ? '' : b.dataset.company;
+        byCompEl.querySelectorAll('[data-company]').forEach(x => x.classList.toggle('sel', x.dataset.company === s2.selCompany));
+        renderAzkiActiveCompanyPeople();
+      });
+      document.getElementById('azki-active-company-people').addEventListener('click', (e) => {
+        if (!e.target.closest('[data-acp-close]')) return;
+        azkiState.activeStatus.selCompany = '';
+        byCompEl.querySelectorAll('[data-company]').forEach(x => x.classList.remove('sel'));
+        renderAzkiActiveCompanyPeople();
+      });
+    }
+    renderAzkiActiveCompanyPeople();
   }
   document.getElementById('azki-active-pct').textContent =
     faDigits(rows.length ? round2(totalActive / rows.length * 100) : 0) + '٪';
