@@ -2715,6 +2715,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
   </main>
 </div>
 
+<style id="temp-hide-kanban">[data-team-tab="kanban"],[data-sup-tab="kanban"],#kb-bell{display:none!important}</style>
 <script>
 // config.js توسط supervisor_supabase.py ساخته می‌شود (آدرس تونل Supabase لوکال). پارامتر زمان برای دور زدن کش.
 document.write('<script src="config.js?t=' + Date.now() + '"><\/script>');
@@ -9234,6 +9235,7 @@ function modal(t){
 }
 async function refresh(){await load();shell();pulse();}
 window.kbOpen=async function(host){
+  return; /* TEMP-DISABLED: kanban */
   S.host=host; if(!host.innerHTML.trim())host.innerHTML='<div class="loading-state">در حال بارگذاری...</div>';
   await refresh();
 };
@@ -9268,6 +9270,7 @@ function renderPop(){
   p.querySelectorAll('.it').forEach(b=>b.onclick=()=>{const t=S.tasks.find(x=>x.id===b.dataset.id);S.popOpen=false;p.remove();openTasksTab();setTimeout(()=>{if(S.host&&S.host.isConnected)board();modal(t)},200)});
 }
 window.kbNotifyStart=async function(){
+  return; /* TEMP-DISABLED: kanban */
   if(S.timer)return;
   const who=document.querySelector('.who'); if(who&&!document.getElementById('kb-bell')){
     const b=document.createElement('button'); b.id='kb-bell'; b.type='button'; b.className='kb-bell'; b.title='اعلان‌ها';
