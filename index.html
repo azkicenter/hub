@@ -2745,17 +2745,18 @@ const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "�
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
 const TABLE_SELLER_LOCATIONS = "seller_locations";
-// ── Supabase: شکستن درخواست‌های GET خیلی بلند (فیلتر in.(...) با ده‌ها/صدها id) ──
-// وقتی URL از حد مجاز پروکسی/تونل بلندتر می‌شود، لیست id ها تکه‌تکه می‌شود و نتیجه‌ها یکی می‌شوند.
+// ── Supabase: رفع دو محدودیت برای همه‌ی تب‌ها ──
+// ۱) سقف ۱۰۰۰ ردیف در هر پاسخ: هر GET بدون limit/offset خودکار صفحه‌به‌صفحه کامل گرفته می‌شود.
+// ۲) سقف طول URL: فیلتر in.(...) با ده‌ها/صدها id تکه‌تکه می‌شود و نتیجه‌ها یکی می‌شوند.
 function makeChunkingFetch() {
-  const MAX_URL = 4000;      // بالاتر از این طول، درخواست شکسته می‌شود
+  const MAX_URL = 4000;      // بالاتر از این طول، in.(...) شکسته می‌شود
   const TARGET_URL = 3500;   // طول هدف هر تکه
+  const PAGE = 1000;         // سقف سطر در هر پاسخ PostgREST
+  const CACHE_MS = 10000;    // کش کوتاه فقط برای صفحه‌های پشت‌سرهم fetchAllRows
+  const CACHE = new Map();
   const nativeFetch = (...a) => window.fetch(...a);
-  const CACHE = new Map();   // کش کوتاه‌مدت برای صفحه‌بندی
-  const CACHE_MS = 15000;
 
   function splitList(s) {
-    // جداکردن مقدارهای داخل in.(...) با رعایت کوتیشن
     const out = []; let cur = '', q = false;
     for (let i = 0; i < s.length; i++) {
       const ch = s[i];
@@ -2781,66 +2782,76 @@ function makeChunkingFetch() {
       const isReq = typeof input !== 'string' && !(input instanceof URL);
       const url = isReq ? input.url : String(input);
       const method = String((init && init.method) || (isReq && input.method) || 'GET').toUpperCase();
-      if (method !== 'GET' || url.length <= MAX_URL || url.indexOf('/rest/v1/') < 0) return nativeFetch(input, init);
+
+      // هر نوشتن/تغییر → کش پاک شود
+      if (method !== 'GET') { CACHE.clear(); return nativeFetch(input, init); }
+      if (url.indexOf('/rest/v1/') < 0 || url.indexOf('/rest/v1/rpc/') >= 0) return nativeFetch(input, init);
 
       const hdrs = new Headers((init && init.headers) || (isReq ? input.headers : undefined));
       const accept = hdrs.get('Accept') || '';
-      if (accept.indexOf('vnd.pgrst.object') >= 0) return nativeFetch(input, init); // .single()
+      if (accept.indexOf('vnd.pgrst.object') >= 0) return nativeFetch(input, init);   // .single()
+      if (accept && accept.indexOf('json') < 0) return nativeFetch(input, init);        // csv و ...
 
       const qi = url.indexOf('?');
-      if (qi < 0) return nativeFetch(input, init);
-      const base = url.slice(0, qi);
-      const segs = url.slice(qi + 1).split('&');
-
-      // بزرگ‌ترین فیلتر in.(...) را پیدا کن
-      let bi = -1, bLen = 0, bVals = null, bKey = '';
-      segs.forEach((sg, i) => {
-        const eq = sg.indexOf('=');
-        if (eq < 0) return;
-        let val; try { val = decodeURIComponent(sg.slice(eq + 1)); } catch (e) { return; }
-        if (val.indexOf('in.(') === 0 && val.charAt(val.length - 1) === ')' && val.length > bLen) {
-          bi = i; bLen = val.length; bKey = sg.slice(0, eq);
-          bVals = splitList(val.slice(4, -1));
-        }
-      });
-      if (bi < 0 || !bVals || bVals.length < 2) return nativeFetch(input, init);
+      const base = qi < 0 ? url : url.slice(0, qi);
+      const segs = qi < 0 ? [] : url.slice(qi + 1).split('&').filter(Boolean);
 
       // offset / limit / order
-      let offset = 0, limit = null, order = null;
-      const rest = [];
-      segs.forEach((sg, i) => {
-        if (i === bi) return;
+      let offset = 0, limit = null, order = null, hasOffset = false;
+      const others = [];
+      segs.forEach(sg => {
         const eq = sg.indexOf('=');
         const k = eq < 0 ? sg : sg.slice(0, eq);
         const v = eq < 0 ? '' : sg.slice(eq + 1);
-        if (k === 'offset') offset = parseInt(v, 10) || 0;
+        if (k === 'offset') { offset = parseInt(v, 10) || 0; hasOffset = true; }
         else if (k === 'limit') limit = parseInt(v, 10);
-        else { if (k === 'order') { try { order = decodeURIComponent(v); } catch (e) {} } rest.push(sg); }
+        else { if (k === 'order') { try { order = decodeURIComponent(v); } catch (e) {} } others.push(sg); }
       });
+      const hasLimit = limit !== null && !isNaN(limit);
+      if (hasOffset && !hasLimit) return nativeFetch(input, init);
+      const autoAll = !hasLimit && !hasOffset;      // بدون صفحه‌بندی → همه‌ی ردیف‌ها
 
-      const baseLen = base.length + 1 + rest.join('&').length + bKey.length + 40;
-      const avg = Math.max(1, Math.ceil(bVals.join(',').length / bVals.length)) + 3; // %2C
-      const per = Math.max(1, Math.floor((TARGET_URL - baseLen) / avg));
-      const chunks = [];
-      for (let i = 0; i < bVals.length; i += per) chunks.push(bVals.slice(i, i + per));
+      // بزرگ‌ترین فیلتر in.(...) (فقط وقتی URL بلند است)
+      let bi = -1, bLen = 0, bVals = null, bKey = '';
+      if (url.length > MAX_URL) {
+        others.forEach((sg, i) => {
+          const eq = sg.indexOf('=');
+          if (eq < 0) return;
+          let val; try { val = decodeURIComponent(sg.slice(eq + 1)); } catch (e) { return; }
+          if (val.indexOf('in.(') === 0 && val.charAt(val.length - 1) === ')' && val.length > bLen) {
+            bi = i; bLen = val.length; bKey = sg.slice(0, eq);
+            bVals = splitList(val.slice(4, -1));
+          }
+        });
+      }
+      const needChunk = bi >= 0 && bVals && bVals.length >= 2;
+      if (!needChunk && !autoAll) return nativeFetch(input, init);   // مثل .range() روی URL کوتاه → دست‌نخورده
+
+      const rest = needChunk ? others.filter((_, i) => i !== bi) : others;
+      let chunks = [null];
+      if (needChunk) {
+        const baseLen = base.length + 1 + rest.join('&').length + bKey.length + 40;
+        const avg = Math.max(1, Math.ceil(bVals.join(',').length / bVals.length)) + 3; // %2C
+        const per = Math.max(1, Math.floor((TARGET_URL - baseLen) / avg));
+        chunks = [];
+        for (let i = 0; i < bVals.length; i += per) chunks.push(bVals.slice(i, i + per));
+      }
 
       const wantCount = /count=/.test(hdrs.get('Prefer') || '');
-      const paged = limit !== null && !isNaN(limit);
-      const PAGE = 1000; // سقف سطر در هر پاسخ PostgREST
-
-      // کل نتیجه (همه‌ی صفحه‌ها) فقط یک بار گرفته و برای صفحه‌های بعدیِ fetchAllRows کش می‌شود
+      const useCache = hasLimit;   // فقط صفحه‌بندی fetchAllRows
       const cacheKey = base + '?' + segs.filter(sg => !/^(offset|limit)=/.test(sg)).join('&') + '|' + (hdrs.get('Authorization') || '');
       const now = Date.now();
       for (const [k, v] of CACHE) if (now - v.t > CACHE_MS) CACHE.delete(k);
-      let ent = CACHE.get(cacheKey);
+      let ent = useCache ? CACHE.get(cacheKey) : null;
+
       if (!ent) {
         const run = async () => {
           const one = async (ch) => {
             let all = [], total = 0, off = 0;
             while (true) {
-              const parts = rest.filter(sg => !/^(offset|limit)=/.test(sg));
-              parts.push(bKey + '=' + encodeURIComponent('in.(' + ch.join(',') + ')'));
-              if (paged) { parts.push('offset=' + off); parts.push('limit=' + PAGE); }
+              const parts = rest.slice();
+              if (ch) parts.push(bKey + '=' + encodeURIComponent('in.(' + ch.join(',') + ')'));
+              parts.push('offset=' + off); parts.push('limit=' + PAGE);
               const u = base + '?' + parts.join('&');
               const r = await nativeFetch(isReq ? new Request(u, input) : u, isReq ? undefined : init);
               if (!r.ok) return { bad: { status: r.status, statusText: r.statusText, text: await r.text() } };
@@ -2848,7 +2859,7 @@ function makeChunkingFetch() {
               if (Array.isArray(j)) all = all.concat(j);
               const cr = r.headers.get('Content-Range');
               if (cr && cr.indexOf('/') > 0 && off === 0) { const t = parseInt(cr.split('/')[1], 10); if (!isNaN(t)) total = t; }
-              if (!paged || !Array.isArray(j) || j.length < PAGE) break;
+              if (!Array.isArray(j) || j.length < PAGE) break;
               off += PAGE;
             }
             return { rows: all, total };
@@ -2858,7 +2869,7 @@ function makeChunkingFetch() {
           if (bad) return bad;
           let rows = [], total = 0;
           res.forEach(x => { rows = rows.concat(x.rows); total += x.total; });
-          if (order) {
+          if (order && chunks.length > 1) {
             const specs = order.split(',').map(s => {
               const p = s.split('.');
               return { col: p[0], asc: p.indexOf('desc') < 0, nf: p.indexOf('nullsfirst') >= 0 ? true : p.indexOf('nullslast') >= 0 ? false : p.indexOf('desc') >= 0 };
@@ -2867,19 +2878,20 @@ function makeChunkingFetch() {
           }
           return { rows, total };
         };
-        ent = { t: now, p: run() };
-        CACHE.set(cacheKey, ent);
-        ent.p.then(v => { if (v.bad) CACHE.delete(cacheKey); }, () => CACHE.delete(cacheKey));
+        ent = { t: Infinity, p: run() };
+        if (useCache) {
+          CACHE.set(cacheKey, ent);
+          ent.p.then(v => { if (v.bad) CACHE.delete(cacheKey); else ent.t = Date.now(); }, () => CACHE.delete(cacheKey));
+        }
       }
       const out = await ent.p;
       if (out.bad) return new Response(out.bad.text, { status: out.bad.status, statusText: out.bad.statusText });
 
       let rows = out.rows;
-      if (paged) rows = rows.slice(offset, offset + limit);
-      else if (rows.length > PAGE) rows = rows.slice(0, PAGE);
+      if (hasLimit) rows = rows.slice(offset, offset + limit);
 
       const h = { 'Content-Type': 'application/json' };
-      if (wantCount) h['Content-Range'] = (rows.length ? offset + '-' + (offset + rows.length - 1) : '*') + '/' + out.total;
+      if (wantCount) h['Content-Range'] = (rows.length ? offset + '-' + (offset + rows.length - 1) : '*') + '/' + (out.total || rows.length);
       return new Response(JSON.stringify(rows), { status: 200, headers: h });
     } catch (e) {
       console.warn('chunkingFetch fallback:', e);
