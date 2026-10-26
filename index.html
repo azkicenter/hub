@@ -2751,6 +2751,8 @@ function makeChunkingFetch() {
   const MAX_URL = 4000;      // بالاتر از این طول، درخواست شکسته می‌شود
   const TARGET_URL = 3500;   // طول هدف هر تکه
   const nativeFetch = (...a) => window.fetch(...a);
+  const CACHE = new Map();   // کش کوتاه‌مدت برای صفحه‌بندی
+  const CACHE_MS = 15000;
 
   function splitList(s) {
     // جداکردن مقدارهای داخل in.(...) با رعایت کوتیشن
@@ -2823,36 +2825,61 @@ function makeChunkingFetch() {
       for (let i = 0; i < bVals.length; i += per) chunks.push(bVals.slice(i, i + per));
 
       const wantCount = /count=/.test(hdrs.get('Prefer') || '');
-      const reqs = chunks.map(ch => {
-        const parts = rest.slice();
-        parts.push(bKey + '=' + encodeURIComponent('in.(' + ch.join(',') + ')'));
-        if (limit !== null && !isNaN(limit)) { parts.push('offset=0'); parts.push('limit=' + (offset + limit)); }
-        const u = base + '?' + parts.join('&');
-        return nativeFetch(isReq ? new Request(u, input) : u, isReq ? undefined : init);
-      });
-      const resps = await Promise.all(reqs);
-      const bad = resps.find(r => !r.ok);
-      if (bad) return bad;
+      const paged = limit !== null && !isNaN(limit);
+      const PAGE = 1000; // سقف سطر در هر پاسخ PostgREST
 
-      let rows = [], total = 0;
-      for (const r of resps) {
-        const j = await r.json();
-        if (Array.isArray(j)) rows = rows.concat(j);
-        const cr = r.headers.get('Content-Range'); // مثل 0-9/123
-        if (cr && cr.indexOf('/') > 0) { const t = parseInt(cr.split('/')[1], 10); if (!isNaN(t)) total += t; }
+      // کل نتیجه (همه‌ی صفحه‌ها) فقط یک بار گرفته و برای صفحه‌های بعدیِ fetchAllRows کش می‌شود
+      const cacheKey = base + '?' + segs.filter(sg => !/^(offset|limit)=/.test(sg)).join('&') + '|' + (hdrs.get('Authorization') || '');
+      const now = Date.now();
+      for (const [k, v] of CACHE) if (now - v.t > CACHE_MS) CACHE.delete(k);
+      let ent = CACHE.get(cacheKey);
+      if (!ent) {
+        const run = async () => {
+          const one = async (ch) => {
+            let all = [], total = 0, off = 0;
+            while (true) {
+              const parts = rest.filter(sg => !/^(offset|limit)=/.test(sg));
+              parts.push(bKey + '=' + encodeURIComponent('in.(' + ch.join(',') + ')'));
+              if (paged) { parts.push('offset=' + off); parts.push('limit=' + PAGE); }
+              const u = base + '?' + parts.join('&');
+              const r = await nativeFetch(isReq ? new Request(u, input) : u, isReq ? undefined : init);
+              if (!r.ok) return { bad: { status: r.status, statusText: r.statusText, text: await r.text() } };
+              const j = await r.json();
+              if (Array.isArray(j)) all = all.concat(j);
+              const cr = r.headers.get('Content-Range');
+              if (cr && cr.indexOf('/') > 0 && off === 0) { const t = parseInt(cr.split('/')[1], 10); if (!isNaN(t)) total = t; }
+              if (!paged || !Array.isArray(j) || j.length < PAGE) break;
+              off += PAGE;
+            }
+            return { rows: all, total };
+          };
+          const res = await Promise.all(chunks.map(one));
+          const bad = res.find(x => x.bad);
+          if (bad) return bad;
+          let rows = [], total = 0;
+          res.forEach(x => { rows = rows.concat(x.rows); total += x.total; });
+          if (order) {
+            const specs = order.split(',').map(s => {
+              const p = s.split('.');
+              return { col: p[0], asc: p.indexOf('desc') < 0, nf: p.indexOf('nullsfirst') >= 0 ? true : p.indexOf('nullslast') >= 0 ? false : p.indexOf('desc') >= 0 };
+            });
+            rows.sort((x, y) => { for (const s of specs) { const c = cmp(x[s.col], y[s.col], s.asc, s.nf); if (c) return c; } return 0; });
+          }
+          return { rows, total };
+        };
+        ent = { t: now, p: run() };
+        CACHE.set(cacheKey, ent);
+        ent.p.then(v => { if (v.bad) CACHE.delete(cacheKey); }, () => CACHE.delete(cacheKey));
       }
+      const out = await ent.p;
+      if (out.bad) return new Response(out.bad.text, { status: out.bad.status, statusText: out.bad.statusText });
 
-      if (order) {
-        const specs = order.split(',').map(s => {
-          const p = s.split('.');
-          return { col: p[0], asc: p.indexOf('desc') < 0, nf: p.indexOf('nullsfirst') >= 0 ? true : p.indexOf('nullslast') >= 0 ? false : p.indexOf('desc') >= 0 };
-        });
-        rows.sort((x, y) => { for (const s of specs) { const c = cmp(x[s.col], y[s.col], s.asc, s.nf); if (c) return c; } return 0; });
-      }
-      if (limit !== null && !isNaN(limit)) rows = rows.slice(offset, offset + limit);
+      let rows = out.rows;
+      if (paged) rows = rows.slice(offset, offset + limit);
+      else if (rows.length > PAGE) rows = rows.slice(0, PAGE);
 
       const h = { 'Content-Type': 'application/json' };
-      if (wantCount) h['Content-Range'] = (rows.length ? offset + '-' + (offset + rows.length - 1) : '*') + '/' + total;
+      if (wantCount) h['Content-Range'] = (rows.length ? offset + '-' + (offset + rows.length - 1) : '*') + '/' + out.total;
       return new Response(JSON.stringify(rows), { status: 200, headers: h });
     } catch (e) {
       console.warn('chunkingFetch fallback:', e);
