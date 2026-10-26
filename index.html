@@ -5813,9 +5813,7 @@ async function enterApp(user) {
 const ONLINE_THRESHOLD_MS = 60 * 1000;
 
 async function sendPresenceHeartbeat() {
-  try {
-    await supabaseClient.rpc('touch_last_seen');
-  } catch (e) { }
+  // touch_last_seen در Supabase لوکال وجود ندارد؛ ثبت آخرین بازدید غیرفعال شد.
 }
 
 function startPresenceHeartbeat() {
