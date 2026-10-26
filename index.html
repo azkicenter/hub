@@ -2745,7 +2745,123 @@ const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "�
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
 const TABLE_SELLER_LOCATIONS = "seller_locations";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ── Supabase: شکستن درخواست‌های GET خیلی بلند (فیلتر in.(...) با ده‌ها/صدها id) ──
+// وقتی URL از حد مجاز پروکسی/تونل بلندتر می‌شود، لیست id ها تکه‌تکه می‌شود و نتیجه‌ها یکی می‌شوند.
+function makeChunkingFetch() {
+  const MAX_URL = 4000;      // بالاتر از این طول، درخواست شکسته می‌شود
+  const TARGET_URL = 3500;   // طول هدف هر تکه
+  const nativeFetch = (...a) => window.fetch(...a);
+
+  function splitList(s) {
+    // جداکردن مقدارهای داخل in.(...) با رعایت کوتیشن
+    const out = []; let cur = '', q = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (ch === '"') { q = !q; cur += ch; }
+      else if (ch === ',' && !q) { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    if (cur !== '') out.push(cur);
+    return out;
+  }
+
+  function cmp(a, b, asc, nullsFirst) {
+    const an = a === null || a === undefined, bn = b === null || b === undefined;
+    if (an || bn) { if (an && bn) return 0; return (an ? 1 : -1) * (nullsFirst ? -1 : 1); }
+    let r;
+    if (typeof a === 'number' && typeof b === 'number') r = a - b;
+    else r = String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0;
+    return asc ? r : -r;
+  }
+
+  return async function chunkingFetch(input, init) {
+    try {
+      const isReq = typeof input !== 'string' && !(input instanceof URL);
+      const url = isReq ? input.url : String(input);
+      const method = String((init && init.method) || (isReq && input.method) || 'GET').toUpperCase();
+      if (method !== 'GET' || url.length <= MAX_URL || url.indexOf('/rest/v1/') < 0) return nativeFetch(input, init);
+
+      const hdrs = new Headers((init && init.headers) || (isReq ? input.headers : undefined));
+      const accept = hdrs.get('Accept') || '';
+      if (accept.indexOf('vnd.pgrst.object') >= 0) return nativeFetch(input, init); // .single()
+
+      const qi = url.indexOf('?');
+      if (qi < 0) return nativeFetch(input, init);
+      const base = url.slice(0, qi);
+      const segs = url.slice(qi + 1).split('&');
+
+      // بزرگ‌ترین فیلتر in.(...) را پیدا کن
+      let bi = -1, bLen = 0, bVals = null, bKey = '';
+      segs.forEach((sg, i) => {
+        const eq = sg.indexOf('=');
+        if (eq < 0) return;
+        let val; try { val = decodeURIComponent(sg.slice(eq + 1)); } catch (e) { return; }
+        if (val.indexOf('in.(') === 0 && val.charAt(val.length - 1) === ')' && val.length > bLen) {
+          bi = i; bLen = val.length; bKey = sg.slice(0, eq);
+          bVals = splitList(val.slice(4, -1));
+        }
+      });
+      if (bi < 0 || !bVals || bVals.length < 2) return nativeFetch(input, init);
+
+      // offset / limit / order
+      let offset = 0, limit = null, order = null;
+      const rest = [];
+      segs.forEach((sg, i) => {
+        if (i === bi) return;
+        const eq = sg.indexOf('=');
+        const k = eq < 0 ? sg : sg.slice(0, eq);
+        const v = eq < 0 ? '' : sg.slice(eq + 1);
+        if (k === 'offset') offset = parseInt(v, 10) || 0;
+        else if (k === 'limit') limit = parseInt(v, 10);
+        else { if (k === 'order') { try { order = decodeURIComponent(v); } catch (e) {} } rest.push(sg); }
+      });
+
+      const baseLen = base.length + 1 + rest.join('&').length + bKey.length + 40;
+      const avg = Math.max(1, Math.ceil(bVals.join(',').length / bVals.length)) + 3; // %2C
+      const per = Math.max(1, Math.floor((TARGET_URL - baseLen) / avg));
+      const chunks = [];
+      for (let i = 0; i < bVals.length; i += per) chunks.push(bVals.slice(i, i + per));
+
+      const wantCount = /count=/.test(hdrs.get('Prefer') || '');
+      const reqs = chunks.map(ch => {
+        const parts = rest.slice();
+        parts.push(bKey + '=' + encodeURIComponent('in.(' + ch.join(',') + ')'));
+        if (limit !== null && !isNaN(limit)) { parts.push('offset=0'); parts.push('limit=' + (offset + limit)); }
+        const u = base + '?' + parts.join('&');
+        return nativeFetch(isReq ? new Request(u, input) : u, isReq ? undefined : init);
+      });
+      const resps = await Promise.all(reqs);
+      const bad = resps.find(r => !r.ok);
+      if (bad) return bad;
+
+      let rows = [], total = 0;
+      for (const r of resps) {
+        const j = await r.json();
+        if (Array.isArray(j)) rows = rows.concat(j);
+        const cr = r.headers.get('Content-Range'); // مثل 0-9/123
+        if (cr && cr.indexOf('/') > 0) { const t = parseInt(cr.split('/')[1], 10); if (!isNaN(t)) total += t; }
+      }
+
+      if (order) {
+        const specs = order.split(',').map(s => {
+          const p = s.split('.');
+          return { col: p[0], asc: p.indexOf('desc') < 0, nf: p.indexOf('nullsfirst') >= 0 ? true : p.indexOf('nullslast') >= 0 ? false : p.indexOf('desc') >= 0 };
+        });
+        rows.sort((x, y) => { for (const s of specs) { const c = cmp(x[s.col], y[s.col], s.asc, s.nf); if (c) return c; } return 0; });
+      }
+      if (limit !== null && !isNaN(limit)) rows = rows.slice(offset, offset + limit);
+
+      const h = { 'Content-Type': 'application/json' };
+      if (wantCount) h['Content-Range'] = (rows.length ? offset + '-' + (offset + rows.length - 1) : '*') + '/' + total;
+      return new Response(JSON.stringify(rows), { status: 200, headers: h });
+    } catch (e) {
+      console.warn('chunkingFetch fallback:', e);
+      return nativeFetch(input, init);
+    }
+  };
+}
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { fetch: makeChunkingFetch() } });
 
 const loginScreen = document.getElementById('login-screen');
 const appScreen = document.getElementById('app-screen');
