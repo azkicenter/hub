@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self' https://hbiygeecakpgjnfieyyt.supabase.co wss://hbiygeecakpgjnfieyyt.supabase.co https://docs.google.com https://script.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self' https://*.lhr.life wss://*.lhr.life https://*.localhost.run wss://*.localhost.run https://*.trycloudflare.com wss://*.trycloudflare.com https://docs.google.com https://script.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>داشبورد ازکی سنتر</title>
 <script>
@@ -2716,6 +2716,10 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
 </div>
 
 <script>
+// config.js توسط supervisor_supabase.py ساخته می‌شود (آدرس تونل Supabase لوکال). پارامتر زمان برای دور زدن کش.
+document.write('<script src="config.js?t=' + Date.now() + '"><\/script>');
+</script>
+<script>
 // فقط کلید F12 و میانبرهای devtools (Ctrl/Cmd + Shift + I/J/C) بسته‌ان
 document.addEventListener('keydown', e => {
   const k = e.key ? e.key.toLowerCase() : '';
@@ -2723,8 +2727,8 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i', 'j', 'c'].includes(k)) { e.preventDefault(); }
 });
 
-const SUPABASE_URL = "https://hbiygeecakpgjnfieyyt.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable__MGWCrgYYtyMFFQ9NjK5XQ_Ps-emOHk";
+const SUPABASE_URL = (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL) || "https://offline.invalid";
+const SUPABASE_ANON_KEY = (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_ANON_KEY) || "";
 
 const USERNAME_EMAIL_DOMAIN = "bimename.com";
 
