@@ -2110,10 +2110,6 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
       </button>
     </div>
     <div class="subtabs" id="team-subtabs" style="display:none;">
-      <button class="subtab-btn" data-team-tab="azki-shifts" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        تفکیک شیفت
-      </button>
       <button class="subtab-btn" data-team-tab="azki-compare" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
         مقایسه درصد صدور
@@ -2976,8 +2972,8 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
 });
 
 window.teamCurrentTab = 'team';
-const TEAM_REPORT_TABS = ['azki-shifts', 'azki-compare', 'azki-chart'];
-let teamLastReportTab = 'azki-shifts';
+const TEAM_REPORT_TABS = ['azki-compare', 'azki-chart'];
+let teamLastReportTab = 'azki-compare';
 window.leaderHiddenTabs = new Set(); // تب‌هایی که سرپرست برای سرگروه‌ها مخفی کرده
 function teamShowTab(tab) {
   if (window.leaderHiddenTabs.has(tab)) return;
@@ -10360,7 +10356,7 @@ function umLeadersModal(centerId) {
 // ============================================================
 const LEADER_TAB_DEFS = [
   ['team', 'تعداد صدور تیم'], ['team-bugs', 'خطای صدور'], ['report', 'گزارش (کل گروه)'],
-  ['azki-shifts', 'گزارش ← تفکیک شیفت', 1], ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1],
+  ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1],
   ['azki-chart', 'گزارش ← نمودار', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
   ['attendance', 'حضور و غیاب'], ['training', 'آموزش'], ['users', 'مدیریت کاربران']
