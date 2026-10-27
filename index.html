@@ -3504,6 +3504,7 @@ const azkiState = {
   centers: { loaded: false, rows: [] },
   shifts:  { loaded: false, rows: [], mode: 'date' },
   compare: { loaded: false, byScope: {}, list: [], hideEmpty: true },
+  oct: { loaded: false, rows: [] },
   payroll: { loaded: false, rows: [], slaByCenterKey: {} },
   activeStatus: { loaded: false, rows: [] },
   chart: { report: 'pct', metric: 'count', sel: { pct: new Set(['__all']), shift: new Set(['morning', 'evening']), period: new Set(['total', 'center']) }, gen: 0 },
@@ -5043,6 +5044,14 @@ function azcNiceTop(mx, pct) {
   return nice * mag;
 }
 
+// سقف محور ساعت (۴ بازه‌ی مساوی با گام‌های ۰٫۲۵، ۰٫۵، ۱، ۲، ۵، ...)
+function azcHourTop(mx) {
+  if (mx <= 0) return 4;
+  const steps = [0.25, 0.5, 1, 2, 5, 10, 20, 50, 100];
+  const s = steps.find(x => mx * 1.1 / 4 <= x) || 100;
+  return s * 4;
+}
+
 function azcXLabel(p) { return p.short || (azkiState.granularity === 'daily' ? faDigits(String(p.key).slice(5)) : p.label); }
 
 // خروجی: { points:[{key,label}], series:[{id,name,color,vals:[],sub:[]}], pct:bool, empty:bool, allSeries:[...] }
@@ -5065,6 +5074,23 @@ function azcBuildModel() {
       const idx = Math.max(0, c.list.indexOf(sm.company));
       all.push(mk(sm.company, sm.company, AZKI_TREND_COLORS[idx % AZKI_TREND_COLORS.length], p => p.by[sm.company]));
     });
+    // OCT ازکی سنتر (میانگین ساعت) هم‌بازه با درصد صدور؛ روی محور راست. در حالت هفتگی/ماهانه میانگین وزنی با وزن «تعداد صدور ازکی سنتر» هر روز
+    if ((azkiState.oct.rows || []).length) {
+      const byKey = {};
+      azkiState.oct.rows.forEach(r => {
+        const { jy, jm, jd } = parseJalaliParts(r.report_date_jalali);
+        const { key } = azkiPeriodGroupKey(jy, jm, jd, azkiState.granularity);
+        const v = Number(r.oct_avg_hours), w = Number(r.center_orders) > 0 ? Number(r.center_orders) : 0;
+        const o = byKey[key] || (byKey[key] = { sw: 0, s: 0, s1: 0, n1: 0 });
+        o.sw += w; o.s += v * w; o.s1 += v; o.n1 += 1;
+      });
+      const octVals = data.map(p => { const o = byKey[p.key]; return o ? (o.sw > 0 ? o.s / o.sw : o.s1 / o.n1) : null; });
+      all.push({
+        id: '__oct', name: 'OCT ازکی سنتر (ساعت)', color: '#D946EF', axis: 'right', dash: true,
+        vals: octVals, sub: data.map(() => ''),
+        fmt: v => `${faDigits(round2(v))} ساعت`, lbl: v => faDigits(round2(v)),
+      });
+    }
     return { points: data, all, pct: true, empty: !data.length, selKey: 'pct', title: 'روند درصد صدور ازکی سنتر', areaId: '__all' };
   }
 
@@ -5103,23 +5129,49 @@ function azcFmtVal(v, pct, m) {
 
 function azcPlotBuild(m, defs, pfx) {
   const n = m.points.length;
-  const W = 900, H = 300, L = m.pct ? 46 : 58, R = 14, T = 14, B = 34;
+  const rightDefs = defs.filter(d => d.axis === 'right');
+  const leftDefs = defs.filter(d => d.axis !== 'right');
+  const onlyR = rightDefs.length > 0 && !leftDefs.length;
+  const W = 900, H = 300, L = m.pct ? 46 : 58, R = (rightDefs.length && leftDefs.length) ? 46 : 14, T = 14, B = 34;
   const pw = W - L - R, ph = H - T - B;
   const X = i => L + pw * i / (n - 1);
   let mx = 0;
-  defs.forEach(d => d.vals.forEach(v => { if (v !== null && v > mx) mx = v; }));
+  leftDefs.forEach(d => d.vals.forEach(v => { if (v !== null && v > mx) mx = v; }));
   const top = azcNiceTop(mx, m.pct);
   const Y = v => T + ph * (1 - v / top);
+  // محور راست با مقیاس جدا (مثلاً OCT به ساعت)
+  let mxR = 0;
+  rightDefs.forEach(d => d.vals.forEach(v => { if (v !== null && v > mxR) mxR = v; }));
+  const topR = azcHourTop(mxR);
+  const YR = v => T + ph * (1 - v / topR);
+  const yOf = d => (d.axis === 'right' ? YR : Y);
+  const rColor = rightDefs.length ? rightDefs[0].color : '#888';
 
   let grid = '';
-  const ticks = [];
-  if (m.pct && top >= 10) { const stp = azcPctStep(top); for (let v = 0; v <= top + 1e-9; v += stp) ticks.push(v); }
-  else { for (let k = 0; k <= 4; k++) ticks.push(top * k / 4); }
-  ticks.forEach(v => {
-    const y = Y(v);
-    grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`
-          + `<text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${m.pct ? faDigits(round2(v)) + '٪' : (m.short ? m.short(v) : formatNumber(Math.round(v)))}</text>`;
-  });
+  if (onlyR) {
+    for (let k = 0; k <= 4; k++) {
+      const v = topR * k / 4, y = YR(v);
+      grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`
+            + `<text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="fill:${rColor}">${faDigits(round2(v))}</text>`;
+    }
+    grid += `<text class="azc-ax" x="${L - 6}" y="${T - 3}" text-anchor="end" style="fill:${rColor}">ساعت</text>`;
+  } else {
+    const ticks = [];
+    if (m.pct && top >= 10) { const stp = azcPctStep(top); for (let v = 0; v <= top + 1e-9; v += stp) ticks.push(v); }
+    else { for (let k = 0; k <= 4; k++) ticks.push(top * k / 4); }
+    ticks.forEach(v => {
+      const y = Y(v);
+      grid += `<line class="azki-trend-grid" x1="${L}" x2="${W - R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/>`
+            + `<text class="azc-ax" x="${L - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${m.pct ? faDigits(round2(v)) + '٪' : (m.short ? m.short(v) : formatNumber(Math.round(v)))}</text>`;
+    });
+    if (rightDefs.length) {
+      for (let k = 0; k <= 4; k++) {
+        const v = topR * k / 4;
+        grid += `<text class="azc-ax" x="${W - R + 6}" y="${(YR(v) + 3.5).toFixed(1)}" text-anchor="start" style="fill:${rColor}">${faDigits(round2(v))}</text>`;
+      }
+      grid += `<text class="azc-ax" x="${W - R + 6}" y="${T - 3}" text-anchor="start" style="fill:${rColor}">ساعت</text>`;
+    }
+  }
   const step = Math.ceil(n / 8);
   let xl = '';
   m.points.forEach((p, i) => { if (i % step === 0) xl += `<text x="${X(i).toFixed(1)}" y="${H - 10}" text-anchor="middle">${azcXLabel(p)}</text>`; });
@@ -5130,7 +5182,7 @@ function azcPlotBuild(m, defs, pfx) {
     d.vals.forEach((v, i) => {
       if (v === null) { cur = null; return; }
       if (!cur) { cur = []; segs.push(cur); }
-      cur.push([X(i), Y(v)]);
+      cur.push([X(i), yOf(d)(v)]);
     });
     const line = segs.map(sg => 'M' + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L')).join(' ');
     if (d.id === m.areaId) {
@@ -5139,8 +5191,8 @@ function azcPlotBuild(m, defs, pfx) {
         `M${sg[0][0].toFixed(1)} ${base} L` + sg.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') + ` L${sg[sg.length - 1][0].toFixed(1)} ${base} Z`).join(' ');
       paths += `<path d="${area}" style="fill:${d.color}" opacity=".10"/>`;
     }
-    paths += `<path d="${line}" fill="none" style="stroke:${d.color}" stroke-width="${d.id === m.areaId ? 2.8 : 2}" stroke-linejoin="round" stroke-linecap="round"/>`;
-    if (n <= 45) d.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${d.color}"/>`; });
+    paths += `<path d="${line}" fill="none" style="stroke:${d.color}" stroke-width="${d.id === m.areaId ? 2.8 : 2}" stroke-linejoin="round" stroke-linecap="round"${d.dash ? ' stroke-dasharray="6 4"' : ''}/>`;
+    if (n <= 45) d.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${yOf(d)(v).toFixed(1)}" r="3" style="fill:${d.color}"/>`; });
   });
 
   // مقدار هر نقطه بالای آن نوشته می‌شود (درصد یا تعداد، بسته به گزارش).
@@ -5151,9 +5203,9 @@ function azcPlotBuild(m, defs, pfx) {
   const ordered = defs.slice().sort((a, b) => (b.id === m.areaId) - (a.id === m.areaId));
   ordered.forEach(d => d.vals.forEach((v, i) => {
     if (v === null) return;
-    const txt = m.short ? m.short(v) : azcFmtVal(v, m.pct);
+    const txt = d.lbl ? d.lbl(v) : (m.short ? m.short(v) : azcFmtVal(v, m.pct));
     const w = txt.length * 6.8 + 6;
-    const px = X(i), py = Y(v);
+    const px = X(i), py = yOf(d)(v);
     let ly = py - 9;                       // خط‌پایه‌ی متن، بالای نقطه
     if (ly - 10 < 2) ly = py + 19;         // اگر نقطه به سقف نمودار چسبیده، زیر نقطه بنویس
     const cx = Math.min(Math.max(px, L + w / 2 + 1), W - R - w / 2 + 2);
@@ -5173,7 +5225,7 @@ function azcPlotBuild(m, defs, pfx) {
           </svg>
           <div class="azki-trend-tip" id="${pfx}tip"></div>
         </div>`;
-  return { html, g: { W, L, pw, T, ph, n, X, Y, m, defs, pfx } };
+  return { html, g: { W, L, pw, T, ph, n, X, Y, YR, m, defs, pfx } };
 }
 
 function azkiChartRender() {
@@ -5225,8 +5277,8 @@ function azkiChartRender() {
         if (worst < 0 || v < ref.vals[worst]) worst = i;
       });
       if (best >= 0) stats = `<div class="azki-trend-stats">
-        <span class="azki-trend-stat">بیشترین ${ref.name} (${azcXLabel(m.points[best])})<b>${azcFmtVal(ref.vals[best], m.pct, m)}</b></span>
-        <span class="azki-trend-stat">کمترین (${azcXLabel(m.points[worst])})<b>${azcFmtVal(ref.vals[worst], m.pct, m)}</b></span></div>`;
+        <span class="azki-trend-stat">بیشترین ${ref.name} (${azcXLabel(m.points[best])})<b>${ref.fmt ? ref.fmt(ref.vals[best]) : azcFmtVal(ref.vals[best], m.pct, m)}</b></span>
+        <span class="azki-trend-stat">کمترین (${azcXLabel(m.points[worst])})<b>${ref.fmt ? ref.fmt(ref.vals[worst]) : azcFmtVal(ref.vals[worst], m.pct, m)}</b></span></div>`;
     }
     const head = `<div class="azki-trend-head"><div class="azki-trend-title">${m.title} (${m.granLabel || AZKI_GRAN_FA[azkiState.granularity] || ''})</div>${stats}</div>${chips}`;
 
@@ -5289,8 +5341,8 @@ function azcBindHover(g) {
     g.defs.forEach(d => {
       const v = d.vals[i];
       if (v === null) return;
-      dots += `<circle cx="${x.toFixed(1)}" cy="${g.Y(v).toFixed(1)}" r="5" style="fill:${d.color};stroke:#fff" stroke-width="2"/>`;
-      rows += `<div class="t-r"><i style="background:${d.color}"></i><span>${escHtml(d.name)}</span><b>${azcFmtVal(v, g.m.pct, g.m)}</b>${d.sub[i] ? `<small>${escHtml(d.sub[i])}</small>` : ''}</div>`;
+      dots += `<circle cx="${x.toFixed(1)}" cy="${((d.axis === 'right' && g.YR) ? g.YR : g.Y)(v).toFixed(1)}" r="5" style="fill:${d.color};stroke:#fff" stroke-width="2"/>`;
+      rows += `<div class="t-r"><i style="background:${d.color}"></i><span>${escHtml(d.name)}</span><b>${d.fmt ? d.fmt(v) : azcFmtVal(v, g.m.pct, g.m)}</b>${d.sub[i] ? `<small>${escHtml(d.sub[i])}</small>` : ''}</div>`;
     });
     hov.innerHTML = dots;
     tip.innerHTML = `<div class="t-h">${escHtml(p.label)}</div>${rows || '<div class="t-r"><span>بدون داده در این دوره</span></div>'}`;
@@ -5305,6 +5357,25 @@ function azcBindHover(g) {
   hit.addEventListener('touchstart', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
   hit.addEventListener('touchmove', e => { if (e.touches[0]) show(e.touches[0].clientX); }, { passive: true });
   hit.addEventListener('touchend', hide);
+}
+
+// میانگین روزانه‌ی OCT ازکی سنتر (کارت 23653 متابیس) از ردیف‌های «کل» جدول گزارش دوره‌ای؛ برای هم‌نمایی با درصد صدور
+async function loadAzkiOctRows() {
+  const bounds = getAzkiBounds();
+  const { data, error } = await fetchAllRows((from, to) =>
+    supabaseClient
+      .from(TABLE_AZKI_PERIOD)
+      .select('report_date, report_date_jalali, center_orders, oct_avg_hours')
+      .eq('company_scope', 'کل')
+      .not('oct_avg_hours', 'is', null)
+      .gte('report_date', bounds.startDate)
+      .lte('report_date', bounds.endDate)
+      .order('report_date', { ascending: true })
+      .range(from, to)
+  );
+  if (bounds !== azkiState.bounds) return;
+  azkiState.oct.rows = error ? [] : (data || []);
+  azkiState.oct.loaded = true;
 }
 
 // داده‌ی گزارش انتخاب‌شده را (اگر لازم باشد) می‌گیرد و بعد نمودار را می‌کشد
@@ -5325,6 +5396,10 @@ async function azkiChartEnsure() {
       if (!root.querySelector('.empty-state')) root.innerHTML = '<div class="empty-state">خطا در دریافت گزارش؛ دوباره تلاش کنید.</div>';
       return;
     }
+  }
+  if (st.report === 'pct' && !azkiState.oct.loaded) {
+    await loadAzkiOctRows();
+    if (gen !== st.gen) return;
   }
   azkiChartRender();
 }
@@ -5459,6 +5534,7 @@ function azkiApplyRange() {
   azkiState.centers.loaded = false;
   azkiState.shifts.loaded = false;
   azkiState.compare.loaded = false;
+  azkiState.oct.loaded = false;
   azkiState.payroll.loaded = false;
   ['azki-period-list', 'azki-centers-list', 'azki-shifts-list', 'azki-compare-list', 'azki-payroll-list'].forEach(id => {
     document.getElementById(id).innerHTML = '<div class="loading-state">در حال بارگذاری...</div>';
