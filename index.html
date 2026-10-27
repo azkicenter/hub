@@ -2717,6 +2717,81 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
 document.write('<script src="config.js?t=' + Date.now() + '"><\/script>');
 </script>
 <script>
+// وقتی supervisor آدرس جدید تونل را روی گیت‌هاب پوش کند (config.js عوض شود)، داشبورد خودش متوجه می‌شود و صفحه را رفرش می‌کند.
+(function () {
+  var CHECK_MS = 30000;            // هر ۳۰ ثانیه (فقط وقتی تب دیده می‌شود)
+  var RELOAD_DELAY_MS = 5000;      // مهلت قبل از رفرش
+  var GUARD_MS = 10 * 60 * 1000;   // ضد رفرش بی‌نهایت: برای یک آدرس، حداکثر هر ۱۰ دقیقه یک‌بار
+  function norm(u) { return String(u || '').trim().replace(/\/+$/, '').toLowerCase(); }
+  var current = norm(window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL);
+  var checking = false, scheduled = false;
+
+  function userIsTyping() {
+    var a = document.activeElement;
+    if (!a) return false;
+    var tag = String(a.tagName || '').toUpperCase();
+    if (tag === 'TEXTAREA') return !!a.value;
+    if (tag === 'INPUT') {
+      var t = String(a.type || 'text').toLowerCase();
+      return ['button', 'checkbox', 'radio', 'submit', 'range', 'file'].indexOf(t) < 0 && !!a.value;
+    }
+    return !!a.isContentEditable;
+  }
+  function recentlyTried(url) {
+    try {
+      var r = JSON.parse(sessionStorage.getItem('cfgReload') || 'null');
+      return !!(r && r.url === url && Date.now() - r.t < GUARD_MS);
+    } catch (e) { return false; }
+  }
+  function doReload(url) {
+    try { sessionStorage.setItem('cfgReload', JSON.stringify({ url: url, t: Date.now() })); } catch (e) {}
+    location.reload();
+  }
+  function showToast(url) {
+    try {
+      var d = document.createElement('div');
+      d.setAttribute('dir', 'rtl');
+      d.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#1f2937;color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+      var sp = document.createElement('span');
+      sp.textContent = 'آدرس سرور عوض شد؛ صفحه تا چند ثانیه دیگر خودش رفرش می‌شود…';
+      var b = document.createElement('button');
+      b.textContent = 'همین الان';
+      b.style.cssText = 'background:#fff;color:#1f2937;border:0;border-radius:8px;padding:4px 10px;cursor:pointer;font:inherit';
+      b.addEventListener('click', function () { doReload(url); });
+      d.appendChild(sp); d.appendChild(b); document.body.appendChild(d);
+    } catch (e) {}
+  }
+  function schedule(url) {
+    if (scheduled) return;
+    scheduled = true;
+    showToast(url);
+    (function wait() {
+      setTimeout(function () {
+        if (userIsTyping()) { wait(); return; }   // اگر کاربر در حال تایپ است صبر کن تا داده‌اش از بین نرود
+        doReload(url);
+      }, RELOAD_DELAY_MS);
+    })();
+  }
+  async function check() {
+    if (checking || scheduled) return;
+    checking = true;
+    try {
+      var r = await fetch('config.js?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      var m = /SUPABASE_URL\s*:\s*["']([^"']+)["']/.exec(await r.text());
+      var fresh = m ? norm(m[1]) : '';
+      if (!fresh || fresh === current) return;
+      if (recentlyTried(fresh)) return;
+      schedule(fresh);
+    } catch (e) { /* آفلاین یا خطای موقت: دفعه‌ی بعد */ }
+    finally { checking = false; }
+  }
+  setInterval(function () { if (!document.hidden) check(); }, CHECK_MS);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+  window.addEventListener('online', check);
+})();
+</script>
+<script>
 // فقط کلید F12 و میانبرهای devtools (Ctrl/Cmd + Shift + I/J/C) بسته‌ان
 document.addEventListener('keydown', e => {
   const k = e.key ? e.key.toLowerCase() : '';
