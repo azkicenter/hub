@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self' https://*.lhr.life wss://*.lhr.life https://*.localhost.run wss://*.localhost.run https://*.trycloudflare.com wss://*.trycloudflare.com https://docs.google.com https://script.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://tile.openstreetmap.org https://server.arcgisonline.com; connect-src 'self' https://hbiygeecakpgjnfieyyt.supabase.co wss://hbiygeecakpgjnfieyyt.supabase.co https://docs.google.com https://script.google.com https://*.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>داشبورد ازکی سنتر</title>
 <script>
@@ -2711,86 +2711,6 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
   </main>
 </div>
 
-<style id="temp-hide-kanban">[data-team-tab="kanban"],[data-sup-tab="kanban"],#kb-bell{display:none!important}</style>
-<script>
-// config.js توسط supervisor_supabase.py ساخته می‌شود (آدرس تونل Supabase لوکال). پارامتر زمان برای دور زدن کش.
-document.write('<script src="config.js?t=' + Date.now() + '"><\/script>');
-</script>
-<script>
-// وقتی supervisor آدرس جدید تونل را روی گیت‌هاب پوش کند (config.js عوض شود)، داشبورد خودش متوجه می‌شود و صفحه را رفرش می‌کند.
-(function () {
-  var CHECK_MS = 30000;            // هر ۳۰ ثانیه (فقط وقتی تب دیده می‌شود)
-  var RELOAD_DELAY_MS = 5000;      // مهلت قبل از رفرش
-  var GUARD_MS = 10 * 60 * 1000;   // ضد رفرش بی‌نهایت: برای یک آدرس، حداکثر هر ۱۰ دقیقه یک‌بار
-  function norm(u) { return String(u || '').trim().replace(/\/+$/, '').toLowerCase(); }
-  var current = norm(window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL);
-  var checking = false, scheduled = false;
-
-  function userIsTyping() {
-    var a = document.activeElement;
-    if (!a) return false;
-    var tag = String(a.tagName || '').toUpperCase();
-    if (tag === 'TEXTAREA') return !!a.value;
-    if (tag === 'INPUT') {
-      var t = String(a.type || 'text').toLowerCase();
-      return ['button', 'checkbox', 'radio', 'submit', 'range', 'file'].indexOf(t) < 0 && !!a.value;
-    }
-    return !!a.isContentEditable;
-  }
-  function recentlyTried(url) {
-    try {
-      var r = JSON.parse(sessionStorage.getItem('cfgReload') || 'null');
-      return !!(r && r.url === url && Date.now() - r.t < GUARD_MS);
-    } catch (e) { return false; }
-  }
-  function doReload(url) {
-    try { sessionStorage.setItem('cfgReload', JSON.stringify({ url: url, t: Date.now() })); } catch (e) {}
-    location.reload();
-  }
-  function showToast(url) {
-    try {
-      var d = document.createElement('div');
-      d.setAttribute('dir', 'rtl');
-      d.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#1f2937;color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.3)';
-      var sp = document.createElement('span');
-      sp.textContent = 'آدرس سرور عوض شد؛ صفحه تا چند ثانیه دیگر خودش رفرش می‌شود…';
-      var b = document.createElement('button');
-      b.textContent = 'همین الان';
-      b.style.cssText = 'background:#fff;color:#1f2937;border:0;border-radius:8px;padding:4px 10px;cursor:pointer;font:inherit';
-      b.addEventListener('click', function () { doReload(url); });
-      d.appendChild(sp); d.appendChild(b); document.body.appendChild(d);
-    } catch (e) {}
-  }
-  function schedule(url) {
-    if (scheduled) return;
-    scheduled = true;
-    showToast(url);
-    (function wait() {
-      setTimeout(function () {
-        if (userIsTyping()) { wait(); return; }   // اگر کاربر در حال تایپ است صبر کن تا داده‌اش از بین نرود
-        doReload(url);
-      }, RELOAD_DELAY_MS);
-    })();
-  }
-  async function check() {
-    if (checking || scheduled) return;
-    checking = true;
-    try {
-      var r = await fetch('config.js?t=' + Date.now(), { cache: 'no-store' });
-      if (!r.ok) return;
-      var m = /SUPABASE_URL\s*:\s*["']([^"']+)["']/.exec(await r.text());
-      var fresh = m ? norm(m[1]) : '';
-      if (!fresh || fresh === current) return;
-      if (recentlyTried(fresh)) return;
-      schedule(fresh);
-    } catch (e) { /* آفلاین یا خطای موقت: دفعه‌ی بعد */ }
-    finally { checking = false; }
-  }
-  setInterval(function () { if (!document.hidden) check(); }, CHECK_MS);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
-  window.addEventListener('online', check);
-})();
-</script>
 <script>
 // فقط کلید F12 و میانبرهای devtools (Ctrl/Cmd + Shift + I/J/C) بسته‌ان
 document.addEventListener('keydown', e => {
@@ -2799,8 +2719,8 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i', 'j', 'c'].includes(k)) { e.preventDefault(); }
 });
 
-const SUPABASE_URL = (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_URL) || "https://offline.invalid";
-const SUPABASE_ANON_KEY = (window.APP_CONFIG && window.APP_CONFIG.SUPABASE_ANON_KEY) || "";
+const SUPABASE_URL = "https://hbiygeecakpgjnfieyyt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable__MGWCrgYYtyMFFQ9NjK5XQ_Ps-emOHk";
 
 const USERNAME_EMAIL_DOMAIN = "bimename.com";
 
@@ -2816,162 +2736,7 @@ const AZKI_COMPANIES = ["آرمان", "آسیا", "البرز", "ایران", "�
 const TABLE_LEADER_CENTERS = "leader_centers";
 const TABLE_CENTER_AGENTS = "center_agents";
 const TABLE_SELLER_LOCATIONS = "seller_locations";
-// ── Supabase: رفع دو محدودیت برای همه‌ی تب‌ها ──
-// ۱) سقف ۱۰۰۰ ردیف در هر پاسخ: هر GET بدون limit/offset خودکار صفحه‌به‌صفحه کامل گرفته می‌شود.
-// ۲) سقف طول URL: فیلتر in.(...) با ده‌ها/صدها id تکه‌تکه می‌شود و نتیجه‌ها یکی می‌شوند.
-function makeChunkingFetch() {
-  const MAX_URL = 4000;      // بالاتر از این طول، in.(...) شکسته می‌شود
-  const TARGET_URL = 3500;   // طول هدف هر تکه
-  const PAGE = 1000;         // سقف سطر در هر پاسخ PostgREST
-  const CACHE_MS = 10000;    // کش کوتاه فقط برای صفحه‌های پشت‌سرهم fetchAllRows
-  const CACHE = new Map();
-  const nativeFetch = (...a) => window.fetch(...a);
-
-  function splitList(s) {
-    const out = []; let cur = '', q = false;
-    for (let i = 0; i < s.length; i++) {
-      const ch = s[i];
-      if (ch === '"') { q = !q; cur += ch; }
-      else if (ch === ',' && !q) { out.push(cur); cur = ''; }
-      else cur += ch;
-    }
-    if (cur !== '') out.push(cur);
-    return out;
-  }
-
-  function cmp(a, b, asc, nullsFirst) {
-    const an = a === null || a === undefined, bn = b === null || b === undefined;
-    if (an || bn) { if (an && bn) return 0; return (an ? 1 : -1) * (nullsFirst ? -1 : 1); }
-    let r;
-    if (typeof a === 'number' && typeof b === 'number') r = a - b;
-    else r = String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0;
-    return asc ? r : -r;
-  }
-
-  return async function chunkingFetch(input, init) {
-    try {
-      const isReq = typeof input !== 'string' && !(input instanceof URL);
-      const url = isReq ? input.url : String(input);
-      const method = String((init && init.method) || (isReq && input.method) || 'GET').toUpperCase();
-
-      // هر نوشتن/تغییر → کش پاک شود
-      if (method !== 'GET') { CACHE.clear(); return nativeFetch(input, init); }
-      if (url.indexOf('/rest/v1/') < 0 || url.indexOf('/rest/v1/rpc/') >= 0) return nativeFetch(input, init);
-
-      const hdrs = new Headers((init && init.headers) || (isReq ? input.headers : undefined));
-      const accept = hdrs.get('Accept') || '';
-      if (accept.indexOf('vnd.pgrst.object') >= 0) return nativeFetch(input, init);   // .single()
-      if (accept && accept.indexOf('json') < 0) return nativeFetch(input, init);        // csv و ...
-
-      const qi = url.indexOf('?');
-      const base = qi < 0 ? url : url.slice(0, qi);
-      const segs = qi < 0 ? [] : url.slice(qi + 1).split('&').filter(Boolean);
-
-      // offset / limit / order
-      let offset = 0, limit = null, order = null, hasOffset = false;
-      const others = [];
-      segs.forEach(sg => {
-        const eq = sg.indexOf('=');
-        const k = eq < 0 ? sg : sg.slice(0, eq);
-        const v = eq < 0 ? '' : sg.slice(eq + 1);
-        if (k === 'offset') { offset = parseInt(v, 10) || 0; hasOffset = true; }
-        else if (k === 'limit') limit = parseInt(v, 10);
-        else { if (k === 'order') { try { order = decodeURIComponent(v); } catch (e) {} } others.push(sg); }
-      });
-      const hasLimit = limit !== null && !isNaN(limit);
-      if (hasOffset && !hasLimit) return nativeFetch(input, init);
-      const autoAll = !hasLimit && !hasOffset;      // بدون صفحه‌بندی → همه‌ی ردیف‌ها
-
-      // بزرگ‌ترین فیلتر in.(...) (فقط وقتی URL بلند است)
-      let bi = -1, bLen = 0, bVals = null, bKey = '';
-      if (url.length > MAX_URL) {
-        others.forEach((sg, i) => {
-          const eq = sg.indexOf('=');
-          if (eq < 0) return;
-          let val; try { val = decodeURIComponent(sg.slice(eq + 1)); } catch (e) { return; }
-          if (val.indexOf('in.(') === 0 && val.charAt(val.length - 1) === ')' && val.length > bLen) {
-            bi = i; bLen = val.length; bKey = sg.slice(0, eq);
-            bVals = splitList(val.slice(4, -1));
-          }
-        });
-      }
-      const needChunk = bi >= 0 && bVals && bVals.length >= 2;
-      if (!needChunk && !autoAll) return nativeFetch(input, init);   // مثل .range() روی URL کوتاه → دست‌نخورده
-
-      const rest = needChunk ? others.filter((_, i) => i !== bi) : others;
-      let chunks = [null];
-      if (needChunk) {
-        const baseLen = base.length + 1 + rest.join('&').length + bKey.length + 40;
-        const avg = Math.max(1, Math.ceil(bVals.join(',').length / bVals.length)) + 3; // %2C
-        const per = Math.max(1, Math.floor((TARGET_URL - baseLen) / avg));
-        chunks = [];
-        for (let i = 0; i < bVals.length; i += per) chunks.push(bVals.slice(i, i + per));
-      }
-
-      const wantCount = /count=/.test(hdrs.get('Prefer') || '');
-      const useCache = hasLimit;   // فقط صفحه‌بندی fetchAllRows
-      const cacheKey = base + '?' + segs.filter(sg => !/^(offset|limit)=/.test(sg)).join('&') + '|' + (hdrs.get('Authorization') || '');
-      const now = Date.now();
-      for (const [k, v] of CACHE) if (now - v.t > CACHE_MS) CACHE.delete(k);
-      let ent = useCache ? CACHE.get(cacheKey) : null;
-
-      if (!ent) {
-        const run = async () => {
-          const one = async (ch) => {
-            let all = [], total = 0, off = 0;
-            while (true) {
-              const parts = rest.slice();
-              if (ch) parts.push(bKey + '=' + encodeURIComponent('in.(' + ch.join(',') + ')'));
-              parts.push('offset=' + off); parts.push('limit=' + PAGE);
-              const u = base + '?' + parts.join('&');
-              const r = await nativeFetch(isReq ? new Request(u, input) : u, isReq ? undefined : init);
-              if (!r.ok) return { bad: { status: r.status, statusText: r.statusText, text: await r.text() } };
-              const j = await r.json();
-              if (Array.isArray(j)) all = all.concat(j);
-              const cr = r.headers.get('Content-Range');
-              if (cr && cr.indexOf('/') > 0 && off === 0) { const t = parseInt(cr.split('/')[1], 10); if (!isNaN(t)) total = t; }
-              if (!Array.isArray(j) || j.length < PAGE) break;
-              off += PAGE;
-            }
-            return { rows: all, total };
-          };
-          const res = await Promise.all(chunks.map(one));
-          const bad = res.find(x => x.bad);
-          if (bad) return bad;
-          let rows = [], total = 0;
-          res.forEach(x => { rows = rows.concat(x.rows); total += x.total; });
-          if (order && chunks.length > 1) {
-            const specs = order.split(',').map(s => {
-              const p = s.split('.');
-              return { col: p[0], asc: p.indexOf('desc') < 0, nf: p.indexOf('nullsfirst') >= 0 ? true : p.indexOf('nullslast') >= 0 ? false : p.indexOf('desc') >= 0 };
-            });
-            rows.sort((x, y) => { for (const s of specs) { const c = cmp(x[s.col], y[s.col], s.asc, s.nf); if (c) return c; } return 0; });
-          }
-          return { rows, total };
-        };
-        ent = { t: Infinity, p: run() };
-        if (useCache) {
-          CACHE.set(cacheKey, ent);
-          ent.p.then(v => { if (v.bad) CACHE.delete(cacheKey); else ent.t = Date.now(); }, () => CACHE.delete(cacheKey));
-        }
-      }
-      const out = await ent.p;
-      if (out.bad) return new Response(out.bad.text, { status: out.bad.status, statusText: out.bad.statusText });
-
-      let rows = out.rows;
-      if (hasLimit) rows = rows.slice(offset, offset + limit);
-
-      const h = { 'Content-Type': 'application/json' };
-      if (wantCount) h['Content-Range'] = (rows.length ? offset + '-' + (offset + rows.length - 1) : '*') + '/' + (out.total || rows.length);
-      return new Response(JSON.stringify(rows), { status: 200, headers: h });
-    } catch (e) {
-      console.warn('chunkingFetch fallback:', e);
-      return nativeFetch(input, init);
-    }
-  };
-}
-
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { fetch: makeChunkingFetch() } });
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const loginScreen = document.getElementById('login-screen');
 const appScreen = document.getElementById('app-screen');
@@ -6040,7 +5805,9 @@ async function enterApp(user) {
 const ONLINE_THRESHOLD_MS = 60 * 1000;
 
 async function sendPresenceHeartbeat() {
-  // touch_last_seen در Supabase لوکال وجود ندارد؛ ثبت آخرین بازدید غیرفعال شد.
+  try {
+    await supabaseClient.rpc('touch_last_seen');
+  } catch (e) { }
 }
 
 function startPresenceHeartbeat() {
@@ -9461,7 +9228,6 @@ function modal(t){
 }
 async function refresh(){await load();shell();pulse();}
 window.kbOpen=async function(host){
-  return; /* TEMP-DISABLED: kanban */
   S.host=host; if(!host.innerHTML.trim())host.innerHTML='<div class="loading-state">در حال بارگذاری...</div>';
   await refresh();
 };
@@ -9496,7 +9262,6 @@ function renderPop(){
   p.querySelectorAll('.it').forEach(b=>b.onclick=()=>{const t=S.tasks.find(x=>x.id===b.dataset.id);S.popOpen=false;p.remove();openTasksTab();setTimeout(()=>{if(S.host&&S.host.isConnected)board();modal(t)},200)});
 }
 window.kbNotifyStart=async function(){
-  return; /* TEMP-DISABLED: kanban */
   if(S.timer)return;
   const who=document.querySelector('.who'); if(who&&!document.getElementById('kb-bell')){
     const b=document.createElement('button'); b.id='kb-bell'; b.type='button'; b.className='kb-bell'; b.title='اعلان‌ها';
