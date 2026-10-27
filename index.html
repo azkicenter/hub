@@ -8093,7 +8093,9 @@ const TRAIN_CACHE_KEY = 'trainingSheetCache_v2';
 const TRAIN_CACHE_TTL = 30 * 60 * 1000;
 const trainState = { chunks: [], sheets: [], failed: [], loaded: false, loading: null, scope: '__all', idf: {}, avgLen: 1, bound: false, fetchedAt: 0 };
 
-const TR_STOP = new Set(('و در به از که این را با است برای آن یک هم چی چیه چیست چه چطور چطوری چگونه کجا کی آیا باید می شود میشه میشود هست نیست بود شد کنم کنیم کنید کرد دارد دارم رو من ما شما تو اگه اگر یا ولی اما تا بعد قبل بین هر همه کدوم کدام بگو بگید بگین بده بدید توضیح درباره میخوام میخواد خواهد بشه باشه کنه کنن کنند بیمه نامه').split(' '));
+const TR_STOP = new Set(('و در به از که این را با است برای آن یک هم چی چیه چیست چه چطور چطوری چگونه کجا کی آیا باید می شود میشه میشود هست نیست بود شد کنم کنیم کنید کرد دارد دارم رو من ما شما تو اگه اگر یا ولی اما تا بعد قبل بین هر همه کدوم کدام بگو بگید بگین بده بدید توضیح درباره میخوام میخواد خواهد بشه باشه کنه کنن کنند بیمه نامه چنده چقدره چقدر چند چندتا چنتا کدومه میدونی بلدی').split(' '));
+// مترادف‌های گفتاری سوال ← کلماتی که توی متن شیت هست (کلید = ریشه‌ی کلمه‌ی سوال)
+const TR_SYN = { 'میزنه': ['صدور', 'صادر'], 'میزنن': ['صدور', 'صادر'], 'میزنند': ['صدور', 'صادر'], 'میزنید': ['صدور', 'صادر'], 'میزنی': ['صدور', 'صادر'], 'بزنیم': ['صدور', 'صادر'], 'بزنم': ['صدور', 'صادر'], 'بزنن': ['صدور', 'صادر'], 'جلو': ['زود'], 'زود': ['جلو'] };
 const TR_SUF = ['هایی', 'ترین', 'های', 'ها', 'ان', 'ات', 'تر', 'ی'];
 
 function trNorm(s) {
@@ -8234,6 +8236,7 @@ function trSearch(question, scope) {
     let score = 0, hit = 0;
     qTok.forEach(t => {
       let tf = c.tf[t] || 0;
+      if (!tf && TR_SYN[t]) { for (const sy of TR_SYN[t]) { if (c.tf[sy]) { tf = c.tf[sy] * 0.7; break; } } }
       if (!tf && t.length >= 4) { for (const k in c.tf) { if (k.length >= 4 && (k.startsWith(t) || t.startsWith(k))) { tf = c.tf[k] * 0.6; break; } } }
       if (!tf) return;
       hit++;
@@ -8494,7 +8497,7 @@ function trPollStart() {
 const TR_CHAT_RULES = [
   ['bye', ['خداحافظ', 'خدافظ', 'خدانگهدار', 'بای بای', 'بای', 'شب خوش', 'روز خوش']],
   ['fine', ['ممنون خوبم', 'مرسی خوبم', 'من خوبم', 'خوبم', 'عالیم', 'سلامتم']],
-  ['how', ['حال و احوال', 'احوال شما', 'حال شما', 'حالت چطوره', 'حالتون چطوره', 'حالت خوبه', 'حالتون خوبه', 'احوالت', 'احوال', 'چطوری', 'چطورین', 'چطورید', 'خوبی', 'خوبین', 'چه خبر', 'چخبر']],
+  ['how', ['حال و احوال', 'احوال شما', 'حال شما', 'حالت چطوره', 'حالتون چطوره', 'حالت خوبه', 'حالتون خوبه', 'احوالت', 'احوال', 'چطوری', 'چطورین', 'چطورید', 'خوبی', 'خخوبی', 'خوبین', 'چه خبر', 'چخبر']],
   ['thanks', ['دستتون درد نکنه', 'دستت درد نکنه', 'خسته نباشید', 'خسته نباشی', 'دمت گرم', 'متشکرم', 'ممنون', 'مرسی', 'تشکر', 'سپاس', 'thanks', 'thank you']],
   ['hello', ['سلام علیکم', 'علیک سلام', 'صبح بخیر', 'ظهر بخیر', 'عصر بخیر', 'شب بخیر', 'روز بخیر', 'وقت بخیر', 'سلام', 'درود', 'hello', 'hi', 'hey']],
   ['filler', ['داداش', 'عزیزم', 'ربات', 'بات', 'لطفا', 'ببخشید', 'خب', 'راستی', 'ببین', 'هستی', 'هستید']]
@@ -8557,6 +8560,211 @@ function trShowTitle(sheet, title) {
   trLog('منو', title, 'پاسخ داده شد', list[0]);
 }
 
+// ============================================================
+// سوال‌های شخصی در چت آموزش: اسم/نقش/سنتر/سرگروه و تعداد صدورِ روزها و دوره‌ها
+// این جواب‌ها از خود داشبورد (profiles / daily_targets / center_agents / leader_centers) خوانده می‌شود، نه از شیت.
+// اگه سوال شخصی نبود، همون مسیر قبلی (جستجو در شیت) اجرا می‌شه.
+// ============================================================
+const TR_ROLE_FA = { agent: 'کارشناس', leader: 'سرگروه', center: 'سنتر', supervisor: 'سرپرست', admin: 'ادمین' };
+const TR_MONTHS_N = JALALI_MONTHS_FA.map(m => trWords(m).join(' '));
+const TR_PERSONAL_CACHE = {};
+const trSortKey = t => t[0] * 10000 + t[1] * 100 + t[2];
+const trFmtDate = t => faDigits(`${t[0]}/${pad2(t[1])}/${pad2(t[2])}`);
+function trMyName() { const el = document.getElementById('user-label'); return el ? el.textContent.trim() : ''; }
+function trMyRoleKind() { return ['admin', 'center', 'leader', 'supervisor'].includes(currentUserRole) ? currentUserRole : 'agent'; }
+function trJalaliShift(days) {
+  const [jy, jm, jd] = tehranTodayJalali();
+  const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd).split('-').map(Number);
+  const d = new Date(Date.UTC(gy, gm - 1, gd + days));
+  return gregorianToJalali(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+}
+function trMonthLen(jy, jm) {
+  if (jm <= 6) return 31;
+  if (jm <= 11) return 30;
+  const [gy, gm, gd] = jalaliToGregorian(jy, 12, 30).split('-').map(Number);
+  const b = gregorianToJalali(gy, gm, gd);
+  return (b[0] === jy && b[1] === 12 && b[2] === 30) ? 30 : 29;
+}
+// تشخیص بازه‌ی زمانی از متن سوال؛ null یعنی تاریخی ذکر نشده
+function trParseRange(q) {
+  const t = ' ' + trWords(q).join(' ') + ' ';
+  const today = tehranTodayJalali();
+  const one = (tt, label) => ({ start: trSortKey(tt), end: trSortKey(tt), label: label || ('روز ' + trFmtDate(tt)), single: true });
+  let m;
+  // تاریخ کامل: 1405/07/21 (یا میلادی 2026/10/13)
+  if ((m = t.match(/ (\d{4}) (\d{1,2}) (\d{1,2}) /))) {
+    let y = +m[1], mo = +m[2], d = +m[3];
+    if (y > 1700) [y, mo, d] = gregorianToJalali(y, mo, d);
+    if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) return one([y, mo, d]);
+  }
+  // «21 مهر» (سال اختیاری)
+  for (let i = 0; i < 12; i++) {
+    if ((m = t.match(new RegExp(' (\\d{1,2}) ' + TR_MONTHS_N[i] + '(?: (\\d{4}))? ')))) {
+      let tt = [m[2] ? +m[2] : today[0], i + 1, +m[1]];
+      if (!m[2] && trSortKey(tt) > trSortKey(today)) tt = [tt[0] - 1, tt[1], tt[2]];
+      return one(tt);
+    }
+  }
+  if (/ پریروز /.test(t)) { const d = trJalaliShift(-2); return one(d, 'پریروز (' + trFmtDate(d) + ')'); }
+  if (/ دیروز /.test(t)) { const d = trJalaliShift(-1); return one(d, 'دیروز (' + trFmtDate(d) + ')'); }
+  if (/ امروز /.test(t)) return one(today, 'امروز (' + trFmtDate(today) + ')');
+  if ((m = t.match(/ (\d{1,2}) روز (?:پیش|قبل|گذشته) /))) { const d = trJalaliShift(-(+m[1])); return one(d, faDigits(m[1]) + ' روز پیش (' + trFmtDate(d) + ')'); }
+  // هفته (از شنبه تا جمعه)
+  const wk = / هفته /.test(t);
+  if (wk) {
+    const [jy, jm, jd] = today;
+    const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd).split('-').map(Number);
+    const sinceSat = (new Date(Date.UTC(gy, gm - 1, gd)).getUTCDay() + 1) % 7;
+    const prev = / (?:پیش|قبل|گذشته) /.test(t);
+    const s = trJalaliShift(-sinceSat - (prev ? 7 : 0)), e = prev ? trJalaliShift(-sinceSat - 1) : today;
+    return { start: trSortKey(s), end: trSortKey(e), label: (prev ? 'هفته‌ی قبل' : 'این هفته') + ` (${trFmtDate(s)} تا ${trFmtDate(e)})`, single: false };
+  }
+  // دوره‌ی ۲۱ تا ۲۰ (همان که داشبورد استفاده می‌کند)
+  const per = currentPeriodBounds();
+  if (/ (?:ماه|دوره) (?:قبل|پیش|گذشته) /.test(t)) {
+    const sy = Math.floor(per.startSort / 10000), sm = Math.floor(per.startSort / 100) % 100;
+    const py = sm > 1 ? sy : sy - 1, pm = sm > 1 ? sm - 1 : 12;
+    const s = [py, pm, 21], e = [sy, sm, 20];
+    return { start: trSortKey(s), end: trSortKey(e), label: `دوره‌ی قبل (${trFmtDate(s)} تا ${trFmtDate(e)})`, single: false };
+  }
+  if (/ (?:این ماه|ماه جاری|دوره جاری|این دوره|دوره) /.test(t)) {
+    return { start: per.startSort, end: per.endSort, label: `دوره‌ی جاری (${faDigits(per.startLabel)} تا ${faDigits(per.endLabel)})`, single: false };
+  }
+  // اسم ماه به‌تنهایی: کل همان ماه تقویمی
+  for (let i = 0; i < 12; i++) {
+    if (t.includes(' ' + TR_MONTHS_N[i] + ' ')) {
+      const y = (i + 1 > today[1]) ? today[0] - 1 : today[0];
+      return { start: trSortKey([y, i + 1, 1]), end: trSortKey([y, i + 1, trMonthLen(y, i + 1)]), label: `${JALALI_MONTHS_FA[i]} ${faDigits(y)}`, single: false };
+    }
+  }
+  return null;
+}
+// آیا سوال درباره‌ی تعداد صدورِ خودِ کاربره؟
+function trIsMyIssuanceQ(q) {
+  const t = ' ' + trWords(q).join(' ') + ' ';
+  const issue = /(صدور|صادر|تارگت|سفارش|بیمه نامه|زدم|زدیم)/.test(t);
+  if (!issue) return false;
+  if (/ چند (روز|ماه|ساعت|سال|درصد|تومان|تومن|هزار|دقیقه|بار) /.test(t)) return false;
+  const countw = / (چند|چندتا|چنتا|چند تا|تعداد|مجموع|جمع|میانگین|بیشترین|کمترین|آمار) /.test(t);
+  const personal = / (من|منو|داشتم|زدم|کردم|دارم|داشتیم|هام|ام|ما) /.test(t) || /(صدور|صدورها|تارگت|سفارش|سفارشها)(م|ام|هام) /.test(t);
+  return personal && (countw || !!trParseRange(q));
+}
+async function trMyIssuance(q) {
+  const title = 'تعداد صدور من';
+  if (!currentUserId) return { title, html: 'برای دیدن آمار صدورت باید وارد حسابت باشی.' };
+  const per = currentPeriodBounds();
+  const asked = trParseRange(q);
+  const rng = asked || { start: per.startSort, end: per.endSort, label: `دوره‌ی جاری (${faDigits(per.startLabel)} تا ${faDigits(per.endLabel)})`, single: false };
+  const { data, error } = await supabaseClient.from(TABLE_TARGETS)
+    .select('report_date_sort, report_date_jalali, target_count')
+    .eq('agent_id', currentUserId).gte('report_date_sort', rng.start).lte('report_date_sort', rng.end)
+    .order('report_date_sort', { ascending: true });
+  if (error) return { title, html: 'نتونستم آمار صدورت رو از سیستم بخونم، چند لحظه بعد دوباره امتحان کن.' };
+  const days = new Map();
+  (data || []).forEach(r => { const k = jalaliRowSortKey(r); days.set(k, (days.get(k) || 0) + (Number(r.target_count) || 0)); });
+  const keyTxt = k => trFmtDate([Math.floor(k / 10000), Math.floor(k / 100) % 100, k % 100]);
+  if (!days.size) {
+    const why = trMyRoleKind() === 'agent' ? 'ممکنه اون روز صدوری نداشتی یا هنوز داده‌اش نیومده باشه.' : 'برای نقش تو آمار صدور شخصی ثبت نمی‌شه؛ آمار رو از تب «تعداد صدور» ببین.';
+    return { title, html: `برای ${escHtml(rng.label)} چیزی ثبت نشده. ${why}` };
+  }
+  const total = [...days.values()].reduce((a, b) => a + b, 0);
+  if (rng.single) {
+    return { title, html: `${escHtml(rng.label)} تعداد <b>${formatNumber(total)}</b> صدور داشتی.` };
+  }
+  const active = [...days.entries()].filter(([, v]) => v > 0);
+  const best = active.length ? active.reduce((a, b) => (b[1] > a[1] ? b : a)) : null;
+  const todayKey = trSortKey(tehranTodayJalali());
+  let html = '';
+  if (!asked && days.has(todayKey)) html += `امروز <b>${formatNumber(days.get(todayKey))}</b> صدور داشتی.<br>`;
+  html += `${escHtml(rng.label)}: مجموع <b>${formatNumber(total)}</b> صدور در ${formatNumber(active.length)} روز فعال` +
+    (active.length ? ` (میانگین ${formatNumber(total / active.length)} در روز)` : '') + '.';
+  if (best) html += `<br>بیشترین صدور: ${keyTxt(best[0])} با ${formatNumber(best[1])} صدور.`;
+  if (days.size <= 40) {
+    html += `<details class="tr-more"><summary>ریز روزها</summary>${[...days.entries()].map(([k, v]) => `<div class="tr-alt">${keyTxt(k)}: ${formatNumber(v)}</div>`).join('')}</details>`;
+  }
+  return { title, html };
+}
+// سنتر و سرگروه کاربر (کش‌شده)
+async function trLoadMyOrg() {
+  if (TR_PERSONAL_CACHE.uid === currentUserId && TR_PERSONAL_CACHE.org) return TR_PERSONAL_CACHE.org;
+  const names = async ids => {
+    if (!ids.length) return [];
+    const { data } = await supabaseClient.from(TABLE_PROFILES).select('id, full_name').in('id', ids);
+    return (data || []).map(p => (p.full_name || '').trim()).filter(Boolean);
+  };
+  const org = { ok: true, centers: [], leaders: [] };
+  try {
+    const kind = trMyRoleKind();
+    let centerIds = [];
+    if (kind === 'agent') {
+      const r = await supabaseClient.from(TABLE_CENTER_AGENTS).select('center_id').eq('agent_id', currentUserId);
+      if (r.error) throw r.error;
+      centerIds = (r.data || []).map(x => x.center_id).filter(Boolean);
+    } else if (kind === 'center') centerIds = [currentUserId];
+    else if (kind === 'leader') {
+      const r = await supabaseClient.from(TABLE_LEADER_CENTERS).select('center_id').eq('leader_id', currentUserId);
+      if (r.error) throw r.error;
+      centerIds = (r.data || []).map(x => x.center_id).filter(Boolean);
+      org.leaders = [trMyName()];
+    }
+    org.centers = await names(centerIds);
+    if ((kind === 'agent' || kind === 'center') && centerIds.length) {
+      const r = await supabaseClient.from(TABLE_LEADER_CENTERS).select('leader_id').in('center_id', centerIds);
+      if (r.error) throw r.error;
+      org.leaders = await names([...new Set((r.data || []).map(x => x.leader_id).filter(Boolean))]);
+    }
+  } catch (e) { org.ok = false; }
+  TR_PERSONAL_CACHE.uid = currentUserId; TR_PERSONAL_CACHE.org = org;
+  return org;
+}
+const trJoin = a => a.map(x => `<b>${escHtml(x)}</b>`).join(' و ');
+// خروجی: null (سوال شخصی نبود) | { title, html }
+async function trPersonal(q) {
+  const raw = String(q || '').trim();
+  const t = ' ' + trWords(raw).join(' ') + ' ';
+  const has = re => re.test(t);
+  const name = trMyName(), role = TR_ROLE_FA[currentUserRole] || TR_ROLE_FA.agent;
+  // فقط ایموجی / علامت
+  if (raw && !/[\p{L}\p{N}]/u.test(raw)) {
+    return { title: 'گپ', html: /^[.\s،؟?!…]+$/.test(raw) ? 'بپرس، گوش می‌دم.' : '😊 هر سوالی داشتی بپرس.' };
+  }
+  // درباره‌ی خود ربات
+  if (has(/ (اسمت|نامت|اسم تو|نام تو|کی هستی|هوش مصنوعی هستی|ربات هستی|معرفی خودت|خودتو معرفی) /)) {
+    return { title: 'معرفی ربات', html: 'من دستیار آموزش همین پنلم. جواب قوانین شرکت‌ها، انتقال تخفیف، سررسید و خطاها رو از شیت «قوانین ثالث» پیدا می‌کنم و درباره‌ی خودت (اسم، سنتر، سرگروه، تعداد صدور) از اطلاعات داشبوردت جواب می‌دم.' };
+  }
+  // چی بلدی؟
+  if (has(/ (چی بلدی|چه کاری بلدی|چیکار می کنی|چیکار میکنی|چه کارایی|چه کارهایی|پس چی می دونی|پس چی میدونی|چی می دونی|چی میدونی|راهنما) /)) {
+    return { title: 'راهنما', html: 'می‌تونی بپرسی:<br>• قوانین صدور رازی، سینا و تعاون (صندوق، سررسید، مالک و بیمه‌گذار، اتباع و …)<br>• انتقال تخفیف و کاربری‌ها<br>• خطاها و ارورها و مجوزی‌ها<br>• اسم و نقش خودت، سنترت، سرگروهت<br>• «دیروز چندتا صدور داشتم؟»، «۲۱ مهر چند صدور داشتم؟»، «این ماه چندتا زدم؟»' };
+  }
+  // اسم من
+  if (has(/ (اسمم|نامم|اسم من|نام من|اسم منو|من کیم|من کی هستم|من کی ام|منو می شناسی|منو میشناسی) /)) {
+    if (!name) return null;
+    const remember = has(/ (یادت باشه|یادت نره|یاد بگیر|یاد بگیری) /);
+    return { title: 'اسم من', html: (remember ? 'لازم نیست یادم بسپاری، اسمت رو خودم از پروفایل داشبورد می‌خونم. ' : '') + `طبق پروفایلت اسمت <b>${escHtml(name)}</b> و نقشت <b>${escHtml(role)}</b> هست.` };
+  }
+  if (has(/ (نقش من|نقشم|سمتم|سمت من) /)) {
+    return { title: 'نقش من', html: `نقشت توی داشبورد <b>${escHtml(role)}</b> هست.` };
+  }
+  // سرگروه / سنتر
+  const askLeader = has(/ (سر ?گروه(م| من| ما)|لیدر(م| من)) /);
+  const askCenter = has(/ (سنترم|سنتر من|سنتر ما|مرکزم|مرکز من) /);
+  if (askLeader || askCenter) {
+    const kind = trMyRoleKind();
+    if (kind === 'supervisor' || kind === 'admin') return { title: 'سنتر و سرگروه', html: 'برای نقش تو سنتر یا سرگروه مشخصی تعریف نشده.' };
+    const org = await trLoadMyOrg();
+    if (!org.ok) return { title: 'سنتر و سرگروه', html: 'نتونستم اطلاعات سنتر و سرگروهت رو از سیستم بخونم، بعداً دوباره امتحان کن.' };
+    if (askLeader) {
+      if (kind === 'leader') return { title: 'سرگروه من', html: `خودت سرگروهی: <b>${escHtml(name)}</b>.` };
+      return { title: 'سرگروه من', html: org.leaders.length ? `سرگروهت ${trJoin(org.leaders)} هست.` : 'توی سیستم سرگروهی برات ثبت نشده، از سرپرست بپرس.' };
+    }
+    if (kind === 'center') return { title: 'سنتر من', html: `سنتر تو <b>${escHtml(name)}</b> هست.` };
+    return { title: 'سنتر من', html: org.centers.length ? `${org.centers.length > 1 ? 'سنترهات' : 'سنترت'} ${trJoin(org.centers)} هست.` : 'توی سیستم سنتری برات ثبت نشده، از سرگروهت بپرس.' };
+  }
+  // تعداد صدور خودم
+  if (trIsMyIssuanceQ(raw)) return await trMyIssuance(raw);
+  return null;
+}
+
 async function trAsk(q) {
   q = String(q || '').trim();
   if (!q) return;
@@ -8564,11 +8772,20 @@ async function trAsk(q) {
   trTyping(true);
   const st = trSmallTalk(q);
   const t0 = Date.now();
-  if (!(st && st.reply) && !trainState.loaded) await trLoad();
+  // سوال‌های شخصی (اسم، سنتر، سرگروه، تعداد صدور خودش) قبل از جستجو در شیت از روی داده‌ی داشبورد جواب داده می‌شن
+  let pr = null;
+  if (!(st && st.reply)) { try { pr = await trPersonal(st && st.rest ? st.rest : q); } catch (e) { pr = null; } }
+  if (!pr && !(st && st.reply) && !trainState.loaded) await trLoad();
   const wait = 500 - (Date.now() - t0);
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
   trTyping(false);
   if (st && st.reply) { trAddMsg('bot', escHtml(st.reply)); trLog('سوال', q, 'احوال‌پرسی', null); return; }
+  if (pr) {
+    trAddMsg('bot', pr.html);
+    const plain = pr.html.replace(/<\/(div|summary)>|<br>/g, '\n').replace(/<[^>]+>/g, '').trim();
+    trLog('سوال', q, 'پاسخ داده شد', { sheet: 'داشبورد', title: pr.title, fields: [{ k: '', v: plain }] });
+    return;
+  }
   if (!trainState.loaded) { trAddMsg('bot', 'هنوز داده‌ها از شیت نیامده. اینترنت را چک کن و چند لحظه بعد دوباره امتحان کن.'); return; }
   const qs = st && st.rest ? st.rest : q;   // اگه اول جمله سلام بود، فقط بقیه‌ی جمله جستجو می‌شه
   const comp = trCompanyOnly(qs);
@@ -8579,8 +8796,12 @@ async function trAsk(q) {
     trLog('سوال', q, 'نامشخص', null);
     return;
   }
-  trAddMsg('bot', trRenderChunk(res[0].c, trTokens(qs)));
-  trLog('سوال', q, 'پاسخ داده شد', res[0].c);
+  const top = res[0].c;
+  // جواب خیلی کوتاه («خیر.») بدون دیدن سوالِ مربوطه گمراه‌کننده است؛ اگه سوال دقیقاً یکی نبود، سوال نزدیک رو هم نشان بده
+  const exact = top.q != null && top.qKey === trWords(qs).filter(w => !TR_STOP.has(w)).join(' ');
+  const near = (top.q != null && !exact && trPlain(top).length <= 15) ? `<div class="tr-alt" style="margin-bottom:4px">نزدیک‌ترین سوال: «${escHtml(top.q)}»</div>` : '';
+  trAddMsg('bot', near + trRenderChunk(top, trTokens(qs)));
+  trLog('سوال', q, 'پاسخ داده شد', top);
 }
 
 function trBind() {
