@@ -560,6 +560,7 @@
   }
   .azki-trend-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
   .azki-trend-title { font-size: 15px; font-weight: 800; color: var(--ink); }
+.azki-trend-titlebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
   .azki-trend-stats { display: flex; flex-wrap: wrap; gap: 8px; }
   .azki-trend-stat { font-size: 12.5px; color: var(--ink-soft); background: var(--surface-tint); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
   .azki-trend-stat b { color: var(--accent-strong); font-weight: 800; margin-inline-start: 4px; }
@@ -2114,6 +2115,10 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg>
         مقایسه درصد صدور
       </button>
+      <button class="subtab-btn" data-team-tab="azki-oct" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12M6 22h12M8 2v4l4 4 4-4V2M8 22v-4l4-4 4 4v4"/></svg>
+        OCT
+      </button>
       <span class="subtab-break"></span>
       <button class="subtab-btn" data-team-tab="azki-chart" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
@@ -2180,6 +2185,7 @@ html select option:checked,html select option:hover{background-color:#dbe7ff !im
     <div class="panel" id="panel-team-training"></div>
     <div class="panel" id="panel-azki-shifts"></div>
     <div class="panel" id="panel-azki-compare"></div>
+    <div class="panel" id="panel-azki-oct"></div>
     <div class="panel" id="panel-azki-chart"></div>
     <div class="panel" id="panel-azki-active"></div>
     <div class="panel" id="panel-azki-payroll"></div>
@@ -2833,7 +2839,7 @@ document.querySelectorAll('#main-tabs .tab-btn').forEach(btn => {
 });
 
 window.teamCurrentTab = 'team';
-const TEAM_REPORT_TABS = ['azki-compare', 'azki-chart'];
+const TEAM_REPORT_TABS = ['azki-compare', 'azki-oct', 'azki-chart'];
 let teamLastReportTab = 'azki-compare';
 window.leaderHiddenTabs = new Set(); // تب‌هایی که سرپرست برای سرگروه‌ها مخفی کرده
 function teamShowTab(tab) {
@@ -2852,7 +2858,7 @@ function teamShowTab(tab) {
   }
   document.getElementById('panel-team').classList.remove('active');
   document.getElementById('panel-team-bugs').classList.remove('active');
-  ['panel-azki-compare', 'panel-azki-chart', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll', 'panel-kanban', 'panel-attendance', 'panel-users', 'panel-team-training'].forEach(id => {
+  ['panel-azki-compare', 'panel-azki-oct', 'panel-azki-chart', 'panel-azki-shifts', 'panel-azki-active', 'panel-azki-payroll', 'panel-kanban', 'panel-attendance', 'panel-users', 'panel-team-training'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -2865,6 +2871,7 @@ function teamShowTab(tab) {
   if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
   if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
   if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
+  if (tab === 'azki-oct') { if (azkiState.oct.loaded) renderAzkiOctView(); else loadAzkiOctView(); }
   if (tab === 'azki-chart') { azkiEnsureChartDefaultRange(); azkiChartEnsure(); }
   azkiSyncFilterForTab(tab);
   if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
@@ -5062,7 +5069,6 @@ function azkiBuildTrendData(summaries) {
 const AZC_REPORTS = [
   { id: 'pct', label: 'درصد صدور' },
   { id: 'period', label: 'تعداد صدور' },
-  { id: 'oct', label: 'نمایش OCT' },
 ];
 const AZC_SHIFT_DEFS = [
   { id: 'morning', name: 'شیفت صبح', color: '#1656F5' },
@@ -5299,9 +5305,14 @@ function azkiChartRender() {
     const defs = m.all.filter(d => sel.has(d.id));
     const n = m.points.length;
 
-    const chips = m.all.length > 1 ? `
+    const chipSeries = m.all.filter(d => d.id !== '__oct');   // OCT بالای نمودار کنار عنوان است، نه بین چیپ‌ها
+    const octSeries = m.all.find(d => d.id === '__oct');
+    const octBtn = octSeries
+      ? `<button type="button" class="azki-trend-chip azc-oct-toggle${sel.has('__oct') ? ' on' : ''}" data-id="__oct" style="--c:${octSeries.color}"><i></i>نمایش OCT ازکی سنتر (ساعت) روی نمودار</button>`
+      : '';
+    const chips = chipSeries.length > 1 ? `
       <div class="azki-trend-chips">
-        ${m.all.map(d => `<button type="button" class="azki-trend-chip${sel.has(d.id) ? ' on' : ''}" data-id="${d.id}" style="--c:${d.color}"><i></i>${escHtml(d.name)}</button>`).join('')}
+        ${chipSeries.map(d => `<button type="button" class="azki-trend-chip${sel.has(d.id) ? ' on' : ''}" data-id="${d.id}" style="--c:${d.color}"><i></i>${escHtml(d.name)}</button>`).join('')}
       </div>` : '';
 
     // آمار روی اولین سری انتخاب‌شده
@@ -5318,7 +5329,7 @@ function azkiChartRender() {
         <span class="azki-trend-stat">${n > 1 ? 'بیشترین' : 'مقدار'} ${ref.name} (${azcXLabel(m.points[best])})<b>${ref.fmt ? ref.fmt(ref.vals[best]) : azcFmtVal(ref.vals[best], m.pct, m)}</b></span>
         ${n > 1 ? `<span class="azki-trend-stat">کمترین (${azcXLabel(m.points[worst])})<b>${ref.fmt ? ref.fmt(ref.vals[worst]) : azcFmtVal(ref.vals[worst], m.pct, m)}</b></span>` : ''}</div>`;
     }
-    const head = `<div class="azki-trend-head"><div class="azki-trend-title">${m.title} (${m.granLabel || AZKI_GRAN_FA[azkiState.granularity] || ''})</div>${stats}</div>${chips}`;
+    const head = `<div class="azki-trend-head"><div class="azki-trend-titlebar"><div class="azki-trend-title">${m.title} (${m.granLabel || AZKI_GRAN_FA[azkiState.granularity] || ''})</div>${octBtn}</div>${stats}</div>${chips}`;
 
     let body;
     if (!defs.length) {
@@ -5973,7 +5984,7 @@ async function enterApp(user) {
     document.getElementById('panel-supervisor').classList.remove('active');
     (function relocateAzkiViewsForLeader() {
       const filterEl = document.getElementById('azki-filter');
-      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-chart', 'sup-view-azki-chart'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
+      [['panel-azki-compare', 'sup-view-azki-compare'], ['panel-azki-oct', 'sup-view-azki-oct'], ['panel-azki-chart', 'sup-view-azki-chart'], ['panel-azki-shifts', 'sup-view-azki-shifts'], ['panel-azki-active', 'sup-view-azki-active'], ['panel-azki-payroll', 'sup-view-azki-payroll']].forEach(([hostId, viewId]) => {
         const host = document.getElementById(hostId);
         const viewEl = document.getElementById(viewId);
         if (host && viewEl && !host.contains(viewEl)) {
@@ -10630,6 +10641,7 @@ function umLeadersModal(centerId) {
 const LEADER_TAB_DEFS = [
   ['team', 'تعداد صدور تیم'], ['team-bugs', 'خطای صدور'], ['report', 'گزارش (کل گروه)'],
   ['azki-compare', 'گزارش ← مقایسه درصد صدور', 1],
+  ['azki-oct', 'گزارش ← OCT', 1],
   ['azki-chart', 'گزارش ← نمودار', 1],
   ['azki-active', 'وضعیت پنل کارشناسان'], ['azki-payroll', 'محاسبه حقوق'], ['kanban', 'تسک‌ها'],
   ['attendance', 'حضور و غیاب'], ['training', 'آموزش'], ['users', 'مدیریت کاربران']
