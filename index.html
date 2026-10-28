@@ -8319,19 +8319,9 @@ async function loadTargets(userId) {
 // اگر نام یکی از برگه‌ها در شیت عوض شد، فقط همین فهرست را به‌روز کنید.
 // ============================================================
 const TRAIN_SHEET_ID = '1zLzuthsCORGAnBM0MT3b_H0xZ-C4Zr-vtPkGxzkpRwk';
-const TRAIN_FIRST_SHEET = { name: 'حروف پلاک و کاربری آن ها', gid: 0 };
-const TRAIN_SHEETS = [
-  'شرکت رازی', 'شرکت سینا', 'شرکت تعاون', 'انتقال تخفیف', 'مجوزی ها - رازی', 'سوالات هوشمند',
-  'خطاها - ارورها', 'سررسید', 'شیت خطای ورود به فناوران ها', 'رفع توقیف - همه شرکت ها', 'اختلاف قیمت'
-];
-// دسته‌بندی برگه‌ها در منوی کنار صفحه: [نام برگه در شیت، عنوان نمایشی]
-// برگه‌ای که اینجا نباشد خودکار می‌رود زیر «سایر». برای تغییر ترتیب/نام فقط همین فهرست را ویرایش کنید.
-const TRAIN_GROUPS = [
-  { name: 'قوانین شرکت‌ها', sheets: [['شرکت رازی', 'قوانین صدور رازی'], ['شرکت سینا', 'قوانین صدور سینا'], ['شرکت تعاون', 'قوانین صدور تعاون'], ['مجوزی ها - رازی', 'مجوزی‌ها - رازی']] },
-  { name: 'راهنمای عمومی',
-    sheets: [['حروف پلاک و کاربری آن ها', 'حروف پلاک و کاربری'], ['انتقال تخفیف', 'انتقال تخفیف'], ['سررسید', 'سررسید'], ['اختلاف قیمت', 'اختلاف قیمت'], ['سوالات هوشمند', 'سوالات هوشمند']],
-    subs: [{ name: 'خطاها و رفع توقیف', sheets: [['خطاها - ارورها', 'خطاها و ارورها'], ['شیت خطای ورود به فناوران ها', 'خطای ورود به فناوران'], ['رفع توقیف - همه شرکت ها', 'رفع توقیف (همه شرکت‌ها)']] }] }
-];
+// لیست برگه‌ها دیگه ثابت نیست: هر برگه‌ی (قابل‌مشاهده) شیت خودکار یک موضوع می‌شود. نام برگه‌ها از وب‌اپ Apps Script (action=sheets) گرفته می‌شود.
+// اگر خواستی برای برگه‌ای عنوان نمایشی یا دسته‌ی جدا بگذاری، اینجا اضافه کن: { name: 'نام دسته', sheets: [['نام برگه در شیت', 'عنوان نمایشی']] }
+const TRAIN_GROUPS = [];
 const TRAIN_LABELS = new Map(TRAIN_GROUPS.flatMap(g => [...g.sheets, ...(g.subs || []).flatMap(sg => sg.sheets)]));
 function trLabel(sheet) { return TRAIN_LABELS.get(sheet) || sheet; }
 const TRAIN_CACHE_KEY = 'trainingSheetCache_v2';
@@ -8674,7 +8664,7 @@ function trRenderTree() {
   }));
   const known = new Set(TRAIN_LABELS.keys());
   const rest = [...bySheet.keys()].filter(sh => !known.has(sh));
-  if (rest.length) groups.push({ name: 'سایر', sheets: rest, subs: [] });
+  if (rest.length) groups.push({ name: 'موضوعات', sheets: rest, subs: [] });
   const shown = groups.filter(g => g.sheets.length || g.subs.length);
   if (!trTreeSeeded && shown.length) { trOpenKeys.add(shown[0].name); trTreeSeeded = true; }
   const html = shown.map(g => {
@@ -8719,16 +8709,34 @@ function trApplyData(sheetsData, failed, fetchedAt) {
   trRenderTree(); trRenderStatus();
 }
 
+let trSheetList = null, trSheetListAt = 0;
+async function trListSheets() {
+  if (trSheetList && Date.now() - trSheetListAt < 60000) return trSheetList;   // فهرست برگه‌ها حداکثر هر ۶۰ ثانیه یک‌بار پرسیده می‌شود
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const res = await fetch(TRAIN_LOG_URL + '?action=sheets&token=' + encodeURIComponent(TRAIN_LOG_TOKEN) + '&_t=' + Date.now(), { signal: ctl.signal, credentials: 'omit', cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    if (!j || !j.ok || !Array.isArray(j.sheets)) throw new Error((j && j.error) || 'پاسخ نامعتبر از اسکریپت');
+    trSheetList = j.sheets; trSheetListAt = Date.now();
+    return trSheetList;
+  } catch (e) {
+    if (trSheetList) return trSheetList;   // اگر قبلاً گرفته بودیم همان را نگه می‌داریم
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+
 async function trFetchAll() {
-  const first = await trFetchSheet(TRAIN_FIRST_SHEET.name, TRAIN_FIRST_SHEET.gid).then(csv => ({ name: TRAIN_FIRST_SHEET.name, csv })).catch(e => ({ err: e }));
-  const rest = await Promise.allSettled(TRAIN_SHEETS.map(n => trFetchSheet(n, null).then(csv => ({ name: n, csv }))));
-  const ok = [], failed = [];
-  if (first.err) failed.push(TRAIN_FIRST_SHEET.name); else ok.push(first);
-  rest.forEach((r, i) => {
-    // اگر نام برگه پیدا نشود گوگل برگه‌ی اول را برمی‌گرداند؛ این حالت را ناموفق حساب می‌کنیم
-    if (r.status !== 'fulfilled' || (!first.err && r.value.csv === first.csv)) failed.push(TRAIN_SHEETS[i]); else ok.push(r.value);
+  let list;
+  try { list = await trListSheets(); } catch (e) { return { ok: [], failed: [], firstErr: new Error('فهرست برگه‌ها از اسکریپت گرفته نشد (' + (e.message || e) + ')') }; }
+  const res = await Promise.allSettled(list.map(sh => trFetchSheet(sh.name, sh.gid).then(csv => ({ name: sh.name, csv }))));
+  const ok = [], failed = []; let firstErr = null;
+  res.forEach((r, i) => {
+    if (r.status === 'fulfilled') ok.push(r.value);
+    else { failed.push(list[i].name); if (!firstErr) firstErr = r.reason; }
   });
-  return { ok, failed, firstErr: first.err };
+  return { ok, failed, firstErr };
 }
 
 // هر بار فراخوانی = یک بار بررسی شیت؛ فقط اگر محتوا عوض شده باشد درخت و ایندکس به‌روز می‌شود
