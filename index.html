@@ -8512,7 +8512,7 @@ function trFocusLines(v, qt) {
     `<details class="tr-more"><summary>نمایش بقیه‌ی متن این سلول</summary>${rest.map(l => `<div class="tr-alt">${trLines(l)}</div>`).join('')}</details>`;
 }
 // ---- جواب بله/خیر: اگه یکی از سلول‌های ردیفِ جواب یک حکم بود («امکان صدور هست»، «نمیشه»)، فقط همون با «بله/خیر» نشان داده می‌شه ----
-// عنوان ستون‌ها (ردیف اول = سوال) نمایش داده نمی‌شن و بقیه‌ی سلول‌های ردیف زیر «جزئیات بیشتر» می‌مونن.
+// عنوان ستون‌ها (ردیف اول = سوال) نمایش داده نمی‌شن و بقیه‌ی سلول‌های ردیف نشان داده نمی‌شن.
 const TR_NEG = /(نیست|نمی ?(شود|شه|باشد|توان|تواند|تونه)|نمیشه|ندارد|ندارن|ندارند|ممنوع|غیر ?مجاز)/;
 const TR_POS = /(هست|هستند|دارد|دارن|دارند|می ?(شود|شه|باشد)|میشه|مجاز|امکان ?پذیر)/;
 const TR_WH = new Set(['چرا', 'چطور', 'چطوری', 'چگونه', 'چیه', 'چی', 'چیست', 'چه', 'کدوم', 'کدام', 'کجا', 'کی', 'چقدر', 'چقدره', 'چند', 'چنده', 'چندتا', 'چجوری']);
@@ -8532,11 +8532,9 @@ function trVerdictHtml(c, qt, yn) {
   if (!cand.length) return null;
   const sc = x => { const tk = new Set(trTokens(x.f.k)); return (qt || []).filter(t => tk.has(t)).length; };
   let best = cand[0]; cand.forEach(x => { if (sc(x) > sc(best)) best = x; });
-  const rest = c.fields.filter((f, i) => i !== best.i);
   const val = String(best.f.v).replace(/[.\s]+$/, '');
   const txt = best.vd.explicit ? val : (best.vd.kind === 'yes' ? 'بله، ' : 'خیر، ') + val;
-  return `<div class="tr-ans">${trLines(txt)}</div>` + (rest.length
-    ? `<details class="tr-more"><summary>جزئیات بیشتر</summary>${rest.map(f => `<div class="tr-alt">${f.k ? `<b>${escHtml(f.k)}:</b> ` : ''}${trLines(f.v)}</div>`).join('')}</details>` : '');
+  return `<div class="tr-ans">${trLines(txt)}</div>`;   // فقط حکم بله/خیر؛ بقیه‌ی سلول‌های ردیف (که ربطی به سوال ندارن) نمایش داده نمی‌شن
 }
 function trRenderChunk(c, qt, yn) {
   const rowTag = (c.row && (currentUserRole === 'admin' || currentUserRole === 'supervisor')) ? ' • ردیف ' + faDigits(c.row) : '';
