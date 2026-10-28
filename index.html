@@ -8377,11 +8377,11 @@ function trParseCsv(t) {
 
 async function trFetchSheet(name, gid) {
   const base = `https://docs.google.com/spreadsheets/d/${TRAIN_SHEET_ID}/gviz/tq?tqx=out:csv&headers=0`;
-  const url = gid != null ? `${base}&gid=${gid}` : `${base}&sheet=${encodeURIComponent(name)}`;
+  const url = (gid != null ? `${base}&gid=${gid}` : `${base}&sheet=${encodeURIComponent(name)}`) + `&_t=${Date.now()}`;   // کش‌شکن: هر بار نسخه‌ی تازه
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 20000);
   try {
-    const res = await fetch(url, { signal: ctl.signal, credentials: 'omit' });
+    const res = await fetch(url, { signal: ctl.signal, credentials: 'omit', cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const txt = await res.text();
     if (/^\s*<(!doctype|html)/i.test(txt)) throw new Error('دسترسی به شیت ممکن نیست (باید «هر کسی با لینک» می‌تواند ببیند باشد)');
@@ -8704,7 +8704,7 @@ async function trLoad() {
     if (!trainState.loaded) {
       let cache = null;
       try { cache = JSON.parse(localStorage.getItem(TRAIN_CACHE_KEY) || 'null'); } catch (e) { }
-      if (cache && cache.sheets && cache.sheets.length) {
+      if (cache && cache.sheets && cache.sheets.length && Date.now() - (cache.t || 0) < TRAIN_CACHE_TTL) {   // کش قدیمی‌تر از TTL استفاده نمی‌شود
         trSignature = cache.sheets.map(s => s.name + '\u0001' + s.csv).join('\u0002');
         trApplyData(cache.sheets, cache.failed || [], cache.t);
       } else trTreeMsg('در حال دریافت…');
@@ -8727,7 +8727,7 @@ async function trLoad() {
   return trainState.loading;
 }
 
-const TRAIN_POLL_MS = 45000;
+const TRAIN_POLL_MS = 30000;
 function trPanelActive() { const l = document.querySelector('.tr-layout'); return !!l && l.offsetParent !== null && document.visibilityState === 'visible'; }
 // یک نمونه‌ی آموزش بین پنل کارشناس / سنتر / سرگروه / سرپرست جابه‌جا می‌شود
 function trMount(host) { const l = document.querySelector('.tr-layout'); if (l && host && l.parentElement !== host) host.appendChild(l); }
@@ -9019,7 +9019,11 @@ async function trAsk(q) {
   // سوال‌های شخصی (اسم، سنتر، سرگروه، تعداد صدور خودش) قبل از جستجو در شیت از روی داده‌ی داشبورد جواب داده می‌شن
   let pr = null;
   if (!(st && st.reply)) { try { pr = await trPersonal(st && st.rest ? st.rest : q); } catch (e) { pr = null; } }
-  if (!pr && !(st && st.reply) && !trainState.loaded) await trLoad();
+  if (!pr && !(st && st.reply)) {
+    if (!trainState.loaded) await trLoad();
+    // اگر آخرین دریافت شیت از چند ثانیه پیش است، قبل از جواب دادن یک بار دیگر بگیر تا حذف/ویرایش‌های لحظه‌ی قبل هم اعمال شود
+    else if (Date.now() - trainState.fetchedAt > 8000) { try { await Promise.race([trLoad(), new Promise(r => setTimeout(r, 6000))]); } catch (e) { } }
+  }
   const wait = 500 - (Date.now() - t0);
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
   trTyping(false);
