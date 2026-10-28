@@ -5186,7 +5186,28 @@ function azcPlotBuild(m, defs, pfx) {
   // محور راست با مقیاس جدا (مثلاً OCT به ساعت)
   let mxR = 0;
   rightDefs.forEach(d => d.vals.forEach(v => { if (v !== null && v > mxR) mxR = v; }));
-  const topR = azcHourTop(mxR);
+  let topR = azcHourTop(mxR);
+  // OCT (محور راست) همیشه باید زیر خط درصد صدور (خط آبی) بماند و هیچ‌وقت روی آن نیفتد:
+  // سقف محور ساعت را (در گام‌های «خوش‌خوان») بالا می‌بریم تا در هر نقطه، OCT حداقل GAP پیکسل پایین‌تر از خط درصد باشد.
+  if (rightDefs.length && leftDefs.length) {
+    const refDef = leftDefs.find(d => d.id === m.areaId);            // خط آبی «مجموع شرکت‌ها»
+    const GAP = 26;                                                   // فاصله‌ی امن (جا برای برچسب عدد OCT بین دو خط)
+    const refPy = i => {
+      if (refDef) return refDef.vals[i] === null || refDef.vals[i] === undefined ? null : Y(refDef.vals[i]);
+      let lowest = null;                                              // اگر خط آبی خاموش بود: پایین‌ترین خط درصد
+      leftDefs.forEach(d => { const v = d.vals[i]; if (v !== null && v !== undefined) { const y = Y(v); if (lowest === null || y > lowest) lowest = y; } });
+      return lowest;
+    };
+    const refYs = []; for (let i = 0; i < n; i++) refYs.push(refPy(i));
+    const fits = t => rightDefs.every(d => d.vals.every((v, i) => {
+      if (v === null || v === undefined || refYs[i] === null) return true;
+      return (T + ph * (1 - v / t)) - refYs[i] >= GAP;
+    }));
+    const stepsH = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 500, 1000];
+    const cands = stepsH.map(x => x * 4).filter(t => t >= topR);
+    const hit = cands.find(fits);
+    topR = hit !== undefined ? hit : (cands.length ? cands[cands.length - 1] : topR);
+  }
   const YR = v => T + ph * (1 - v / topR);
   const yOf = d => (d.axis === 'right' ? YR : Y);
   const rColor = rightDefs.length ? rightDefs[0].color : '#888';
