@@ -11613,6 +11613,18 @@ html[data-theme="dark"] .center-perf-table td:first-child{ background:rgba(16,22
 .disc-sel,.disc-q{ font:inherit; font-size:13px; color:var(--ink); background:var(--surface-tint,rgba(255,255,255,.5)); border:1px solid var(--line); border-radius:12px; padding:8px 12px; outline:none; }
 .disc-q{ flex:1 1 200px; min-width:160px; }
 .disc-q:focus,.disc-sel:focus{ border-color:var(--accent); }
+.disc-ms{ position:relative; }
+.disc-ms-btn{ display:inline-flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; min-width:200px; max-width:100%; text-align:start; }
+.disc-ms-caret{ font-size:11px; opacity:.7; }
+.disc-ms-pop{ position:absolute; top:calc(100% + 6px); inset-inline-start:0; z-index:60; min-width:250px; max-height:340px; overflow:auto; padding:8px;
+  background:#fff; color:var(--ink); border:1px solid var(--line); border-radius:14px; box-shadow:0 14px 34px -12px rgba(0,0,0,.35); }
+html[data-theme="dark"] .disc-ms-pop{ background:#14182a; }
+.disc-ms-pop[hidden]{ display:none; }
+.disc-ms-quick{ display:flex; gap:6px; padding:2px 2px 8px; border-bottom:1px solid var(--line); margin-bottom:6px; }
+.disc-ms-quick button{ font:inherit; font-size:12px; color:var(--accent-deep); background:none; border:1px solid var(--line); border-radius:999px; padding:4px 10px; cursor:pointer; }
+.disc-ms-opt{ display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px; font-size:13px; cursor:pointer; }
+.disc-ms-opt:hover{ background:var(--surface-tint,rgba(0,0,0,.05)); }
+.disc-ms-opt input{ width:16px; height:16px; accent-color:var(--accent-deep); margin:0; }
 .disc-refresh{ font:inherit; font-size:13px; font-weight:700; color:var(--accent-deep,var(--accent)); background:var(--accent-soft); border:1px solid var(--line); border-radius:12px; padding:8px 14px; cursor:pointer; }
 .disc-sync{ font-size:11.5px; color:var(--ink-faint); margin:-6px 2px 12px; }
 .disc-sync:empty{ display:none; }
@@ -11671,7 +11683,7 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   var STATUSES = ['در انتظار تخفیف', 'در انتظار کسر از حقوق', 'در انتظار تایید آموزش', 'بررسی مجدد - معلق', 'عدم تایید آموزش', 'تخفیف شد - کسر شد', 'پرداخت شد'];
   var PENDING = ['در انتظار تخفیف', 'در انتظار کسر از حقوق'];
   var PILL = { 'در انتظار تخفیف': 'wait', 'در انتظار کسر از حقوق': 'ded', 'تخفیف شد - کسر شد': 'done', 'پرداخت شد': 'done' };
-  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {}, centerByKey: {}, agentByKey: {} }, status: 'pending', q: '', loading: false, error: null, syncedAt: null,
+  var S = { rows: [], hier: { byId: {}, agentCenter: {}, centerLeaders: {}, centerByKey: {}, agentByKey: {} }, sel: new Set(PENDING), q: '', loading: false, error: null, syncedAt: null,
             from: null, to: null, calView: { from: [0, 0], to: [0, 0] } };
 
   var esc = function (v) { return window.escHtml(v); };
@@ -11747,6 +11759,17 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
     render();
   }
 
+  /* ---- منوی چندانتخابی وضعیت: برچسب دکمه و تیک‌ها را با S.sel هماهنگ می‌کند ---- */
+  function msSync(host) {
+    host.querySelectorAll('[data-ms-opt]').forEach(function (c) { c.checked = S.sel.has(c.value); });
+    var lb = host.querySelector('.disc-ms-label'); if (!lb) return;
+    var n = S.sel.size, isPend = n === PENDING.length && PENDING.every(function (x) { return S.sel.has(x); });
+    lb.textContent = (n === 0 || n === STATUSES.length) ? 'همه وضعیت‌ها'
+      : isPend ? 'در انتظار (تخفیف / کسر از حقوق)'
+      : n === 1 ? Array.from(S.sel)[0]
+      : faDigits(String(n)) + ' وضعیت انتخاب شده';
+  }
+
   function shell(host) {
     if (host.dataset.discInit) return host.querySelector('.disc-body');
     host.dataset.discInit = '1';
@@ -11755,11 +11778,17 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
         '<div class="disc-title">خطای صدور</div>' +
         '<div class="disc-sync"></div>' +
         '<div class="disc-bar">' +
-          '<select class="disc-sel" data-disc="status">' +
-            '<option value="pending">در انتظار (تخفیف / کسر از حقوق)</option>' +
-            '<option value="all">همه وضعیت‌ها</option>' +
-            STATUSES.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('') +
-          '</select>' +
+          '<div class="disc-ms">' +
+            '<button type="button" class="disc-sel disc-ms-btn" data-disc="ms-toggle" aria-haspopup="true"><span class="disc-ms-label"></span><span class="disc-ms-caret">▾</span></button>' +
+            '<div class="disc-ms-pop" hidden>' +
+              '<div class="disc-ms-quick">' +
+                '<button type="button" data-ms-quick="pending">در انتظار</button>' +
+                '<button type="button" data-ms-quick="all">همه</button>' +
+                '<button type="button" data-ms-quick="none">پاک کردن</button>' +
+              '</div>' +
+              STATUSES.map(function (s) { return '<label class="disc-ms-opt"><input type="checkbox" data-ms-opt value="' + esc(s) + '"><span>' + esc(s) + '</span></label>'; }).join('') +
+            '</div>' +
+          '</div>' +
           '<input class="disc-q" data-disc="q" type="search" placeholder="جستجو: کارشناس / شماره سفارش / توضیحات" autocomplete="off">' +
           '<button class="disc-refresh disc-icon-btn" data-disc="refresh" type="button" title="بروزرسانی" aria-label="بروزرسانی">' +
             '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>' +
@@ -11775,8 +11804,30 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
         '<div class="disc-body"></div>' +
       '</div>';
     host.addEventListener('change', function (e) {
-      if (e.target.matches('[data-disc="status"]')) { S.status = e.target.value; render(); }
+      if (e.target.matches('[data-ms-opt]')) {
+        if (e.target.checked) S.sel.add(e.target.value); else S.sel.delete(e.target.value);
+        msSync(host); render();
+      }
     });
+    host.addEventListener('click', function (e) {
+      var tg = e.target.closest('[data-disc="ms-toggle"]');
+      var pop = host.querySelector('.disc-ms-pop');
+      if (tg) { var open = pop.hidden; azkiClosePops(); pop.hidden = !open; return; }
+      var q = e.target.closest('[data-ms-quick]');
+      if (q) {
+        var k = q.getAttribute('data-ms-quick');
+        S.sel = new Set(k === 'pending' ? PENDING : k === 'all' ? STATUSES : []);
+        msSync(host); render();
+      }
+    });
+    if (!window.__discMsOutside) {
+      window.__discMsOutside = true;
+      document.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('.disc-ms')) return;
+        document.querySelectorAll('.disc-ms-pop').forEach(function (p) { p.hidden = true; });
+      });
+    }
+    msSync(host);
     host.addEventListener('input', function (e) {
       if (e.target.matches('[data-disc="q"]')) { S.q = e.target.value.trim().toLowerCase(); render(); }
     });
@@ -11840,8 +11891,7 @@ html[data-theme="dark"] .disc-pill.done{ color:#5cf0c4; }
   }
   function passes(r) {
     var st = (r.status || '').trim();
-    if (S.status === 'pending') { if (PENDING.indexOf(st) < 0) return false; }
-    else if (S.status !== 'all' && st !== S.status) return false;
+    if (S.sel.size && !S.sel.has(st)) return false;     // هیچ تیکی = همه وضعیت‌ها
     if (S.from || S.to) {
       var j = rowJ(r);
       if (!j) return false;               // ردیف بدون تاریخ، وقتی بازه فعال است نمایش داده نمی‌شود
