@@ -2865,7 +2865,7 @@ function teamShowTab(tab) {
   if (azkiFilterEl && isAzki && panelEl.firstChild !== azkiFilterEl) panelEl.insertBefore(azkiFilterEl, panelEl.firstChild);
   if (azkiFilterEl) azkiFilterEl.style.display = isAzki ? '' : 'none';
   if (tab === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
-  if (tab === 'azki-chart') azkiChartEnsure();
+  if (tab === 'azki-chart') { azkiEnsureChartDefaultRange(); azkiChartEnsure(); }
   azkiSyncFilterForTab(tab);
   if (tab === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
   if (tab === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
@@ -3308,7 +3308,7 @@ document.querySelectorAll('#center-tabs .tab-btn').forEach(btn => {
     if (which === 'azki-shifts' && !azkiState.shifts.loaded) loadAzkiShiftsView();
     if (which === 'azki-compare' && !azkiState.compare.loaded) loadAzkiCompareView();
     if (which === 'azki-oct') { if (azkiState.oct.loaded) renderAzkiOctView(); else loadAzkiOctView(); }
-    if (which === 'azki-chart') azkiChartEnsure();
+    if (which === 'azki-chart') { azkiEnsureChartDefaultRange(); azkiChartEnsure(); }
     azkiSyncFilterForTab(which);
     if (which === 'azki-payroll' && !azkiState.payroll.loaded) loadAzkiPayrollView();
     if (which === 'azki-active' && !azkiState.activeStatus.loaded) loadAzkiActiveStatusView();
@@ -3553,6 +3553,25 @@ function getAzkiBounds() {
   }
   return azkiState.bounds;
 }
+// هفته‌ی جاری (شنبه تا جمعه) به‌صورت [[jy,jm,jd],[jy,jm,jd]]
+function azkiCurrentWeekRange() {
+  const [jy, jm, jd] = tehranTodayJalali();
+  const idx = azkiWeekdayIndex(jy, jm, jd);   // شنبه = ۰ ... جمعه = ۶
+  const [gy, gm, gd] = jalaliToGregorian(jy, jm, jd).split('-').map(Number);
+  const at = k => { const d = new Date(Date.UTC(gy, gm - 1, gd - idx + k)); return gregorianToJalali(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); };
+  return [at(0), at(6)];
+}
+
+// اولین ورود به تب نمودار: بازه‌ی پیش‌فرض = هفته‌ی جاری؛ بعد از آن هرچه کاربر انتخاب کند می‌ماند
+function azkiEnsureChartDefaultRange() {
+  if (azkiState.chartRangeInit) return;
+  azkiState.chartRangeInit = true;
+  const [a, b] = azkiCurrentWeekRange();
+  azkiSetDate('from', a); azkiSetDate('to', b);
+  azkiState.bounds = azkiReadBounds();
+  ['period', 'centers', 'shifts', 'compare', 'oct', 'payroll'].forEach(k => { azkiState[k].loaded = false; });
+}
+
 function azkiRangeText(b) { return `بازه‌ی نمایش: ${faDigits(b.startLabel)} تا ${faDigits(b.endLabel)}`; }
 
 function round2(x) { return (x === null || x === undefined || isNaN(x)) ? null : Math.round(x * 100) / 100; }
@@ -5153,7 +5172,7 @@ function azcPlotBuild(m, defs, pfx) {
   const onlyR = rightDefs.length > 0 && !leftDefs.length;
   const W = 900, H = 300, L = m.pct ? 46 : 58, R = (rightDefs.length && leftDefs.length) ? 46 : 14, T = 14, B = 34;
   const pw = W - L - R, ph = H - T - B;
-  const X = i => L + pw * i / (n - 1);
+  const X = i => (n > 1 ? L + pw * i / (n - 1) : L + pw / 2);   // یک نقطه: وسط نمودار
   let mx = 0;
   leftDefs.forEach(d => d.vals.forEach(v => { if (v !== null && v > mx) mx = v; }));
   const top = azcNiceTop(mx, m.pct);
@@ -5211,7 +5230,7 @@ function azcPlotBuild(m, defs, pfx) {
       paths += `<path d="${area}" style="fill:${d.color}" opacity=".10"/>`;
     }
     paths += `<path d="${line}" fill="none" style="stroke:${d.color}" stroke-width="${d.id === m.areaId ? 2.8 : 2}" stroke-linejoin="round" stroke-linecap="round"${d.dash ? ' stroke-dasharray="6 4"' : ''}/>`;
-    if (n <= 45) d.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${yOf(d)(v).toFixed(1)}" r="3" style="fill:${d.color}"/>`; });
+    if (n <= 45) d.vals.forEach((v, i) => { if (v !== null) paths += `<circle cx="${X(i).toFixed(1)}" cy="${yOf(d)(v).toFixed(1)}" r="${n === 1 ? 5.5 : 3}" style="fill:${d.color}"/>`; });
   });
 
   // مقدار هر نقطه بالای آن نوشته می‌شود (درصد یا تعداد، بسته به گزارش).
@@ -5296,15 +5315,13 @@ function azkiChartRender() {
         if (worst < 0 || v < ref.vals[worst]) worst = i;
       });
       if (best >= 0) stats = `<div class="azki-trend-stats">
-        <span class="azki-trend-stat">بیشترین ${ref.name} (${azcXLabel(m.points[best])})<b>${ref.fmt ? ref.fmt(ref.vals[best]) : azcFmtVal(ref.vals[best], m.pct, m)}</b></span>
-        <span class="azki-trend-stat">کمترین (${azcXLabel(m.points[worst])})<b>${ref.fmt ? ref.fmt(ref.vals[worst]) : azcFmtVal(ref.vals[worst], m.pct, m)}</b></span></div>`;
+        <span class="azki-trend-stat">${n > 1 ? 'بیشترین' : 'مقدار'} ${ref.name} (${azcXLabel(m.points[best])})<b>${ref.fmt ? ref.fmt(ref.vals[best]) : azcFmtVal(ref.vals[best], m.pct, m)}</b></span>
+        ${n > 1 ? `<span class="azki-trend-stat">کمترین (${azcXLabel(m.points[worst])})<b>${ref.fmt ? ref.fmt(ref.vals[worst]) : azcFmtVal(ref.vals[worst], m.pct, m)}</b></span>` : ''}</div>`;
     }
     const head = `<div class="azki-trend-head"><div class="azki-trend-title">${m.title} (${m.granLabel || AZKI_GRAN_FA[azkiState.granularity] || ''})</div>${stats}</div>${chips}`;
 
     let body;
-    if (n < 2) {
-      body = '<div class="azki-trend-note">برای رسم روند، حداقل دو دوره لازم است؛ بازه را بزرگ‌تر کنید یا حالت نمایش را روزانه بگذارید.</div>';
-    } else if (!defs.length) {
+    if (!defs.length) {
       body = '<div class="azki-trend-note">حداقل یک مورد را برای نمایش روی نمودار انتخاب کنید.</div>';
     } else {
       const pb = azcPlotBuild(m, defs, 'azc-');
@@ -5353,7 +5370,7 @@ function azcBindHover(g) {
     const r = svg.getBoundingClientRect();
     if (!r.width) return;
     const vx = (clientX - r.left) * (g.W / r.width);
-    const i = Math.max(0, Math.min(g.n - 1, Math.round((vx - g.L) / g.pw * (g.n - 1))));
+    const i = g.n < 2 ? 0 : Math.max(0, Math.min(g.n - 1, Math.round((vx - g.L) / g.pw * (g.n - 1))));
     const x = g.X(i), p = g.m.points[i];
     guide.setAttribute('x1', x.toFixed(1)); guide.setAttribute('x2', x.toFixed(1)); guide.style.display = '';
     let dots = '', rows = '';
