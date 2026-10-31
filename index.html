@@ -1828,6 +1828,7 @@
 .tr-dl dd{margin:0}
 .tr-main{font-weight:700;margin-bottom:4px}
 .tr-more{margin-top:10px;font-size:12.5px}
+.tr-link{display:inline-block;margin-top:2px;padding:6px 12px;border-radius:10px;background:rgba(10,132,255,.12);font-weight:600;text-decoration:none}
 .tr-more summary{cursor:pointer;color:var(--accent-strong);font-weight:600}
 .tr-more .tr-alt{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
 .tr-suggest{display:flex;gap:6px;flex-wrap:wrap}
@@ -8324,7 +8325,7 @@ const TRAIN_SHEET_ID = '1zLzuthsCORGAnBM0MT3b_H0xZ-C4Zr-vtPkGxzkpRwk';
 const TRAIN_GROUPS = [];
 const TRAIN_LABELS = new Map(TRAIN_GROUPS.flatMap(g => [...g.sheets, ...(g.subs || []).flatMap(sg => sg.sheets)]));
 function trLabel(sheet) { return TRAIN_LABELS.get(sheet) || sheet; }
-const TRAIN_CACHE_KEY = 'trainingSheetCache_v2';
+const TRAIN_CACHE_KEY = 'trainingSheetCache_v3';
 const TRAIN_CACHE_TTL = 5 * 60 * 1000;
 const trainState = { chunks: [], sheets: [], failed: [], loaded: false, loading: null, scope: '__all', idf: {}, avgLen: 1, bound: false, fetchedAt: 0 };
 
@@ -8332,6 +8333,34 @@ const TR_STOP = new Set(('و در به از که این را با است برا�
 // مترادف‌های گفتاری سوال ← کلماتی که توی متن شیت هست (کلید = ریشه‌ی کلمه‌ی سوال)
 const TR_SYN = { 'میزنه': ['صدور', 'صادر'], 'میزنن': ['صدور', 'صادر'], 'میزنند': ['صدور', 'صادر'], 'میزنید': ['صدور', 'صادر'], 'میزنی': ['صدور', 'صادر'], 'بزنیم': ['صدور', 'صادر'], 'بزنم': ['صدور', 'صادر'], 'بزنن': ['صدور', 'صادر'], 'جلو': ['زود'], 'زود': ['جلو'], 'شماره': ['کد'], 'کد': ['شماره'] };
 const TR_SUF = ['هایی', 'ترین', 'های', 'ها', 'ان', 'ات', 'تر', 'ی'];
+// افعال و کلمه‌های پرکاربرد محاوره‌ای که معنی جستجو ندارند
+['کنه', 'کنم', 'کنن', 'کنند', 'کنید', 'کنیم', 'بکنم', 'بکنه', 'بکنن', 'بکنیم', 'بشه', 'بشم', 'بشن', 'میخوام', 'میخوای', 'میخواد', 'میخوان', 'میتونم', 'میتونه', 'میتونن', 'میتونی', 'میکنه', 'میکنن', 'میکنم', 'میکنید', 'هستش', 'برام', 'برامون', 'بهم', 'بهش', 'ازش', 'درش', 'دارین', 'داره', 'دارن', 'اونو', 'اینو', 'خب', 'ببخشید', 'لطفا', 'ممنون', 'داداش', 'عزیزم'].forEach(w => TR_STOP.add(w));
+// گروه‌های هم‌معنی/هم‌مفهوم: اگه کسی با یکی از این کلمه‌ها پرسید، بقیه‌ی گروه هم در شیت جستجو می‌شود
+const TR_CONCEPT_GROUPS = [
+  ['صدور', 'صادر', 'بزنیم', 'بزنم', 'بزن', 'میزنه', 'میزنن', 'میزنند', 'میزنید', 'میزنی', 'زدن', 'صدورش'],
+  ['سررسید', 'موعد', 'انقضا', 'منقضی', 'تمدید', 'زودتر', 'جلوتر', 'زود', 'جلو', 'پیشتر', 'مهلت'],
+  ['اختلاف', 'مغایرت', 'تفاوت', 'فرق', 'ناهماهنگی', 'مغایر'],
+  ['چک', 'بررسی', 'کنترل', 'مشاهده', 'پیگیری', 'ببینم', 'رویت', 'استعلام'],
+  ['اتباع', 'تبعه', 'خارجی', 'غیرایرانی', 'افغان', 'افغانستانی', 'پاسپورت', 'گذرنامه'],
+  ['خطا', 'ارور', 'error', 'پیغام', 'پیام', 'مشکل', 'ایراد', 'نمیزنه'],
+  ['قیمت', 'نرخ', 'مبلغ', 'هزینه', 'تعرفه', 'پرمیوم'],
+  ['لغو', 'کنسل', 'ابطال', 'انصراف', 'باطل'],
+  ['استرداد', 'برگشت', 'بازگشت', 'عودت', 'ریفاند'],
+  ['مجوز', 'مجوزی', 'اجازه', 'تایید', 'تأیید'],
+  ['مدرک', 'مدارک', 'سند', 'اسناد', 'عکس', 'تصویر', 'مستندات'],
+  ['خودرو', 'ماشین', 'اتومبیل', 'سواری', 'وسیله'],
+  ['دانلود', 'دریافت', 'لینک', 'نصب', 'برنامه', 'نرمافزار'],
+  ['پسورد', 'پسوورد', 'رمز', 'پسوود', 'پسورت'],
+  ['پرداخت', 'واریز', 'تسویه', 'قسط', 'پرداختی'],
+  ['خسارت', 'تصادف', 'حادثه'],
+  ['توقیف', 'رفع', 'آزادسازی'],
+  ['مدت', 'زمان', 'مهلت', 'مدتی']
+];
+const TR_CONCEPT = new Map();
+TR_CONCEPT_GROUPS.forEach(g => {
+  const st = g.map(w => trStem(trNorm(w)));
+  st.forEach((t, i) => { const set = TR_CONCEPT.get(t) || new Set(); st.forEach((x, j) => { if (j !== i) set.add(x); }); TR_CONCEPT.set(t, set); });
+});
 
 function trNorm(s) {
   return String(s == null ? '' : s)
@@ -8394,13 +8423,16 @@ function trPushRow(out, sheet, title, fields, hasHeader, row) {
     const chunk = { sheet, title, kind: 'row', fields: seg, row };
     const qi = seg.findIndex(f => TR_Q_LABEL.test(f.k));
     if (qi >= 0 && seg.length > 1) { chunk.q = seg[qi].v; chunk.qi = qi; }
+    // جدول دوستونه (مثل «نام فایل | لینک دانلود»): سلول اول = سوال، سلول روبرو = جواب
+    else if (hasHeader && seg.length === 2 && seg[0].v.split(/\s+/).length >= 2) { chunk.q = seg[0].v; chunk.qi = 0; }
     out.push(chunk);
   });
 }
 
 // ساخت تکه‌های دانش از یک برگه: جدول → هر ردیف یک تکه (با عنوان ستون‌ها)، متن آزاد → بلوک‌های پشت‌سرهم
-function trBuildChunks(sheet, grid) {
+function trBuildChunks(sheet, grid, links) {
   const out = [];
+  const lm = {}; (links || []).forEach(l => { lm[l[0] + ':' + l[1]] = l[2]; });   // «ردیف:ستون» ← آدرس لینک سلول
   let title = '', header = null, block = [], blockRow = 0;
   const cellsOf = r => (r || []).map((c, i) => ({ i, v: String(c == null ? '' : c).trim() })).filter(x => x.v);
   const flush = () => {
@@ -8415,7 +8447,7 @@ function trBuildChunks(sheet, grid) {
     const next = cellsOf(grid[r + 1]);
     if (cells.length === 1) {
       const v = cells[0].v;
-      if (header) { out.push({ sheet, title, kind: 'row', row: r + 1, fields: [{ k: header[cells[0].i] || '', v }] }); continue; }
+      if (header) { out.push({ sheet, title, kind: 'row', row: r + 1, fields: [{ k: header[cells[0].i] || '', v, url: lm[(r + 1) + ':' + cells[0].i] }] }); continue; }
       const prevBlank = r === 0 || !cellsOf(grid[r - 1]).length;
       // خط کوتاهِ حاوی عدد/کد یا جمله‌ی کامل (مثل «کد صندوق 1395») عنوان نیست، یک خبر است و باید قابل جستجو باشد
       const factLike = !next.length && (/[0-9۰-۹]/.test(v) || v.split(/\s+/).length >= 5);
@@ -8432,7 +8464,7 @@ function trBuildChunks(sheet, grid) {
       out.push({ sheet, title, kind: 'row', isHeader: true, row: r + 1, fields: cells.map(c => ({ k: '', v: c.v })) });
       continue;
     }
-    trPushRow(out, sheet, title, cells.map(c => ({ k: header ? (header[c.i] || '') : '', v: c.v })), !!header, r + 1);
+    trPushRow(out, sheet, title, cells.map(c => ({ k: header ? (header[c.i] || '') : '', v: c.v, url: lm[(r + 1) + ':' + c.i] })), !!header, r + 1);
   }
   flush();
   return out;
@@ -8456,45 +8488,106 @@ function trIndex(chunks) {
   const idf = {};
   Object.keys(df).forEach(t => { idf[t] = Math.log(1 + (N - df[t] + 0.5) / (df[t] + 0.5)); });
   trainState.idf = idf;
+  trainState.vocab = Object.keys(idf);
   trainState.avgLen = Math.max(total / N, 1);
 }
 
+// فاصله‌ی ویرایشی (برای غلط‌املایی‌های کوچک مثل «پسورت» ← «پسورد»)
+function trLev(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i]; let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      const v = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      cur.push(v); if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > max) return max + 1;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+// همه‌ی شکل‌های ممکنِ یک کلمه‌ی سوال (ریشه، ضمیر چسبیده، پیشوند فعل، مترادف، هم‌مفهوم، غلط‌املایی) با وزن
+function trCands(w) {
+  const base = trStem(w), out = new Map();
+  const add = (t, wg) => { if (t && t.length > 1 && (out.get(t) || 0) < wg) out.set(t, wg); };
+  add(base, 1);
+  if (w.length >= 5) {   // اختلافم، شرکتشون
+    for (const suf of ['مون', 'تون', 'شون', 'م', 'ت', 'ش']) if (w.endsWith(suf) && w.length - suf.length >= 3) { add(trStem(w.slice(0, -suf.length)), 0.9); break; }
+  }
+  const m = w.match(/^(نمی|می)(.{3,})$/); if (m) add(trStem(m[2]), 0.6);   // میزنه، نمیشه
+  [...out.keys()].forEach(k => {
+    const wk = out.get(k);
+    (TR_SYN[k] || []).forEach(x => add(trStem(x), 0.7 * wk));
+    (TR_CONCEPT.get(k) || []).forEach(x => add(x, 0.75 * wk));
+  });
+  (TR_SYN[w] || []).forEach(x => add(trStem(x), 0.7));
+  if (!trainState.idf[base] && trainState.vocab && base.length >= 5) {   // کلمه‌ای که در شیت اصلاً نیست: نزدیک‌ترین کلمه‌ی شیت (غلط املایی)
+    const lim = base.length >= 8 ? 2 : 1; let best = null, bd = lim + 1;
+    for (const v of trainState.vocab) { const d = trLev(base, v, lim); if (d < bd || (d === bd && best && (trainState.idf[v] || 0) > (trainState.idf[best] || 0))) { bd = d; best = v; } }
+    if (best && bd <= lim) add(best, 0.65);
+  }
+  return out;
+}
+function trTf(c, cands) {
+  let best = 0;
+  cands.forEach((wg, t) => {
+    let tf = c.tf[t] || 0;
+    if (!tf && t.length >= 4) { for (const k in c.tf) { if (k.length >= 4 && (k.startsWith(t) || t.startsWith(k))) { tf = c.tf[k] * 0.6; break; } } }
+    if (tf) best = Math.max(best, tf * wg);
+  });
+  return best;
+}
 function trSearch(question, scope) {
-  const words = trWords(question).filter(w => !TR_STOP.has(w));
-  const qTok = words.filter(w => w.length > 1).map(trStem);
+  const words = trWords(question).flatMap(w => /^چند.{3,}$/.test(w) ? ['چند', w.slice(3)] : [w]).filter(w => !TR_STOP.has(w));
+  const long = words.filter(w => w.length > 1);
   const single = words.filter(w => w.length === 1);
-  if (!qTok.length && !single.length) return [];
+  if (!long.length && !single.length) return [];
+  const toks = long.map(w => {
+    const cands = trCands(w), base = trStem(w);
+    let idf = 0; cands.forEach((wg, t) => { if (trainState.idf[t]) idf = Math.max(idf, trainState.idf[t]); });
+    return { w, base, cands, idf: idf || 1 };
+  });
   const k1 = 1.4, b = 0.75, avg = trainState.avgLen;
   const phrase = words.join(' ');
-  const res = [];
+  const total = toks.length + single.length;
+  const strict = [], loose = [];
   trainState.chunks.forEach(c => {
     if (scope !== '__all' && c.sheet !== scope) return;
-    let score = 0, hit = 0;
-    qTok.forEach(t => {
-      let tf = c.tf[t] || 0;
-      if (!tf && TR_SYN[t]) { for (const sy of TR_SYN[t]) { if (c.tf[sy]) { tf = c.tf[sy] * 0.7; break; } } }
-      if (!tf && t.length >= 4) { for (const k in c.tf) { if (k.length >= 4 && (k.startsWith(t) || t.startsWith(k))) { tf = c.tf[k] * 0.6; break; } } }
+    let score = 0, hit = 0, W = 0, M = 0;
+    toks.forEach(tk => {
+      W += tk.idf;
+      const tf = trTf(c, tk.cands);
       if (!tf) return;
-      hit++;
-      const idf = trainState.idf[t] || 1;
-      score += idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * c.tokens.length / avg));
-      if (c.cells.has(t)) score += 1.5;
-      if (c.qSet && c.qSet.has(t)) score += 1.2;
+      hit++; M += tk.idf;
+      score += tk.idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * c.tokens.length / avg));
+      if (c.cells.has(tk.base) || c.cells.has(tk.w)) score += 1.5;
+      if (c.qSet && c.qSet.has(tk.base)) score += 1.2;
     });
-    single.forEach(t => { if (c.cells.has(t)) { score += 6; hit++; } });
-    if (qTok.length > 1 && c.text.includes(phrase)) score += 3;
+    single.forEach(t => { W += 1; if (c.cells.has(t)) { score += 6; hit++; M += 1; } });
+    if (!hit) return;
+    if (toks.length > 1 && c.text.includes(phrase)) score += 3;
     if (c.qKey && c.qKey === phrase) score += 25;
-    const total = qTok.length + single.length;
-    if (!hit || hit < Math.ceil(0.75 * total)) return; // جواب فقط وقتی که تقریباً همه‌ی کلمات سوال تو یک رکورد باشه
-    const cover = hit / total;
+    const cover = W ? M / W : hit / total;
     score *= 0.5 + 0.5 * cover;
     if (c.isHeader) score *= 0.35;
-    res.push({ c, score });
+    if (hit >= Math.ceil(0.75 * total)) strict.push({ c, score });   // تقریباً همه‌ی کلمات سوال در یک رکورد
+    else if (cover >= 0.4 && hit >= Math.min(2, total)) loose.push({ c, score });   // جستجوی گسترده: سوال محاوره‌ای با کلمات اضافه
   });
-  res.sort((a, b) => b.score - a.score);
-  return res.slice(0, 4);
+  const pick = strict.length ? strict : loose;
+  pick.sort((a, b) => b.score - a.score);
+  const res = pick.slice(0, 4);
+  res.relaxed = !strict.length && res.length > 0;
+  return res;
 }
 
+function trSafeUrl(u) { return /^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : ''; }
+// سلولی که لینک (هایپرلینک) دارد به‌صورت دکمه‌ی دانلود نشان داده می‌شود؛ بقیه مثل قبل
+function trFieldHtml(f) {
+  const u = trSafeUrl(f.url);
+  if (u) return `<a class="tr-link" href="${escHtml(u)}" target="_blank" rel="noopener noreferrer">⬇ ${escHtml(f.v)}</a>`;
+  return trLines(f.v);
+}
 function trLines(v) {
   return escHtml(v).replace(/\n/g, '<br>').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 }
@@ -8516,7 +8609,7 @@ function trFocusLines(v, qt) {
 const TR_NEG = /(نیست|نمی ?(شود|شه|باشد|توان|تواند|تونه)|نمیشه|ندارد|ندارن|ندارند|ممنوع|غیر ?مجاز)/;
 const TR_POS = /(هست|هستند|دارد|دارن|دارند|می ?(شود|شه|باشد)|میشه|مجاز|امکان ?پذیر)/;
 const TR_WH = new Set(['چرا', 'چطور', 'چطوری', 'چگونه', 'چیه', 'چی', 'چیست', 'چه', 'کدوم', 'کدام', 'کجا', 'کی', 'چقدر', 'چقدره', 'چند', 'چنده', 'چندتا', 'چجوری']);
-function trIsYesNo(q) { return !trWords(q).some(w => TR_WH.has(w)); }
+function trIsYesNo(q) { return !trWords(q).some(w => TR_WH.has(w) || /^چند/.test(w)); }
 function trVerdict(v) {
   const t = trNorm(v).replace(/\s+/g, ' ').trim();
   if (!t || t.length > 80) return null;
@@ -8545,14 +8638,14 @@ function trRenderChunk(c, qt, yn) {
     // فقط پاسخ؛ خود سوال دوباره نشان داده نمی‌شود
     const ans = c.fields.filter((f, i) => i !== c.qi);
     const multi = ans.length > 1;
-    return src + ans.map(f => `<div class="tr-ans">${multi && f.k ? `<b class="tr-ans-k">${escHtml(f.k)}:</b> ` : ''}${trLines(f.v)}</div>`).join('');
+    return src + ans.map(f => `<div class="tr-ans">${multi && f.k ? `<b class="tr-ans-k">${escHtml(f.k)}:</b> ` : ''}${trFieldHtml(f)}</div>`).join('');
   }
   if (c.kind === 'row' && c.fields.some(f => f.k)) {
-    return src + '<dl class="tr-dl">' + c.fields.map(f => `<div><dt>${escHtml(f.k || '—')}</dt><dd>${trFocusLines(f.v, qt)}</dd></div>`).join('') + '</dl>';
+    return src + '<dl class="tr-dl">' + c.fields.map(f => `<div><dt>${escHtml(f.k || '—')}</dt><dd>${f.url ? trFieldHtml(f) : trFocusLines(f.v, qt)}</dd></div>`).join('') + '</dl>';
   }
   if (c.kind === 'row') {
     const [first, ...rest] = c.fields;
-    return src + `<div class="tr-main">${trFocusLines(first.v, qt)}</div>` + rest.map(f => `<div>${trFocusLines(f.v, qt)}</div>`).join('');
+    return src + `<div class="tr-main">${first.url ? trFieldHtml(first) : trFocusLines(first.v, qt)}</div>` + rest.map(f => `<div>${f.url ? trFieldHtml(f) : trFocusLines(f.v, qt)}</div>`).join('');
   }
   if (qt && qt.length && c.fields.length > 3) {
     // متن بلند: فقط خط‌هایی که بیشترین تطابق با سوال را دارند نشان بده، بقیه‌ی متن در «نمایش بقیه» بماند
@@ -8574,7 +8667,7 @@ const TRAIN_LOG_TOKEN = '887520hhfaofwooh696gfjyf'; // همان TOKEN داخل �
 function trPlain(c) {
   if (!c) return '';
   const f = c.q != null ? c.fields.filter((x, i) => i !== c.qi) : c.fields;
-  return f.map(x => x.v).join('\n').slice(0, 3000);
+  return f.map(x => x.v + (trSafeUrl(x.url) ? ' ' + trSafeUrl(x.url) : '')).join('\n').slice(0, 3000);
 }
 function trLog(method, question, status, c) {
   if (!TRAIN_LOG_URL) return;
@@ -8698,7 +8791,7 @@ function trShowChunk(id) {
 function trApplyData(sheetsData, failed, fetchedAt) {
   const chunks = [], names = [];
   sheetsData.forEach(s => {
-    const part = trBuildChunks(s.name, trParseCsv(s.csv));
+    const part = trBuildChunks(s.name, trParseCsv(s.csv), s.links);
     if (part.length) { names.push(s.name); chunks.push(...part); }
   });
   chunks.forEach((c, i) => { c.id = i; });
@@ -8728,7 +8821,7 @@ async function trListSheets() {
 async function trFetchAll() {
   let list;
   try { list = await trListSheets(); } catch (e) { return { ok: [], failed: [], firstErr: new Error('فهرست برگه‌ها از اسکریپت گرفته نشد (' + (e.message || e) + ')') }; }
-  const res = await Promise.allSettled(list.map(sh => trFetchSheet(sh.name, sh.gid).then(csv => ({ name: sh.name, csv }))));
+  const res = await Promise.allSettled(list.map(sh => trFetchSheet(sh.name, sh.gid).then(csv => ({ name: sh.name, csv, links: sh.links || [] }))));
   const ok = [], failed = []; let firstErr = null;
   res.forEach((r, i) => {
     if (r.status === 'fulfilled') ok.push(r.value);
@@ -8745,7 +8838,7 @@ async function trLoad() {
       let cache = null;
       try { cache = JSON.parse(localStorage.getItem(TRAIN_CACHE_KEY) || 'null'); } catch (e) { }
       if (cache && cache.sheets && cache.sheets.length && Date.now() - (cache.t || 0) < TRAIN_CACHE_TTL) {   // کش قدیمی‌تر از TTL استفاده نمی‌شود
-        trSignature = cache.sheets.map(s => s.name + '\u0001' + s.csv).join('\u0002');
+        trSignature = cache.sheets.map(s => s.name + '\u0001' + s.csv + '\u0001' + JSON.stringify(s.links || [])).join('\u0002');
         trApplyData(cache.sheets, cache.failed || [], cache.t);
       } else trTreeMsg('در حال دریافت…');
     }
@@ -8754,7 +8847,7 @@ async function trLoad() {
       trTreeMsg('دریافت ناموفق: ' + (r.firstErr ? r.firstErr.message : 'نامشخص'));
       return;
     }
-    const sig = r.ok.map(s => s.name + '\u0001' + s.csv).join('\u0002');
+    const sig = r.ok.map(s => s.name + '\u0001' + s.csv + '\u0001' + JSON.stringify(s.links || [])).join('\u0002');
     const now = Date.now();
     if (sig !== trSignature || !trainState.loaded) {
       trSignature = sig;
@@ -9089,7 +9182,7 @@ async function trAsk(q) {
   const comp = trCompanyOnly(qs);
   if (comp && trCompanyMenu(comp)) { trLog('سوال', q, 'انتخاب موضوع', null); return; }
   const res = trSearch(qs, '__all');
-  if (!res.length || res[0].score < 1) {
+  if (!res.length || res[0].score < (res.relaxed ? 1.5 : 1)) {
     trAddMsg('bot', 'متاسفانه منم این رو نمی‌دونم، منم باید برم یاد بگیرمش. فعلاً از سرگروه بپرس.');
     trLog('سوال', q, 'نامشخص', null);
     return;
@@ -9100,7 +9193,10 @@ async function trAsk(q) {
   const near = (top.q != null && !exact && trPlain(top).length <= 15) ? `<div class="tr-alt" style="margin-bottom:4px">نزدیک‌ترین سوال: «${escHtml(top.q)}»</div>` : '';
   const ageMs = Date.now() - trainState.fetchedAt;
   const staleNote = ageMs > 90000 ? `<div class="tr-alt" style="margin-top:6px">⚠ نسخه‌ی تازه‌ی شیت گرفته نشد؛ این جواب از نسخه‌ی ${faDigits(Math.max(1, Math.round(ageMs / 60000)))} دقیقه پیش است.</div>` : '';
-  trAddMsg('bot', near + trRenderChunk(top, trTokens(qs), trIsYesNo(qs)) + staleNote);
+  const relNote = res.relaxed && !near ? `<div class="tr-alt" style="margin-bottom:4px">نزدیک‌ترین جوابی که پیدا کردم:</div>` : '';
+  const others = res.slice(1).filter(x => !x.c.isHeader && x.score >= 0.55 * res[0].score && (x.c.q || trItemLabel(x.c)));
+  const related = others.length ? `<div class="tr-alt" style="margin-top:8px">شاید منظورت این بود:</div><div class="tr-chips" style="margin-top:4px">${others.slice(0, 3).map(x => `<button type="button" class="tr-chip" data-id="${x.c.id}">${escHtml(trItemLabel(x.c))}</button>`).join('')}</div>` : '';
+  trAddMsg('bot', near + relNote + trRenderChunk(top, trTokens(qs), trIsYesNo(qs)) + related + staleNote);
   trLog('سوال', q, 'پاسخ داده شد', top);
 }
 
