@@ -9046,7 +9046,7 @@ async function trMyIssuance(q) {
     .select('report_date_sort, report_date_jalali, target_count')
     .eq('agent_id', currentUserId).gte('report_date_sort', rng.start).lte('report_date_sort', rng.end)
     .order('report_date_sort', { ascending: true });
-  if (error) return { title, html: 'نتونستم آمار صدورت رو از سیستم بخونم، چند لحظه بعد دوباره امتحان کن.' };
+  if (error) return { title, html: 'الان نتونستم آمار صدورت رو بگیرم، چند لحظه بعد دوباره امتحان کن.' };
   const days = new Map();
   (data || []).forEach(r => { const k = jalaliRowSortKey(r); days.set(k, (days.get(k) || 0) + (Number(r.target_count) || 0)); });
   const keyTxt = k => trFmtDate([Math.floor(k / 10000), Math.floor(k / 100) % 100, k % 100]);
@@ -9117,7 +9117,7 @@ async function trPersonal(q) {
   }
   // درباره‌ی خود ربات
   if (has(/ (اسمت|نامت|اسم تو|نام تو|کی هستی|هوش مصنوعی هستی|ربات هستی|معرفی خودت|خودتو معرفی) /)) {
-    return { title: 'معرفی ربات', html: 'من دستیار آموزش همین پنلم. جواب قوانین شرکت‌ها، انتقال تخفیف، سررسید و خطاها رو از شیت «قوانین ثالث» پیدا می‌کنم و درباره‌ی خودت (اسم، سنتر، سرگروه، تعداد صدور) از اطلاعات داشبوردت جواب می‌دم.' };
+    return { title: 'معرفی ربات', html: 'من دستیار آموزش همین پنلم. می‌تونم درباره‌ی قوانین شرکت‌ها، انتقال تخفیف، سررسید و خطاها و همچنین اطلاعات خودت (اسم، سنتر، سرگروه، تعداد صدور) جواب بدم.' };
   }
   // چی بلدی؟
   if (has(/ (چی بلدی|چه کاری بلدی|چیکار می کنی|چیکار میکنی|چه کارایی|چه کارهایی|پس چی می دونی|پس چی میدونی|چی می دونی|چی میدونی|راهنما) /)) {
@@ -9127,10 +9127,10 @@ async function trPersonal(q) {
   if (has(/ (اسمم|نامم|اسم من|نام من|اسم منو|من کیم|من کی هستم|من کی ام|منو می شناسی|منو میشناسی) /)) {
     if (!name) return null;
     const remember = has(/ (یادت باشه|یادت نره|یاد بگیر|یاد بگیری) /);
-    return { title: 'اسم من', html: (remember ? 'لازم نیست یادم بسپاری، اسمت رو خودم از پروفایل داشبورد می‌خونم. ' : '') + `طبق پروفایلت اسمت <b>${escHtml(name)}</b> و نقشت <b>${escHtml(role)}</b> هست.` };
+    return { title: 'اسم من', html: (remember ? 'لازم نیست یادم بسپاری. ' : '') + `اسمت <b>${escHtml(name)}</b> هست.` };
   }
   if (has(/ (نقش من|نقشم|سمتم|سمت من) /)) {
-    return { title: 'نقش من', html: `نقشت توی داشبورد <b>${escHtml(role)}</b> هست.` };
+    return { title: 'نقش من', html: `نقشت <b>${escHtml(role)}</b> هست.` };
   }
   // سرگروه / سنتر
   const askLeader = has(/ (سر ?گروه(م| من| ما)|لیدر(م| من)) /);
@@ -9139,13 +9139,13 @@ async function trPersonal(q) {
     const kind = trMyRoleKind();
     if (kind === 'supervisor' || kind === 'admin') return { title: 'سنتر و سرگروه', html: 'برای نقش تو سنتر یا سرگروه مشخصی تعریف نشده.' };
     const org = await trLoadMyOrg();
-    if (!org.ok) return { title: 'سنتر و سرگروه', html: 'نتونستم اطلاعات سنتر و سرگروهت رو از سیستم بخونم، بعداً دوباره امتحان کن.' };
+    if (!org.ok) return { title: 'سنتر و سرگروه', html: 'الان نتونستم اطلاعات سنتر و سرگروهت رو بگیرم، بعداً دوباره امتحان کن.' };
     if (askLeader) {
       if (kind === 'leader') return { title: 'سرگروه من', html: `خودت سرگروهی: <b>${escHtml(name)}</b>.` };
-      return { title: 'سرگروه من', html: org.leaders.length ? `سرگروهت ${trJoin(org.leaders)} هست.` : 'توی سیستم سرگروهی برات ثبت نشده، از سرپرست بپرس.' };
+      return { title: 'سرگروه من', html: org.leaders.length ? `سرگروهت ${trJoin(org.leaders)} هست.` : 'سرگروهی برات ثبت نشده، از سرپرست بپرس.' };
     }
     if (kind === 'center') return { title: 'سنتر من', html: `سنتر تو <b>${escHtml(name)}</b> هست.` };
-    return { title: 'سنتر من', html: org.centers.length ? `${org.centers.length > 1 ? 'سنترهات' : 'سنترت'} ${trJoin(org.centers)} هست.` : 'توی سیستم سنتری برات ثبت نشده، از سرگروهت بپرس.' };
+    return { title: 'سنتر من', html: org.centers.length ? `${org.centers.length > 1 ? 'سنترهات' : 'سنترت'} ${trJoin(org.centers)} هست.` : 'سنتری برات ثبت نشده، از سرگروهت بپرس.' };
   }
   // تعداد صدور خودم
   if (trIsMyIssuanceQ(raw)) return await trMyIssuance(raw);
